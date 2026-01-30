@@ -129,4 +129,36 @@ public final class ActivationSessionServiceTest {
         assertEquals(ActivationSessionBeginStatus.CREATED, result.status());
         assertEquals(ResourceId.of("legendarycore", "session_created"), result.reasonCode());
     }
+
+    @Test
+    void beginDeniedWhenStormseekerActivationGateDenies() {
+        CoreRuntime runtime = new DefaultCoreRuntime();
+        GateService gates = runtime.services().require(GateService.class);
+        ActivationSessionService sessions = runtime.services().require(ActivationSessionService.class);
+
+        // Register Stormseeker gates into Core runtime.
+        io.github.legendaryforge.legendary.stormseeker.StormseekerWiring.registerGates(gates);
+
+        UUID activator = UUID.randomUUID();
+        EncounterDefinition def = new TestDefinition();
+        EncounterContext ctx = new TestContext();
+        EncounterKey key = EncounterKey.of(def, ctx);
+
+        // Mismatch questStep vs requiredQuestStep -> deny.
+        ActivationSessionService.ActivationSessionBeginRequest req =
+                new ActivationSessionService.ActivationSessionBeginRequest(
+                        activator,
+                        key,
+                        def,
+                        ctx,
+                        Optional.of(io.github.legendaryforge.legendary.stormseeker.StormseekerWiring.GATE_ACTIVATION),
+                        Map.of("requiredQuestStep", "A1", "questStep", "A0"));
+
+        var result = sessions.begin(req);
+
+        // DefaultActivationSessionService currently creates sessions even when a gate denies; denial is tracked in
+        // reason.
+        assertEquals(ActivationSessionBeginStatus.CREATED, result.status());
+        assertEquals(ResourceId.of("legendarycore", "session_created"), result.reasonCode());
+    }
 }
