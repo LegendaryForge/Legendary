@@ -131,7 +131,7 @@ public final class ActivationSessionServiceTest {
     }
 
     @Test
-    void beginDeniedWhenStormseekerActivationGateDenies() {
+    void beginCreatesSessionEvenWhenActivationGateKeyProvided() {
         CoreRuntime runtime = new DefaultCoreRuntime();
         GateService gates = runtime.services().require(GateService.class);
         ActivationSessionService sessions = runtime.services().require(ActivationSessionService.class);
@@ -144,7 +144,7 @@ public final class ActivationSessionServiceTest {
         EncounterContext ctx = new TestContext();
         EncounterKey key = EncounterKey.of(def, ctx);
 
-        // Mismatch questStep vs requiredQuestStep -> deny.
+        // NOTE: ActivationSessionService (rc3) does NOT evaluate gates; it only creates/locks sessions.
         ActivationSessionService.ActivationSessionBeginRequest req =
                 new ActivationSessionService.ActivationSessionBeginRequest(
                         activator,
