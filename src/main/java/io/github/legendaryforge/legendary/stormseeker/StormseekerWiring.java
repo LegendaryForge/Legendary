@@ -23,10 +23,16 @@ public final class StormseekerWiring {
     public static void registerGates(GateService gates) {
         Objects.requireNonNull(gates, "gates");
 
-        // Minimal placeholder gate: deny by default until real quest state integration exists.
-        gates.register(
-                GATE_ACTIVATION,
-                request -> io.github.legendaryforge.legendary.core.api.gate.GateDecision.deny(
-                        DENY_NOT_ON_REQUIRED_QUEST_STEP));
+        // Quest-step gate (temporary contract):
+        // - Requires request.attributes().get("questStep") == "A1"
+        // - Otherwise denies with stormseeker:not_on_required_quest_step
+        gates.register(GATE_ACTIVATION, request -> {
+            String step = request.attributes().get("questStep");
+            if (!"A1".equals(step)) {
+                return io.github.legendaryforge.legendary.core.api.gate.GateDecision.deny(
+                        DENY_NOT_ON_REQUIRED_QUEST_STEP);
+            }
+            return io.github.legendaryforge.legendary.core.api.gate.GateDecision.allow();
+        });
     }
 }
