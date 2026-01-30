@@ -27,8 +27,9 @@ public final class StormseekerWiring {
         // - Requires request.attributes().get("questStep") == "A1"
         // - Otherwise denies with stormseeker:not_on_required_quest_step
         gates.register(GATE_ACTIVATION, request -> {
+            String required = request.attributes().get("requiredQuestStep");
             String step = request.attributes().get("questStep");
-            if (!"A1".equals(step)) {
+            if (required == null || !required.equals(step)) {
                 return io.github.legendaryforge.legendary.core.api.gate.GateDecision.deny(
                         DENY_NOT_ON_REQUIRED_QUEST_STEP);
             }

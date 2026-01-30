@@ -26,7 +26,7 @@ public final class StormseekerQuestStepGateTest {
                 Optional.empty(),
                 Optional.empty(),
                 Optional.empty(),
-                Map.of()));
+                Map.of("requiredQuestStep", "A1")));
 
         assertFalse(missing.allowed());
         assertEquals(StormseekerWiring.DENY_NOT_ON_REQUIRED_QUEST_STEP, missing.reasonCode());
@@ -37,7 +37,7 @@ public final class StormseekerQuestStepGateTest {
                 Optional.empty(),
                 Optional.empty(),
                 Optional.empty(),
-                Map.of("questStep", "A0")));
+                Map.of("requiredQuestStep", "A1", "questStep", "A0")));
 
         assertFalse(wrong.allowed());
         assertEquals(StormseekerWiring.DENY_NOT_ON_REQUIRED_QUEST_STEP, wrong.reasonCode());
@@ -55,7 +55,7 @@ public final class StormseekerQuestStepGateTest {
                 Optional.empty(),
                 Optional.empty(),
                 Optional.empty(),
-                Map.of("questStep", "A1")));
+                Map.of("requiredQuestStep", "A1", "questStep", "A1")));
 
         assertTrue(ok.allowed());
         assertEquals(ResourceId.of("legendarycore", "allowed"), ok.reasonCode());
