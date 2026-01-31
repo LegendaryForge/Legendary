@@ -2,38 +2,34 @@ package io.github.legendaryforge.legendary.mod.stormseeker;
 
 import io.github.legendaryforge.legendary.core.api.gate.GateService;
 import io.github.legendaryforge.legendary.core.api.id.ResourceId;
-import java.util.Objects;
 
-/**
- * Stormseeker-side wiring entrypoint.
- *
- * <p>This module is currently a plain java-library, so Stormseeker provides a small explicit wiring
- * API that callers can invoke during runtime bootstrap.
- */
 public final class StormseekerWiring {
-
-    private StormseekerWiring() {}
 
     public static final ResourceId GATE_ACTIVATION = ResourceId.of("stormseeker", "activation");
 
     public static final ResourceId DENY_NOT_ON_REQUIRED_QUEST_STEP =
             ResourceId.of("stormseeker", "not_on_required_quest_step");
 
-    /** Register Stormseeker gates into the provided {@link GateService}. */
-    public static void registerGates(GateService gates) {
-        Objects.requireNonNull(gates, "gates");
+    private StormseekerWiring() {}
 
-        // Quest-step gate (temporary contract):
-        // - Requires request.attributes().get("questStep") == "A1"
-        // - Otherwise denies with stormseeker:not_on_required_quest_step
+    public static void registerGates(GateService gates) {
+        // Denies unless the activator is on the required quest step.
+        //
+        // Canonical attribute key (Phase 3+): "legendary.quest.step"
+        // Back-compat: also accept legacy "questStep" until all harness tests are migrated.
         gates.register(GATE_ACTIVATION, request -> {
             String required = request.attributes().get("requiredQuestStep");
-            String step = request.attributes().get("questStep");
-            if (required == null || !required.equals(step)) {
-                return io.github.legendaryforge.legendary.core.api.gate.GateDecision.deny(
-                        DENY_NOT_ON_REQUIRED_QUEST_STEP);
+            String step = request.attributes().get("legendary.quest.step");
+            if (step == null) {
+                step = request.attributes().get("questStep");
             }
-            return io.github.legendaryforge.legendary.core.api.gate.GateDecision.allow();
+
+            if (required != null && required.equals(step)) {
+                return io.github.legendaryforge.legendary.core.api.gate.GateDecision.allow();
+            }
+
+            return io.github.legendaryforge.legendary.core.api.gate.GateDecision.deny(
+                    DENY_NOT_ON_REQUIRED_QUEST_STEP, request.attributes());
         });
     }
 }

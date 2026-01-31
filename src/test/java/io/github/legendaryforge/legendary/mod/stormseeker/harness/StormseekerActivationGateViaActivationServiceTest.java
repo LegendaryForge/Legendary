@@ -3,6 +3,7 @@ package io.github.legendaryforge.legendary.mod.stormseeker.harness;
 import static org.junit.jupiter.api.Assertions.*;
 
 import io.github.legendaryforge.legendary.core.api.activation.*;
+import io.github.legendaryforge.legendary.core.api.activation.ActivationAuthority;
 import io.github.legendaryforge.legendary.core.api.encounter.*;
 import io.github.legendaryforge.legendary.core.api.gate.GateService;
 import io.github.legendaryforge.legendary.core.api.platform.CoreRuntime;
@@ -27,7 +28,12 @@ public final class StormseekerActivationGateViaActivationServiceTest {
         EncounterContext ctx = new ActivationSessionServiceTest.TestContext();
 
         ActivationAttemptResult result = activations.attemptActivation(new ActivationService.ActivationAttemptRequest(
-                UUID.randomUUID(), def, ctx, Optional.of(StormseekerWiring.GATE_ACTIVATION), Optional.empty()));
+                UUID.randomUUID(),
+                def,
+                ctx,
+                Optional.of(StormseekerWiring.GATE_ACTIVATION),
+                Optional.<ActivationAuthority>empty(),
+                Optional.<String>empty()));
 
         assertEquals(ActivationAttemptStatus.FAILED, result.status());
         assertFalse(result.decision().allowed());

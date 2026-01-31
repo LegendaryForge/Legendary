@@ -46,7 +46,7 @@ public final class GateServiceTest {
                 Optional.empty(),
                 Optional.empty(),
                 Optional.empty(),
-                Map.of("questStep", "A1")));
+                Map.of("legendary.quest.step", "A1")));
 
         assertTrue(decision.allowed());
         assertEquals(ResourceId.of("legendarycore", "allowed"), decision.reasonCode());

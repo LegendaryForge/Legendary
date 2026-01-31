@@ -89,7 +89,7 @@ public final class ActivationSessionServiceTest {
 
         ActivationSessionService.ActivationSessionBeginRequest req =
                 new ActivationSessionService.ActivationSessionBeginRequest(
-                        activator, key, def, ctx, Optional.of(gateKey), Map.of("questStep", "A1"));
+                        activator, key, def, ctx, Optional.of(gateKey), Map.of("legendary.quest.step", "A1"));
 
         var first = sessions.begin(req);
         assertTrue(first.status() == ActivationSessionBeginStatus.CREATED
@@ -123,7 +123,7 @@ public final class ActivationSessionServiceTest {
 
         ActivationSessionService.ActivationSessionBeginRequest req =
                 new ActivationSessionService.ActivationSessionBeginRequest(
-                        activator, key, def, ctx, Optional.of(gateKey), Map.of("questStep", "A0"));
+                        activator, key, def, ctx, Optional.of(gateKey), Map.of("legendary.quest.step", "A0"));
 
         var result = sessions.begin(req);
         assertEquals(ActivationSessionBeginStatus.CREATED, result.status());
@@ -153,7 +153,7 @@ public final class ActivationSessionServiceTest {
                         ctx,
                         Optional.of(
                                 io.github.legendaryforge.legendary.mod.stormseeker.StormseekerWiring.GATE_ACTIVATION),
-                        Map.of("requiredQuestStep", "A1", "questStep", "A0"));
+                        Map.of("requiredQuestStep", "A1", "legendary.quest.step", "A0"));
 
         var result = sessions.begin(req);
 
