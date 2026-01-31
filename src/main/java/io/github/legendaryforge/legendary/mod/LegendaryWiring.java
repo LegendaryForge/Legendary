@@ -1,13 +1,12 @@
 package io.github.legendaryforge.legendary.mod;
 
 import io.github.legendaryforge.legendary.core.api.gate.GateService;
-import io.github.legendaryforge.legendary.mod.stormseeker.StormseekerWiring;
+import io.github.legendaryforge.legendary.mod.questline.Questlines;
 
 /**
  * Mod-level wiring entrypoint for Legendary.
  *
- * <p>Questlines (e.g., Stormseeker) expose their own wiring classes. This class aggregates them
- * so servers can enable/disable questlines from one place.
+ * <p>Questlines are registered here so servers can enable/disable them from one place.
  */
 public final class LegendaryWiring {
 
@@ -20,8 +19,10 @@ public final class LegendaryWiring {
     }
 
     public static void registerAllGates(GateService gates, LegendaryConfig config) {
-        if (config.stormseekerEnabled()) {
-            StormseekerWiring.registerGates(gates);
+        for (var questline : Questlines.all()) {
+            if (config.isEnabled(questline.id())) {
+                questline.registerGates(gates);
+            }
         }
     }
 }

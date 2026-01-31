@@ -9,6 +9,7 @@ import io.github.legendaryforge.legendary.core.api.id.ResourceId;
 import io.github.legendaryforge.legendary.core.internal.gate.DefaultGateService;
 import io.github.legendaryforge.legendary.mod.LegendaryConfig;
 import io.github.legendaryforge.legendary.mod.LegendaryWiring;
+import io.github.legendaryforge.legendary.mod.questline.StormseekerQuestline;
 import io.github.legendaryforge.legendary.mod.stormseeker.StormseekerWiring;
 import java.util.Map;
 import java.util.Optional;
@@ -20,7 +21,9 @@ final class LegendaryWiringQuestlineToggleTest {
     @Test
     void whenStormseekerDisabled_gateIsNotRegistered() {
         GateService gates = new DefaultGateService();
-        LegendaryWiring.registerAllGates(gates, LegendaryConfig.allDisabled());
+
+        LegendaryConfig config = LegendaryConfig.of(Map.of(StormseekerQuestline.ID, false));
+        LegendaryWiring.registerAllGates(gates, config);
 
         ConditionGate.GateRequest req = new ConditionGate.GateRequest(
                 StormseekerWiring.GATE_ACTIVATION,
