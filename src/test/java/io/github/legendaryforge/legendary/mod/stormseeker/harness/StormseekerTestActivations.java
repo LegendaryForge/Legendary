@@ -20,7 +20,7 @@ final class StormseekerTestActivations {
         ActivationInputResolver resolver = request -> new ActivationInput(
                 request.activatorId(),
                 request.activationGateKey().orElseThrow(),
-                Map.of("legendary.quest.step", questStep),
+                Map.of("legendary.quest.step", questStep, "questStep", questStep, "requiredQuestStep", "A1"),
                 request.targetRef());
 
         return new DefaultActivationService(gates, sessions, resolver);
