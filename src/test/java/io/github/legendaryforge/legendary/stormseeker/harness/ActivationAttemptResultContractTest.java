@@ -29,6 +29,7 @@ public final class ActivationAttemptResultContractTest {
                         def,
                         ctx,
                         Optional.of(ResourceId.of("stormseeker", "deny_gate")),
+                        java.util.Map.of(),
                         Optional.empty())));
 
         assertNotNull(result, "result must not be null");
