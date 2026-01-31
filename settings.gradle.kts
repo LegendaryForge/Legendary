@@ -1,4 +1,4 @@
-rootProject.name = "LegendaryStormseeker"
+rootProject.name = "Legendary"
 
 includeBuild("vendor/LegendaryCore") {
     dependencySubstitution {
