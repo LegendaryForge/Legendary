@@ -22,13 +22,17 @@ public final class ActivationServiceWiringTest {
         EncounterContext ctx = new ActivationSessionServiceTest.TestContext();
 
         ActivationAttemptResult result = activations.attemptActivation(new ActivationService.ActivationAttemptRequest(
-                UUID.randomUUID(), def, ctx, Optional.of(ResourceId.of("stormseeker", "deny_gate")), Optional.empty()));
+                UUID.randomUUID(),
+                def,
+                ctx,
+                Optional.of(ResourceId.of("stormseeker", "deny_gate")),
+                Optional.empty()));
 
         assertEquals(ActivationAttemptStatus.FAILED, result.status());
         assertFalse(result.decision().allowed());
         assertTrue(result.sessionId().isEmpty());
         assertTrue(result.instance().isEmpty());
         assertEquals(
-                ResourceId.of("legendarycore", "not_wired"), result.decision().reasonCode());
+                ResourceId.of("legendarycore", "gate_not_registered"), result.decision().reasonCode());
     }
 }

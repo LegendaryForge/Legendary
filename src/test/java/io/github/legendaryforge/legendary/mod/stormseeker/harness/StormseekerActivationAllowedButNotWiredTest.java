@@ -27,12 +27,16 @@ public final class StormseekerActivationAllowedButNotWiredTest {
         EncounterContext ctx = new ActivationSessionServiceTest.TestContext();
 
         ActivationAttemptResult result = activations.attemptActivation(new ActivationService.ActivationAttemptRequest(
-                UUID.randomUUID(), def, ctx, Optional.of(StormseekerWiring.GATE_ACTIVATION), Optional.empty()));
+                UUID.randomUUID(),
+                def,
+                ctx,
+                Optional.of(StormseekerWiring.GATE_ACTIVATION),
+                Optional.empty()));
 
         assertEquals(ActivationAttemptStatus.FAILED, result.status());
         assertFalse(result.decision().allowed());
-        assertEquals(
-                ResourceId.of("legendarycore", "not_wired"), result.decision().reasonCode());
+assertEquals(
+StormseekerWiring.DENY_NOT_ON_REQUIRED_QUEST_STEP, result.decision().reasonCode());
         assertTrue(result.sessionId().isEmpty());
         assertTrue(result.instance().isEmpty());
     }
