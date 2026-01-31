@@ -1,4 +1,4 @@
-package io.github.legendaryforge.legendary.stormseeker;
+package io.github.legendaryforge.legendary.mod.stormseeker;
 
 import io.github.legendaryforge.legendary.core.api.gate.GateService;
 import io.github.legendaryforge.legendary.core.api.id.ResourceId;

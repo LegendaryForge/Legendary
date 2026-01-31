@@ -1,4 +1,4 @@
-package io.github.legendaryforge.legendary.stormseeker.harness;
+package io.github.legendaryforge.legendary.mod.stormseeker.harness;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -137,7 +137,7 @@ public final class ActivationSessionServiceTest {
         ActivationSessionService sessions = runtime.services().require(ActivationSessionService.class);
 
         // Register Stormseeker gates into Core runtime.
-        io.github.legendaryforge.legendary.stormseeker.StormseekerWiring.registerGates(gates);
+        io.github.legendaryforge.legendary.mod.stormseeker.StormseekerWiring.registerGates(gates);
 
         UUID activator = UUID.randomUUID();
         EncounterDefinition def = new TestDefinition();
@@ -151,7 +151,8 @@ public final class ActivationSessionServiceTest {
                         key,
                         def,
                         ctx,
-                        Optional.of(io.github.legendaryforge.legendary.stormseeker.StormseekerWiring.GATE_ACTIVATION),
+                        Optional.of(
+                                io.github.legendaryforge.legendary.mod.stormseeker.StormseekerWiring.GATE_ACTIVATION),
                         Map.of("requiredQuestStep", "A1", "questStep", "A0"));
 
         var result = sessions.begin(req);

@@ -1,4 +1,4 @@
-package io.github.legendaryforge.legendary.stormseeker.harness;
+package io.github.legendaryforge.legendary.mod.stormseeker.harness;
 
 import static org.junit.jupiter.api.Assertions.*;
 

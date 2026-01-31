@@ -1,4 +1,4 @@
-package io.github.legendaryforge.legendary.stormseeker.harness;
+package io.github.legendaryforge.legendary.mod.stormseeker.harness;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -29,7 +29,6 @@ public final class ActivationAttemptResultContractTest {
                         def,
                         ctx,
                         Optional.of(ResourceId.of("stormseeker", "deny_gate")),
-                        java.util.Map.of(),
                         Optional.empty())));
 
         assertNotNull(result, "result must not be null");

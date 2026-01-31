@@ -1,4 +1,4 @@
-package io.github.legendaryforge.legendary.stormseeker.harness;
+package io.github.legendaryforge.legendary.mod.stormseeker.harness;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -6,7 +6,7 @@ import io.github.legendaryforge.legendary.core.api.gate.*;
 import io.github.legendaryforge.legendary.core.api.id.ResourceId;
 import io.github.legendaryforge.legendary.core.api.platform.CoreRuntime;
 import io.github.legendaryforge.legendary.core.internal.runtime.DefaultCoreRuntime;
-import io.github.legendaryforge.legendary.stormseeker.StormseekerWiring;
+import io.github.legendaryforge.legendary.mod.stormseeker.StormseekerWiring;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
