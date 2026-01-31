@@ -29,18 +29,18 @@ public final class StormseekerActivationAllowedButNotWiredTest {
         EncounterDefinition def = new ActivationSessionServiceTest.TestDefinition();
         EncounterContext ctx = new ActivationSessionServiceTest.TestContext();
 
-        ActivationAttemptResult result =
-                activations.attemptActivation(
-                        new ActivationService.ActivationAttemptRequest(
-                                UUID.randomUUID(),
-                                def,
-                                ctx,
-                                Optional.of(StormseekerWiring.GATE_ACTIVATION),
-                                Optional.<ActivationAuthority>empty(),
-                                Optional.<String>empty()));
+        ActivationAttemptResult result = activations.attemptActivation(new ActivationService.ActivationAttemptRequest(
+                UUID.randomUUID(),
+                def,
+                ctx,
+                Optional.of(StormseekerWiring.GATE_ACTIVATION),
+                Optional.<ActivationAuthority>empty(),
+                Optional.<String>empty()));
 
         assertEquals(ActivationAttemptStatus.FAILED, result.status());
         assertFalse(result.decision().allowed());
-        assertEquals(StormseekerWiring.DENY_NOT_ON_REQUIRED_QUEST_STEP, result.decision().reasonCode());
+        assertEquals(
+                StormseekerWiring.DENY_NOT_ON_REQUIRED_QUEST_STEP,
+                result.decision().reasonCode());
     }
 }
