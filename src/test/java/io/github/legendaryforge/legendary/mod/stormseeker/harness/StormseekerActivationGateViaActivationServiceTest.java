@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import io.github.legendaryforge.legendary.core.api.activation.*;
 import io.github.legendaryforge.legendary.core.api.encounter.*;
 import io.github.legendaryforge.legendary.core.api.gate.GateService;
-import io.github.legendaryforge.legendary.core.api.id.ResourceId;
 import io.github.legendaryforge.legendary.core.api.platform.CoreRuntime;
 import io.github.legendaryforge.legendary.core.internal.runtime.DefaultCoreRuntime;
 import io.github.legendaryforge.legendary.mod.stormseeker.StormseekerWiring;
@@ -28,15 +27,12 @@ public final class StormseekerActivationGateViaActivationServiceTest {
         EncounterContext ctx = new ActivationSessionServiceTest.TestContext();
 
         ActivationAttemptResult result = activations.attemptActivation(new ActivationService.ActivationAttemptRequest(
-                UUID.randomUUID(),
-                def,
-                ctx,
-                Optional.of(StormseekerWiring.GATE_ACTIVATION),
-                Optional.empty()));
+                UUID.randomUUID(), def, ctx, Optional.of(StormseekerWiring.GATE_ACTIVATION), Optional.empty()));
 
         assertEquals(ActivationAttemptStatus.FAILED, result.status());
         assertFalse(result.decision().allowed());
         assertEquals(
-                StormseekerWiring.DENY_NOT_ON_REQUIRED_QUEST_STEP, result.decision().reasonCode());
+                StormseekerWiring.DENY_NOT_ON_REQUIRED_QUEST_STEP,
+                result.decision().reasonCode());
     }
 }
