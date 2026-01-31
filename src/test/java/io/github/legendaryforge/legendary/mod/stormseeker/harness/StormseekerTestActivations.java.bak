@@ -13,30 +13,14 @@ final class StormseekerTestActivations {
 
     private StormseekerTestActivations() {}
 
-    /**
-     * Backward-compatible convenience: assumes requiredQuestStep == questStep.
-     */
     static ActivationService withQuestStep(CoreRuntime runtime, String questStep) {
-        return withQuestStep(runtime, questStep, questStep);
-    }
-
-    /**
-     * Explicit helper for Phase 3 input resolution tests.
-     *
-     * <p>requiredQuestStep represents the gate's required step (e.g., bound to a landmark/target),
-     * while questStep represents the activator's current quest state.</p>
-     */
-    static ActivationService withQuestStep(CoreRuntime runtime, String requiredQuestStep, String questStep) {
         GateService gates = runtime.services().require(GateService.class);
         ActivationSessionService sessions = runtime.services().require(ActivationSessionService.class);
 
         ActivationInputResolver resolver = request -> new ActivationInput(
                 request.activatorId(),
                 request.activationGateKey().orElseThrow(),
-                Map.of(
-                        "legendary.quest.step", questStep,
-                        "questStep", questStep,
-                        "requiredQuestStep", requiredQuestStep),
+                Map.of("legendary.quest.step", questStep, "questStep", questStep, "requiredQuestStep", "A1"),
                 request.targetRef());
 
         return new DefaultActivationService(gates, sessions, resolver);

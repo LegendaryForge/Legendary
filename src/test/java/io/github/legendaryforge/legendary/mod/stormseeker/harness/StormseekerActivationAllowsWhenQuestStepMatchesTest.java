@@ -24,7 +24,7 @@ public final class StormseekerActivationAllowsWhenQuestStepMatchesTest {
 
         StormseekerWiring.registerGates(gates);
 
-        ActivationService activations = StormseekerTestActivations.withQuestStep(runtime, "A1");
+        ActivationService activations = StormseekerTestActivations.withQuestStep(runtime, "A1", "A1");
 
         EncounterDefinition def = new ActivationSessionServiceTest.TestDefinition();
         EncounterContext ctx = new ActivationSessionServiceTest.TestContext();
