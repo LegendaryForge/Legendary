@@ -8,6 +8,8 @@ import io.github.legendaryforge.legendary.core.api.gate.GateService;
 import io.github.legendaryforge.legendary.core.api.id.ResourceId;
 import io.github.legendaryforge.legendary.core.api.platform.CoreRuntime;
 import io.github.legendaryforge.legendary.core.internal.runtime.DefaultCoreRuntime;
+import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerQuestAttributes;
+import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerQuestSteps;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -46,7 +48,7 @@ public final class GateServiceTest {
                 Optional.empty(),
                 Optional.empty(),
                 Optional.empty(),
-                Map.of("legendary.quest.step", "A1")));
+                Map.of(StormseekerQuestAttributes.QUEST_STEP, StormseekerQuestSteps.PHASE_3_INCOMPLETE_FORM)));
 
         assertTrue(decision.allowed());
         assertEquals(ResourceId.of("legendarycore", "allowed"), decision.reasonCode());

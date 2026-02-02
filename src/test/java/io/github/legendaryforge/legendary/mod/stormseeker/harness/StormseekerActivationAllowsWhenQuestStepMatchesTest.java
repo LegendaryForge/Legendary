@@ -11,6 +11,7 @@ import io.github.legendaryforge.legendary.core.api.gate.GateService;
 import io.github.legendaryforge.legendary.core.api.platform.CoreRuntime;
 import io.github.legendaryforge.legendary.core.internal.runtime.DefaultCoreRuntime;
 import io.github.legendaryforge.legendary.mod.stormseeker.StormseekerWiring;
+import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerQuestSteps;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -24,7 +25,8 @@ public final class StormseekerActivationAllowsWhenQuestStepMatchesTest {
 
         StormseekerWiring.registerGates(gates);
 
-        ActivationService activations = StormseekerTestActivations.withQuestStep(runtime, "A1", "A1");
+        ActivationService activations = StormseekerTestActivations.withQuestStep(
+                runtime, StormseekerQuestSteps.PHASE_3_INCOMPLETE_FORM, StormseekerQuestSteps.PHASE_3_INCOMPLETE_FORM);
 
         EncounterDefinition def = new ActivationSessionServiceTest.TestDefinition();
         EncounterContext ctx = new ActivationSessionServiceTest.TestContext();
