@@ -7,6 +7,7 @@ import io.github.legendaryforge.legendary.core.api.activation.session.Activation
 import io.github.legendaryforge.legendary.core.api.gate.GateService;
 import io.github.legendaryforge.legendary.core.api.platform.CoreRuntime;
 import io.github.legendaryforge.legendary.core.internal.activation.DefaultActivationService;
+import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerQuestAttributes;
 import java.util.Map;
 
 final class StormseekerTestActivations {
@@ -34,9 +35,9 @@ final class StormseekerTestActivations {
                 request.activatorId(),
                 request.activationGateKey().orElseThrow(),
                 Map.of(
-                        "legendary.quest.step", questStep,
-                        "questStep", questStep,
-                        "requiredQuestStep", requiredQuestStep),
+                        StormseekerQuestAttributes.QUEST_STEP, questStep,
+                        StormseekerQuestAttributes.LEGACY_QUEST_STEP, questStep,
+                        StormseekerQuestAttributes.REQUIRED_QUEST_STEP, requiredQuestStep),
                 request.targetRef());
 
         return new DefaultActivationService(gates, sessions, resolver);

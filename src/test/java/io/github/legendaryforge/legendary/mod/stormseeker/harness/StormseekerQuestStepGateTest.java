@@ -7,7 +7,6 @@ import io.github.legendaryforge.legendary.core.api.id.ResourceId;
 import io.github.legendaryforge.legendary.core.api.platform.CoreRuntime;
 import io.github.legendaryforge.legendary.core.internal.runtime.DefaultCoreRuntime;
 import io.github.legendaryforge.legendary.mod.stormseeker.StormseekerWiring;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -26,7 +25,7 @@ public final class StormseekerQuestStepGateTest {
                 Optional.empty(),
                 Optional.empty(),
                 Optional.empty(),
-                Map.of("requiredQuestStep", "A1")));
+                StormseekerGateTestKit.requiredStep("A1")));
 
         assertFalse(missing.allowed());
         assertEquals(StormseekerWiring.DENY_NOT_ON_REQUIRED_QUEST_STEP, missing.reasonCode());
@@ -37,7 +36,7 @@ public final class StormseekerQuestStepGateTest {
                 Optional.empty(),
                 Optional.empty(),
                 Optional.empty(),
-                Map.of("requiredQuestStep", "A1", "legendary.quest.step", "A0")));
+                StormseekerGateTestKit.requiredAndCanonicalStep("A1", "A0")));
 
         assertFalse(wrong.allowed());
         assertEquals(StormseekerWiring.DENY_NOT_ON_REQUIRED_QUEST_STEP, wrong.reasonCode());
@@ -55,7 +54,7 @@ public final class StormseekerQuestStepGateTest {
                 Optional.empty(),
                 Optional.empty(),
                 Optional.empty(),
-                Map.of("requiredQuestStep", "A1", "legendary.quest.step", "A1")));
+                StormseekerGateTestKit.requiredAndCanonicalStep("A1", "A1")));
 
         assertTrue(ok.allowed());
         assertEquals(ResourceId.of("legendarycore", "allowed"), ok.reasonCode());
