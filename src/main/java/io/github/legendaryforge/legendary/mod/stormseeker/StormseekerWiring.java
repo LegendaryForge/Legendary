@@ -2,6 +2,7 @@ package io.github.legendaryforge.legendary.mod.stormseeker;
 
 import io.github.legendaryforge.legendary.core.api.gate.GateService;
 import io.github.legendaryforge.legendary.core.api.id.ResourceId;
+import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerQuestAttributes;
 
 public final class StormseekerWiring {
 
@@ -18,10 +19,10 @@ public final class StormseekerWiring {
         // Canonical attribute key (Phase 3+): "legendary.quest.step"
         // Back-compat: also accept legacy "questStep" until all harness tests are migrated.
         gates.register(GATE_ACTIVATION, request -> {
-            String required = request.attributes().get("requiredQuestStep");
-            String step = request.attributes().get("legendary.quest.step");
+            String required = request.attributes().get(StormseekerQuestAttributes.REQUIRED_QUEST_STEP);
+            String step = request.attributes().get(StormseekerQuestAttributes.QUEST_STEP);
             if (step == null) {
-                step = request.attributes().get("questStep");
+                step = request.attributes().get(StormseekerQuestAttributes.LEGACY_QUEST_STEP);
             }
 
             if (required != null && required.equals(step)) {
