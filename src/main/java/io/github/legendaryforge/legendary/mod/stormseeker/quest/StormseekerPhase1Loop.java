@@ -44,7 +44,13 @@ public final class StormseekerPhase1Loop {
 
         // Snapshot current host-visible players.
         Set<String> present = new HashSet<>();
+        var playerIds = new java.util.ArrayList<String>();
         for (String playerId : host.playerIds()) {
+            playerIds.add(playerId);
+        }
+        playerIds.sort(java.util.Comparator.comparing(String::valueOf));
+
+        for (String playerId : playerIds) {
             Objects.requireNonNull(playerId, "playerId");
             present.add(playerId);
         }
