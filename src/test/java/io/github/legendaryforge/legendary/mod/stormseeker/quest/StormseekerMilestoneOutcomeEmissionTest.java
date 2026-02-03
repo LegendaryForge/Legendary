@@ -7,7 +7,7 @@ import io.github.legendaryforge.legendary.mod.runtime.OutcomeRecordingHostRuntim
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-public final class StormseekerPhase1OutcomeEmissionTest {
+public final class StormseekerMilestoneOutcomeEmissionTest {
 
     @Test
     void emitsPhase1OutcomeExactlyOnceOnSigilAGrant() {

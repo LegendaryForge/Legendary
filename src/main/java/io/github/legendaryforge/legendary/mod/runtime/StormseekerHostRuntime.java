@@ -1,5 +1,6 @@
 package io.github.legendaryforge.legendary.mod.runtime;
 
+import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerMilestoneOutcome;
 import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerPhase1Outcome;
 import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerPhase1TickView;
 import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerProgress;
@@ -39,5 +40,12 @@ public interface StormseekerHostRuntime {
      * Durable Phase 1 outcome notification (emitted exactly once per player).
      * Default is no-op.
      */
-    default void emitPhase1Outcome(StormseekerPhase1Outcome outcome) {}
+    default void emitStormseekerMilestone(StormseekerMilestoneOutcome outcome) {}
+
+    /**
+     * Durable milestone signal emitted at most once per player+milestone edge.
+     */
+    default void emitPhase1Outcome(StormseekerPhase1Outcome outcome) {
+        emitStormseekerMilestone(new StormseekerMilestoneOutcome(outcome.playerId(), outcome.milestone()));
+    }
 }

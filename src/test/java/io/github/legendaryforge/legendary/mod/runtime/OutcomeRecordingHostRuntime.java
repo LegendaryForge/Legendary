@@ -1,6 +1,6 @@
 package io.github.legendaryforge.legendary.mod.runtime;
 
-import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerPhase1Outcome;
+import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerMilestoneOutcome;
 import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerProgress;
 import io.github.legendaryforge.legendary.mod.stormseeker.trial.flowing.FlowHintIntent;
 import io.github.legendaryforge.legendary.mod.stormseeker.trial.flowing.FlowingTrialSessionStep;
@@ -13,7 +13,7 @@ public final class OutcomeRecordingHostRuntime implements StormseekerHostRuntime
     private final Iterable<String> playerIds;
     private final StormseekerProgress progress;
 
-    public final List<StormseekerPhase1Outcome> outcomes = new ArrayList<>();
+    public final List<StormseekerMilestoneOutcome> outcomes = new ArrayList<>();
 
     public OutcomeRecordingHostRuntime(Iterable<String> playerIds, StormseekerProgress progress) {
         this.playerIds = playerIds;
@@ -39,7 +39,7 @@ public final class OutcomeRecordingHostRuntime implements StormseekerHostRuntime
     public void emitFlowHint(String playerId, FlowHintIntent hint) {}
 
     @Override
-    public void emitPhase1Outcome(StormseekerPhase1Outcome outcome) {
+    public void emitStormseekerMilestone(StormseekerMilestoneOutcome outcome) {
         outcomes.add(outcome);
     }
 
