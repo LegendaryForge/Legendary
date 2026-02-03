@@ -1,7 +1,11 @@
 package io.github.legendaryforge.legendary.mod.stormseeker.quest;
 
+import io.github.legendaryforge.legendary.core.api.id.ResourceId;
+import io.github.legendaryforge.legendary.mod.questline.objective.ObjectiveStatus;
 import io.github.legendaryforge.legendary.mod.runtime.StormseekerHostRuntime;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -9,25 +13,33 @@ import java.util.Set;
  * Phase 1 coordinator: enforces Attunement eligibility and drives the Flowing Trial loop once per host tick.
  *
  * <p>This class is deliberately engine-agnostic and contains no scheduling assumptions.
+ *
+ * <p>Contract: {@link #tick(StormseekerHostRuntime)} returns a per-player read model suitable for hosts/UI:
+ * denial reason (or null), objective snapshot, and participation state for this tick.
  */
 public final class StormseekerPhase1Loop {
 
     private final StormseekerAttunementService attunement;
+    private final StormseekerObjectiveSnapshotService snapshotService;
 
     public StormseekerPhase1Loop() {
-        this(new StormseekerAttunementService());
+        this(new StormseekerAttunementService(), new StormseekerObjectiveSnapshotService());
     }
 
-    public StormseekerPhase1Loop(StormseekerAttunementService attunement) {
+    public StormseekerPhase1Loop(
+            StormseekerAttunementService attunement, StormseekerObjectiveSnapshotService snapshotService) {
         this.attunement = Objects.requireNonNull(attunement, "attunement");
+        this.snapshotService = Objects.requireNonNull(snapshotService, "snapshotService");
     }
 
     /**
      * Called once per host tick.
      *
      * <p>Reconciles participation against current eligibility, then advances the trial loop for participants.
+     *
+     * @return host-facing per-player views for this tick (one entry per {@link StormseekerHostRuntime#playerIds()}).
      */
-    public void tick(StormseekerHostRuntime host) {
+    public List<StormseekerPhase1TickView> tick(StormseekerHostRuntime host) {
         Objects.requireNonNull(host, "host");
 
         // Snapshot current host-visible players.
@@ -37,29 +49,27 @@ public final class StormseekerPhase1Loop {
             present.add(playerId);
         }
 
-        // Remove participation for players no longer present.
-        // (We cannot iterate participation directly here without exposing internals, so we rely on host visibility:
-        // hosts should include all connected/loaded players in playerIds().)
-        //
-        // NOTE: Participation retention is already handled by FlowingTrialHostDriver -> hostTick.retainOnly(),
-        // but this ensures the participation set itself doesn't retain stale IDs.
-        //
-        // Because FlowingTrialParticipation is internal to the service, we conservatively call leave for all
-        // non-present IDs only if the host provides a stable universe of connected players.
-        //
-        // If a host provides only "nearby" players, it should call leave explicitly on disconnect/leave events.
+        List<StormseekerPhase1TickView> views = new ArrayList<>(present.size());
 
-        // Enforce eligibility for all present players.
+        // Enforce eligibility for all present players and build the host-facing read model.
         for (String playerId : present) {
             StormseekerProgress progress = host.progress(playerId);
-            if (attunement.canEnterFlowingTrial(progress)) {
+            ResourceId deny = attunement.denyEnterFlowingTrialReason(progress);
+            boolean participatingThisTick = (deny == null);
+
+            if (participatingThisTick) {
                 attunement.enterFlowingTrial(playerId, progress);
             } else {
                 attunement.leaveFlowingTrial(playerId);
             }
+
+            List<ObjectiveStatus> objectives = snapshotService.snapshot(progress);
+            views.add(new StormseekerPhase1TickView(playerId, deny, objectives, participatingThisTick));
         }
 
         // Drive the Flowing Trial loop for participating players only.
         attunement.tick(host);
+
+        return views;
     }
 }
