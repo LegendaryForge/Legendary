@@ -19,6 +19,8 @@ final class StormseekerAttunementServiceTest {
         StormseekerProgress p = new StormseekerProgress(); // PHASE_0_UNEASE
 
         assertFalse(s.enterFlowingTrial("p1", p));
+        assertFalse(s.canEnterFlowingTrial(p));
+        assertEquals(StormseekerAttunementService.DENY_ENTER_NOT_IN_PHASE_1, s.denyEnterFlowingTrialReason(p));
         assertFalse(s.isParticipatingForTesting("p1"));
     }
 
@@ -30,6 +32,8 @@ final class StormseekerAttunementServiceTest {
         p.grantSigilA();
 
         assertFalse(s.enterFlowingTrial("p1", p));
+        assertFalse(s.canEnterFlowingTrial(p));
+        assertEquals(StormseekerAttunementService.DENY_ENTER_ALREADY_HAS_SIGIL_A, s.denyEnterFlowingTrialReason(p));
         assertFalse(s.isParticipatingForTesting("p1"));
     }
 
@@ -39,6 +43,8 @@ final class StormseekerAttunementServiceTest {
         StormseekerProgress p = new StormseekerProgress();
         p.advanceToNextOrThrow(StormseekerPhase.PHASE_1_ATTUNEMENT);
 
+        assertTrue(s.canEnterFlowingTrial(p));
+        assertNull(s.denyEnterFlowingTrialReason(p));
         assertTrue(s.enterFlowingTrial("p1", p));
         assertTrue(s.isParticipatingForTesting("p1"));
 
@@ -53,6 +59,8 @@ final class StormseekerAttunementServiceTest {
 
         StormseekerProgress p = new StormseekerProgress();
         p.advanceToNextOrThrow(StormseekerPhase.PHASE_1_ATTUNEMENT);
+        assertTrue(s.canEnterFlowingTrial(p));
+        assertNull(s.denyEnterFlowingTrialReason(p));
         assertTrue(s.enterFlowingTrial("p1", p));
 
         final boolean[] hintEmitted = new boolean[] {false};

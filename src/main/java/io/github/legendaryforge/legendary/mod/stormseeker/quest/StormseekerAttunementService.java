@@ -1,5 +1,6 @@
 package io.github.legendaryforge.legendary.mod.stormseeker.quest;
 
+import io.github.legendaryforge.legendary.core.api.id.ResourceId;
 import io.github.legendaryforge.legendary.mod.runtime.FlowingTrialHostDriver;
 import io.github.legendaryforge.legendary.mod.runtime.FlowingTrialHostTick;
 import io.github.legendaryforge.legendary.mod.runtime.StormseekerHostRuntime;
@@ -14,6 +15,12 @@ import java.util.Objects;
  */
 public final class StormseekerAttunementService {
 
+    public static final ResourceId DENY_ENTER_NOT_IN_PHASE_1 =
+            ResourceId.of("stormseeker", "deny_enter_not_in_phase_1");
+
+    public static final ResourceId DENY_ENTER_ALREADY_HAS_SIGIL_A =
+            ResourceId.of("stormseeker", "deny_enter_already_has_sigil_a");
+
     private final FlowingTrialParticipation participation = new FlowingTrialParticipation();
     private final FlowingTrialHostDriver driver;
 
@@ -25,6 +32,31 @@ public final class StormseekerAttunementService {
         this.driver = Objects.requireNonNull(driver, "driver");
     }
 
+    public boolean canEnterFlowingTrial(StormseekerProgress progress) {
+        return denyEnterFlowingTrialReason(progress) == null;
+    }
+
+    /**
+     * Returns a stable denial reason when a player cannot enter the Flowing Trial loop.
+     *
+     * @return denial reason id, or null if entry is allowed
+     */
+    public ResourceId denyEnterFlowingTrialReason(StormseekerProgress progress) {
+        Objects.requireNonNull(progress, "progress");
+
+        // Deny if already earned Sigil A (idempotent: no re-entry needed).
+        if (progress.hasSigilA()) {
+            return DENY_ENTER_ALREADY_HAS_SIGIL_A;
+        }
+
+        // Deny if not yet in Phase 1 Attunement (scaffold semantics).
+        if (progress.phase() == StormseekerPhase.PHASE_0_UNEASE) {
+            return DENY_ENTER_NOT_IN_PHASE_1;
+        }
+
+        return null;
+    }
+
     /**
      * Attempts to enter the Flowing Trial loop.
      *
@@ -34,18 +66,8 @@ public final class StormseekerAttunementService {
         Objects.requireNonNull(playerId, "playerId");
         Objects.requireNonNull(progress, "progress");
 
-        if (progress.hasSigilA()) {
+        if (!canEnterFlowingTrial(progress)) {
             return false;
-        }
-
-        // Scaffold rule: only allow entry once Stormseeker has begun (Phase 1+).
-        switch (progress.phase()) {
-            case PHASE_0_UNEASE -> {
-                return false;
-            }
-            default -> {
-                // Phase 1+ allowed
-            }
         }
 
         return participation.enter(playerId);
