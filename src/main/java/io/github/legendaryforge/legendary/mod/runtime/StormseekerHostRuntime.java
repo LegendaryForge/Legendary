@@ -30,6 +30,13 @@ public interface StormseekerHostRuntime {
     void emitFlowHint(String playerId, FlowHintIntent hint);
 
     /**
+     * Optional host hook: receive the per-player Phase 1 tick read model.
+     * Default is no-op so host implementations are not forced to handle it.
+     */
+    default void emitPhase1TickView(
+            io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerPhase1TickView view) {}
+
+    /**
      * Receives the step result for the current tick (optional hook for host-side effects).
      *
      * <p>Called after {@link #emitFlowHint(String, FlowHintIntent)}.
