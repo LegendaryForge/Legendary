@@ -1,6 +1,7 @@
 package io.github.legendaryforge.legendary.mod.questline;
 
 import io.github.legendaryforge.legendary.core.api.gate.GateService;
+import io.github.legendaryforge.legendary.mod.runtime.LegendarySystemRegistrar;
 
 /**
  * A questline module hosted inside the Legendary mod.
@@ -18,4 +19,13 @@ public interface QuestlineModule {
 
     /** Register this questline's gates into the provided GateService. */
     void registerGates(GateService gates);
+
+    /**
+     * Register this questline's runtime systems into the provided registrar.
+     *
+     * <p>Default is no-op so gate-only questlines remain valid.
+     */
+    default void registerSystems(LegendarySystemRegistrar registrar) {
+        // no-op by default
+    }
 }

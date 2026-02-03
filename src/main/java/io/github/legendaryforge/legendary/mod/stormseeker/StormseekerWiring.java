@@ -2,6 +2,7 @@ package io.github.legendaryforge.legendary.mod.stormseeker;
 
 import io.github.legendaryforge.legendary.core.api.gate.GateService;
 import io.github.legendaryforge.legendary.core.api.id.ResourceId;
+import io.github.legendaryforge.legendary.mod.runtime.LegendarySystemRegistrar;
 import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerQuestAttributes;
 
 public final class StormseekerWiring {
@@ -32,5 +33,17 @@ public final class StormseekerWiring {
             return io.github.legendaryforge.legendary.core.api.gate.GateDecision.deny(
                     DENY_NOT_ON_REQUIRED_QUEST_STEP, request.attributes());
         });
+    }
+
+    /**
+     * Register Stormseeker runtime systems.
+     *
+     * <p>Phase C scope: Flowing Sigil Trial only. No Forge logic. No Anchored Sigil mechanics.
+     *
+     * <p>Phase C planning seam: Flowing Sigil Trial is driven per-player via FlowingTrialSession.
+     * Do not register placeholder systems until a real engine tick/scheduler integration exists.
+     */
+    public static void registerSystems(LegendarySystemRegistrar registrar) {
+        // Intentionally no-op in Phase C scaffold.
     }
 }
