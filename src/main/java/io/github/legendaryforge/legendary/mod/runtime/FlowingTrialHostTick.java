@@ -38,6 +38,10 @@ public final class FlowingTrialHostTick {
             if (!hadSigilA && hasSigilANow) {
                 runtime.emitStormseekerMilestone(
                         new StormseekerMilestoneOutcome(playerId, StormseekerPhaseMilestone.SIGIL_A_GRANTED));
+                if (progress.hasSigilB()) {
+                    runtime.emitStormseekerMilestone(
+                            new StormseekerMilestoneOutcome(playerId, StormseekerPhaseMilestone.DUAL_SIGILS_GRANTED));
+                }
             }
 
             runtime.emitFlowHint(playerId, step.hint());
