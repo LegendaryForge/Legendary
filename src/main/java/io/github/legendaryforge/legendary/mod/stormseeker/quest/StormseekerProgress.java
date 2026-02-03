@@ -39,8 +39,12 @@ public final class StormseekerProgress {
         this.hasSigilA = true;
     }
 
-    public void grantSigilB() {
+    public boolean grantSigilB() {
+        if (hasSigilB()) {
+            return false;
+        }
         this.hasSigilB = true;
+        return true;
     }
 
     /**
