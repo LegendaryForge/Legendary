@@ -1,61 +1,34 @@
 # Legendary
 
-Legendary is a content mod that hosts multiple **legendary questlines** (e.g., Stormseeker) built on top of **LegendaryCore**.
+Legendary is the canonical gameplay and questline mod built on top of LegendaryCore.
 
-This repository provides a shared mod-level namespace and wiring layer, while each questline remains isolated and self-owned.
-
----
-
-## Repository structure
-
-- **Mod namespace:** `io.github.legendaryforge.legendary.mod`
-- **Questline modules:** `io.github.legendaryforge.legendary.mod.<questline>`
-  - Example: `io.github.legendaryforge.legendary.mod.stormseeker`
-
-Each questline defines:
-- Its own gate keys and denial reasons
-- Its own wiring entrypoint
-- Its own tests
+This repository hosts Legendary questlines (starting with Stormseeker) and the content-side systems that exercise LegendaryCores encounter and activation primitives.
 
 ---
 
-## Wiring model
+## Scope
 
-- `LegendaryWiring` is the mod-level aggregation entrypoint.
-- Questlines expose their own wiring classes (e.g., `StormseekerWiring`).
-- Today, wiring is limited to **gate registration**.
+- Questline modules and wiring (enable/disable by questline)
+- Content-side runtime systems and host integration seams
+- Stormseeker questline implementation (phased)
 
-Activation, authority, and encounter creation remain intentionally phased and are not yet wired in LegendaryCore.
-
----
-
-## Stormseeker (first questline)
-
-Stormseeker is the first questline implemented under Legendary.
-
-Current scope:
-- Registers Stormseeker-specific activation gates into Core
-- Defines stable gate keys and denial reason codes under the `stormseeker` namespace
-- Validates wiring and propagation behavior via harness tests
-
-Note: Under LegendaryCore `v1.0.0-rc3`, the ActivationService is intentionally inert and returns `legendarycore:not_wired`.
+Legendary intentionally avoids embedding platform-specific engine code. Platform adapters should remain isolated behind explicit seams.
 
 ---
 
-## Development
+## Repositories
 
-Legendary vendors LegendaryCore via an included build:
+- **LegendaryCore**: shared deterministic encounter foundation
+- **LegendaryContent**: dogfooding and validation mod for harness-style testing
 
-```text
-vendor/LegendaryCore
-```
+---
 
-Run tests:
+## Status
 
-```bash
-./gradlew spotlessApply clean test
-```
+Under active development.
+
+---
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT License. See `LICENSE`.
