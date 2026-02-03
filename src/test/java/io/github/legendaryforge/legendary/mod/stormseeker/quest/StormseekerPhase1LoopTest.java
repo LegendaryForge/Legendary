@@ -38,7 +38,7 @@ final class StormseekerPhase1LoopTest {
             @Override
             public MotionSample motionSample(String playerId) {
                 // Provide a moving sample; eligible participants should cause hint emission.
-                return new MotionSample(1.0, 0.0, 0.0, true);
+                return MotionSample.moving(1, 0, 0);
             }
 
             @Override
