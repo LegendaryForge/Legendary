@@ -58,3 +58,7 @@ Run tests:
 ```bash
 ./gradlew spotlessApply clean test
 ```
+
+## License
+
+MIT — see [LICENSE](LICENSE).
