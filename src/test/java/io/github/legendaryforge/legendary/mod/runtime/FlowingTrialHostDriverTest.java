@@ -43,7 +43,7 @@ final class FlowingTrialHostDriverTest {
 
         @Override
         public MotionSample motionSample(String playerId) {
-            return new MotionSample(1.0, 0.0, 0.0, true);
+            return MotionSample.moving(1, 0, 0);
         }
 
         @Override

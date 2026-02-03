@@ -17,7 +17,7 @@ public final class FlowingTrialEvaluator {
             return new FlowingTrialStepResult(s, FlowHintIntent.zero(), false);
         }
 
-        MotionSample sample = raw.moving() ? raw : new MotionSample(0, 0, 0, false);
+        MotionSample sample = raw.moving() ? raw : MotionSample.idle();
         MotionSample dir = sample.normalizedOrZero();
 
         // --- Detection: build a candidate score from sustained movement + coherence ---
