@@ -1,5 +1,6 @@
 package io.github.legendaryforge.legendary.mod.runtime;
 
+import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerPhase1Outcome;
 import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerProgress;
 import io.github.legendaryforge.legendary.mod.stormseeker.trial.flowing.FlowingTrialSession;
 import java.util.HashMap;
@@ -26,9 +27,16 @@ public final class FlowingTrialHostTick {
             Objects.requireNonNull(playerId, "playerId");
 
             StormseekerProgress progress = runtime.progress(playerId);
+            boolean hadSigilA = progress.hasSigilA();
+
             FlowingTrialSession session = sessions.computeIfAbsent(playerId, id -> new FlowingTrialSession(progress));
 
             var step = session.step(runtime.motionSample(playerId));
+
+            boolean hasSigilANow = progress.hasSigilA();
+            if (!hadSigilA && hasSigilANow) {
+                runtime.emitPhase1Outcome(new StormseekerPhase1Outcome(playerId, true));
+            }
 
             runtime.emitFlowHint(playerId, step.hint());
             runtime.onFlowingTrialStep(playerId, step);
