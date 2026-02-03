@@ -7,6 +7,16 @@ package io.github.legendaryforge.legendary.mod.stormseeker.trial.flowing;
  */
 public record MotionSample(double dx, double dy, double dz, boolean moving) {
 
+    /** Convenience: a non-moving sample. */
+    public static MotionSample idle() {
+        return new MotionSample(0, 0, 0, false);
+    }
+
+    /** Convenience: a moving sample with the provided delta vector. */
+    public static MotionSample moving(double dx, double dy, double dz) {
+        return new MotionSample(dx, dy, dz, true);
+    }
+
     public double distance() {
         double d2 = dx * dx + dy * dy + dz * dz;
         return Math.sqrt(d2);
