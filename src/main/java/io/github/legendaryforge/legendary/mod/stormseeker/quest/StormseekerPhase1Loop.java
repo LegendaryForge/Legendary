@@ -70,7 +70,9 @@ public final class StormseekerPhase1Loop {
             }
 
             List<ObjectiveStatus> objectives = snapshotService.snapshot(progress);
-            views.add(new StormseekerPhase1TickView(playerId, deny, objectives, participatingThisTick));
+            var view = new StormseekerPhase1TickView(playerId, deny, objectives, participatingThisTick);
+            host.emitPhase1TickView(view);
+            views.add(view);
         }
 
         // Drive the Flowing Trial loop for participating players only.
