@@ -19,27 +19,38 @@ final class FlowingTrialHostTickTest {
 
         assertFalse(rt.progress.hasSigilA());
 
-        // Drive enough ticks to complete. We don't care about exact tuning here;
-        // we just feed consistent movement until the session reports completion.
         boolean completedObserved = false;
         for (int i = 0; i < 500; i++) {
             hostTick.tick(rt);
-            if (rt.completedSteps.size() > 0
+            if (!rt.completedSteps.isEmpty()
                     && rt.completedSteps.get(rt.completedSteps.size() - 1).completedThisTick()) {
                 completedObserved = true;
                 break;
             }
         }
 
-        assertTrue(rt.hints.size() > 0, "expected at least one hint emission");
+        assertFalse(rt.hints.isEmpty(), "expected at least one hint emission");
         assertTrue(completedObserved, "expected completion to be observed within tick budget");
         assertTrue(rt.progress.hasSigilA(), "sigil A should be granted on completion");
 
-        // Tick some more; sigil A must remain granted and not flip/flop.
         for (int i = 0; i < 50; i++) {
             hostTick.tick(rt);
         }
         assertTrue(rt.progress.hasSigilA());
+    }
+
+    @Test
+    void canRemovePlayerSession() {
+        FlowingTrialHostTick hostTick = new FlowingTrialHostTick();
+        FakeRuntime rt = new FakeRuntime();
+
+        hostTick.tick(rt);
+        assertNotNull(hostTick.sessionForTesting("p1"), "session should exist after tick");
+
+        assertTrue(hostTick.removePlayer("p1"), "expected removal to return true");
+        assertNull(hostTick.sessionForTesting("p1"), "session should be removed");
+
+        assertFalse(hostTick.removePlayer("p1"), "second removal should return false");
     }
 
     private static final class FakeRuntime implements StormseekerHostRuntime {
@@ -55,7 +66,6 @@ final class FlowingTrialHostTickTest {
 
         @Override
         public MotionSample motionSample(String playerId) {
-            // Constant movement in one direction; evaluator normalizes direction anyway.
             return new MotionSample(1.0, 0.0, 0.0, true);
         }
 

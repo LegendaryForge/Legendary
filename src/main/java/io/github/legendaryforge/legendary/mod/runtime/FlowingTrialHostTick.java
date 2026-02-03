@@ -3,8 +3,10 @@ package io.github.legendaryforge.legendary.mod.runtime;
 import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerProgress;
 import io.github.legendaryforge.legendary.mod.stormseeker.trial.flowing.FlowingTrialSession;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Phase D host tick seam: drives the Flowing Trial per-player loop without engine assumptions.
@@ -31,6 +33,38 @@ public final class FlowingTrialHostTick {
             runtime.emitFlowHint(playerId, step.hint());
             runtime.onFlowingTrialStep(playerId, step);
         }
+    }
+
+    /**
+     * Removes a player's session (host can call this when a player leaves the trial or disconnects).
+     *
+     * @return true if a session existed and was removed; false otherwise.
+     */
+    public boolean removePlayer(String playerId) {
+        Objects.requireNonNull(playerId, "playerId");
+        return sessions.remove(playerId) != null;
+    }
+
+    /** Removes all sessions. */
+    public void clear() {
+        sessions.clear();
+    }
+
+    /**
+     * Retains sessions only for the provided active player IDs.
+     *
+     * <p>Convenience for long-lived hosts that want to avoid session accumulation.
+     */
+    public void retainOnly(Iterable<String> activePlayerIds) {
+        Objects.requireNonNull(activePlayerIds, "activePlayerIds");
+
+        Set<String> keep = new HashSet<>();
+        for (String id : activePlayerIds) {
+            Objects.requireNonNull(id, "playerId");
+            keep.add(id);
+        }
+
+        sessions.keySet().retainAll(keep);
     }
 
     /** Visible for testing. */
