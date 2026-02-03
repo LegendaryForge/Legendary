@@ -1,6 +1,9 @@
 # Legendary
 
-Legendary is a content mod that hosts multiple **legendary questlines** (e.g., Stormseeker) built on top of **LegendaryCore**.
+
+
+Canonical legendary gameplay content built on LegendaryCore.
+
 
 This repository provides a shared mod-level namespace and wiring layer, while each questline remains isolated and self-owned.
 
