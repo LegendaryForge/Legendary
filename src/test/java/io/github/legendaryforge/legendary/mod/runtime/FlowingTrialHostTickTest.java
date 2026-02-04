@@ -66,7 +66,7 @@ final class FlowingTrialHostTickTest {
 
         @Override
         public MotionSample motionSample(String playerId) {
-            return MotionSample.moving(1, 0, 0);
+            return new MotionSample(1, 0, 0, true);
         }
 
         @Override
