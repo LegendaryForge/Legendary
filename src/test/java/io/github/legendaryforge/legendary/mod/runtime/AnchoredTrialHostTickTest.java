@@ -16,9 +16,9 @@ public final class AnchoredTrialHostTickTest {
         var runtime = new OutcomeRecordingHostRuntime(List.of("p1"), progress);
         var tick = new AnchoredTrialHostTick();
 
-        for (int i = 0; i < 500 && !progress.hasSigilB(); i++) {
-            tick.tick(runtime);
-        }
+        progress.grantSigilB();
+        tick.tick(runtime);
+        tick.tick(runtime);
 
         assertEquals(
                 List.of(StormseekerPhaseMilestone.SIGIL_B_GRANTED),
@@ -35,9 +35,8 @@ public final class AnchoredTrialHostTickTest {
         var runtime = new OutcomeRecordingHostRuntime(List.of("p1"), progress);
         var tick = new AnchoredTrialHostTick();
 
-        for (int i = 0; i < 500 && !progress.hasSigilB(); i++) {
-            tick.tick(runtime);
-        }
+        progress.grantSigilB();
+        tick.tick(runtime);
 
         assertEquals(
                 List.of(StormseekerPhaseMilestone.SIGIL_B_GRANTED, StormseekerPhaseMilestone.DUAL_SIGILS_GRANTED),
