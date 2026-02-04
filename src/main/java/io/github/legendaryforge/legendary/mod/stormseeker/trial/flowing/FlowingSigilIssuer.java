@@ -1,8 +1,5 @@
 package io.github.legendaryforge.legendary.mod.stormseeker.trial.flowing;
 
-import io.github.legendaryforge.legendary.mod.runtime.StormseekerHostRuntime;
-import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerMilestoneOutcome;
-import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerPhaseMilestone;
 import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerProgress;
 
 /**
@@ -18,21 +15,13 @@ public final class FlowingSigilIssuer {
      *
      * @return true if this call newly granted Sigil A; false if it was already granted.
      */
-    public static boolean tryGrantSigilA(
-            StormseekerHostRuntime runtime, String playerId, StormseekerProgress progress) {
+    public static boolean tryGrantSigilA(String playerId, StormseekerProgress progress) {
         if (progress.hasSigilA()) {
             return false;
         }
 
         progress.grantSigilA();
-
-        runtime.emitStormseekerMilestone(
-                new StormseekerMilestoneOutcome(playerId, StormseekerPhaseMilestone.SIGIL_A_GRANTED));
-
-        if (progress.hasSigilB()) {
-            runtime.emitStormseekerMilestone(
-                    new StormseekerMilestoneOutcome(playerId, StormseekerPhaseMilestone.DUAL_SIGILS_GRANTED));
-        }
+        if (progress.hasSigilB()) {}
 
         return true;
     }
