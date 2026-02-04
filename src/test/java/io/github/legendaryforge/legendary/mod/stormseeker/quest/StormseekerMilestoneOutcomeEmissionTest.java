@@ -31,4 +31,33 @@ public final class StormseekerMilestoneOutcomeEmissionTest {
 
         assertEquals(1, host.outcomes.size(), "Phase 1 outcome must not re-emit on subsequent ticks");
     }
+
+    @Test
+    void emitsDualSigilsGrantedWhenSigilBAlreadyGrantedOnSigilAGrant() {
+        var progress = new StormseekerProgress();
+        progress.grantSigilB();
+        var host = new OutcomeRecordingHostRuntime(List.of("p1"), progress);
+        var tick = new FlowingTrialHostTick();
+
+        // Tick until Sigil A is granted
+        for (int i = 0; i < 500 && !progress.hasSigilA(); i++) {
+            tick.tick(host);
+        }
+
+        assertEquals(
+                true, progress.hasSigilA(), "Test precondition: Sigil A should have been granted within tick budget");
+
+        assertEquals(2, host.outcomes.size(), "A grant with B already granted must emit A + dual");
+        assertEquals(
+                StormseekerPhaseMilestone.SIGIL_A_GRANTED, host.outcomes.get(0).milestone());
+        assertEquals(
+                StormseekerPhaseMilestone.DUAL_SIGILS_GRANTED,
+                host.outcomes.get(1).milestone());
+
+        // Additional ticks must not emit again
+        tick.tick(host);
+        tick.tick(host);
+
+        assertEquals(2, host.outcomes.size(), "Outcomes must not re-emit on subsequent ticks");
+    }
 }
