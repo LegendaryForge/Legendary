@@ -1,87 +1,64 @@
 # Legendary
 
-**Legendary** is the canonical gameplay and questline mod built on top of
-**LegendaryCore**.
 
-This repository hosts Legendary questlines (starting with **Stormseeker**) and
-the **content-side systems** that exercise LegendaryCore’s encounter,
-activation, and access-control primitives.
 
-Legendary is where *player-facing legendary gameplay* lives.
+Canonical legendary gameplay content built on LegendaryCore.
+
+
+This repository provides a shared mod-level namespace and wiring layer, while each questline remains isolated and self-owned.
 
 ---
 
-## Purpose
+## Repository structure
 
-Legendary exists to implement high-value, replayable legendary questlines using
-the deterministic foundations provided by LegendaryCore.
+- **Mod namespace:** `io.github.legendaryforge.legendary.mod`
+- **Questline modules:** `io.github.legendaryforge.legendary.mod.<questline>`
+  - Example: `io.github.legendaryforge.legendary.mod.stormseeker`
 
-It intentionally sits **above Core** and **below any engine/platform layer**.
-
-This repo answers the question:
-
-> “What does a real legendary questline look like when built correctly on the
-> LegendaryCore model?”
-
----
-
-## Scope
-
-Legendary owns:
-
-- Questline modules and wiring (enable/disable by questline)
-- Content-side runtime systems and orchestration
-- Quest-specific ECS systems, evaluators, and state machines
-- Explicit host integration seams (engine-agnostic)
-- Canonical questline implementations (e.g. Stormseeker, phased)
-
-Legendary explicitly does **not** own:
-
-- Engine or platform-specific code
-- Deterministic encounter lifecycle primitives
-- Access policy enforcement logic
-- Validation-only or dogfood harnesses
-
-Those concerns live in other repos by design.
+Each questline defines:
+- Its own gate keys and denial reasons
+- Its own wiring entrypoint
+- Its own tests
 
 ---
 
-## Architectural Position
+## Wiring model
 
-Legendary follows the canonical Legendary architecture:
+- `LegendaryWiring` is the mod-level aggregation entrypoint.
+- Questlines expose their own wiring classes (e.g., `StormseekerWiring`).
+- Today, wiring is limited to **gate registration**.
 
-- **Events** define engine truth
-- **ECS Systems** implement all authoritative gameplay logic
-- **Entities & Components** embody durable world state
-- **NPC Meta** is perception and expression only
-
-Legendary systems consume Core-provided events and services, but never embed
-engine assumptions directly.
-
-All engine/platform coupling must be isolated behind explicit seams.
+Activation, authority, and encounter creation remain intentionally phased and are not yet wired in LegendaryCore.
 
 ---
 
-## Repositories
+## Stormseeker (first questline)
 
-- **LegendaryCore**  
-  Shared deterministic encounter foundation and activation primitives
+Stormseeker is the first questline implemented under Legendary.
 
-- **Legendary** (this repo)  
-  Canonical legendary gameplay and questline implementations
+Current scope:
+- Registers Stormseeker-specific activation gates into Core
+- Defines stable gate keys and denial reason codes under the `stormseeker` namespace
+- Validates wiring and propagation behavior via harness tests
 
-- **LegendaryContent**  
-  Dogfooding and validation mod used to exercise Core + Legendary end-to-end
-
----
-
-## Status
-
-Under active development.  
-Phase-based questlines are added incrementally as systems are validated.
+Note: Under LegendaryCore `v1.0.0-rc3`, the ActivationService is intentionally inert and returns `legendarycore:not_wired`.
 
 ---
+
+## Development
+
+Legendary vendors LegendaryCore via an included build:
+
+```text
+vendor/LegendaryCore
+```
+
+Run tests:
+
+```bash
+./gradlew spotlessApply clean test
+```
 
 ## License
 
-MIT License. See `LICENSE`.
+MIT — see [LICENSE](LICENSE).
