@@ -1,6 +1,12 @@
 package io.github.legendaryforge.legendary.mod.runtime;
 
+import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerMilestoneOutcome;
+import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerProgress;
 import io.github.legendaryforge.legendary.mod.stormseeker.trial.anchored.AnchoredTrialParticipation;
+import io.github.legendaryforge.legendary.mod.stormseeker.trial.anchored.AnchoredTrialSessionStep;
+import io.github.legendaryforge.legendary.mod.stormseeker.trial.flowing.FlowHintIntent;
+import io.github.legendaryforge.legendary.mod.stormseeker.trial.flowing.FlowingTrialSessionStep;
+import io.github.legendaryforge.legendary.mod.stormseeker.trial.flowing.MotionSample;
 import java.util.ArrayList;
 import java.util.Objects;
 
@@ -8,6 +14,7 @@ import java.util.Objects;
  * Host driver for Anchored Trial.
  *
  * <p>Responsibilities:
+ *
  * <ul>
  *   <li>Filter the host runtime player set to only those participating.</li>
  *   <li>Delegate to {@link AnchoredTrialHostTick} for per-tick stepping and milestone emission.</li>
@@ -43,33 +50,33 @@ public final class AnchoredTrialHostDriver {
         }
 
         @Override
-        public io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerProgress progress(String playerId) {
+        public StormseekerProgress progress(String playerId) {
             return delegate.progress(playerId);
         }
 
         @Override
-        public io.github.legendaryforge.legendary.mod.stormseeker.trial.flowing.MotionSample motionSample(
-                String playerId) {
+        public MotionSample motionSample(String playerId) {
             return delegate.motionSample(playerId);
         }
 
         @Override
-        public void emitStormseekerMilestone(
-                io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerMilestoneOutcome outcome) {
+        public void emitStormseekerMilestone(StormseekerMilestoneOutcome outcome) {
             delegate.emitStormseekerMilestone(outcome);
         }
 
         @Override
-        public void emitFlowHint(
-                String playerId, io.github.legendaryforge.legendary.mod.stormseeker.trial.flowing.FlowHintIntent hint) {
+        public void emitFlowHint(String playerId, FlowHintIntent hint) {
             delegate.emitFlowHint(playerId, hint);
         }
 
         @Override
-        public void onFlowingTrialStep(
-                String playerId,
-                io.github.legendaryforge.legendary.mod.stormseeker.trial.flowing.FlowingTrialSessionStep step) {
+        public void onFlowingTrialStep(String playerId, FlowingTrialSessionStep step) {
             delegate.onFlowingTrialStep(playerId, step);
+        }
+
+        @Override
+        public void onAnchoredTrialStep(String playerId, AnchoredTrialSessionStep step) {
+            delegate.onAnchoredTrialStep(playerId, step);
         }
     }
 }
