@@ -4,6 +4,7 @@ import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerMiles
 import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerPhase1Outcome;
 import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerPhase1TickView;
 import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerProgress;
+import io.github.legendaryforge.legendary.mod.stormseeker.trial.anchored.AnchoredTrialSessionStep;
 import io.github.legendaryforge.legendary.mod.stormseeker.trial.flowing.FlowHintIntent;
 import io.github.legendaryforge.legendary.mod.stormseeker.trial.flowing.FlowingTrialSessionStep;
 import io.github.legendaryforge.legendary.mod.stormseeker.trial.flowing.MotionSample;
@@ -48,4 +49,7 @@ public interface StormseekerHostRuntime {
     default void emitPhase1Outcome(StormseekerPhase1Outcome outcome) {
         emitStormseekerMilestone(new StormseekerMilestoneOutcome(outcome.playerId(), outcome.milestone()));
     }
+
+    /** Host presentation hook for the Anchored Trial (Phase 2). */
+    default void onAnchoredTrialStep(String playerId, AnchoredTrialSessionStep step) {}
 }
