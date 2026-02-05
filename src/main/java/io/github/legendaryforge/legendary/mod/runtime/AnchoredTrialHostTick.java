@@ -30,6 +30,8 @@ public final class AnchoredTrialHostTick {
     private final Map<String, AnchoredTrialSession> sessions = new HashMap<>();
     private final Set<String> playersWithSigilB = new HashSet<>();
 
+    private final Set<String> playersWithDualSigils = new HashSet<>();
+
     public void tick(StormseekerHostRuntime runtime) {
         Objects.requireNonNull(runtime, "runtime");
 
@@ -52,6 +54,11 @@ public final class AnchoredTrialHostTick {
                     runtime.emitStormseekerMilestone(
                             new StormseekerMilestoneOutcome(playerId, StormseekerPhaseMilestone.DUAL_SIGILS_GRANTED));
                 }
+
+                if (progress.hasSigilA() && progress.hasSigilB() && playersWithDualSigils.add(playerId)) {
+                    runtime.emitStormseekerMilestone(
+                            new StormseekerMilestoneOutcome(playerId, StormseekerPhaseMilestone.DUAL_SIGILS_GRANTED));
+                }
             }
         }
     }
@@ -59,11 +66,13 @@ public final class AnchoredTrialHostTick {
     public boolean removePlayer(String playerId) {
         Objects.requireNonNull(playerId, "playerId");
         playersWithSigilB.remove(playerId);
+        playersWithDualSigils.remove(playerId);
         return sessions.remove(playerId) != null;
     }
 
     public void clear() {
         sessions.clear();
         playersWithSigilB.clear();
+        playersWithDualSigils.clear();
     }
 }
