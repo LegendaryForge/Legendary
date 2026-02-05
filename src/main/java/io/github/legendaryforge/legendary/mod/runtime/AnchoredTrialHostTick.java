@@ -40,7 +40,8 @@ public final class AnchoredTrialHostTick {
 
             // Gameplay stepping (authoritative mutation happens inside session.step via StormseekerProgress).
             AnchoredTrialSession session = sessions.computeIfAbsent(playerId, id -> new AnchoredTrialSession(progress));
-            session.step(runtime.motionSample(playerId));
+            var step = session.step(runtime.motionSample(playerId));
+            runtime.onAnchoredTrialStep(playerId, step);
 
             // Host-facing milestone emission is edge-based.
             if (progress.hasSigilB() && playersWithSigilB.add(playerId)) {
