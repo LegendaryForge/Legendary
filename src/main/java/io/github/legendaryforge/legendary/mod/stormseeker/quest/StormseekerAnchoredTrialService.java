@@ -10,8 +10,9 @@ import java.util.Objects;
 /**
  * Phase 2 control surface for entering/leaving and ticking the Anchored Trial.
  *
- * <p>Engine integration will call enter/leave based on triggers (zone, interaction, UI).
- * This service remains engine-agnostic and only manipulates authoritative participation state.
+ * <p>Engine integration will call enter/leave based on triggers (zone, interaction, UI). This
+ * service remains engine-agnostic and only manipulates authoritative participation state and host
+ * tick seams.
  */
 public final class StormseekerAnchoredTrialService {
 
@@ -55,6 +56,18 @@ public final class StormseekerAnchoredTrialService {
     public boolean leaveAnchoredTrial(String playerId) {
         Objects.requireNonNull(playerId, "playerId");
         return participation.leave(playerId);
+    }
+
+    /**
+     * Explicit leave+cleanup helper (policy seam).
+     *
+     * <p>Leaving participation does not reset host tick session state; cleanup is explicit. If an
+     * integration wants leaving to also cleanup Anchored Trial host tick state, call this method.
+     */
+    public void leaveAndCleanup(StormseekerHostRuntime runtime, String playerId) {
+        Objects.requireNonNull(runtime, "runtime");
+        Objects.requireNonNull(playerId, "playerId");
+        driver.leaveAndCleanup(runtime, participation, playerId);
     }
 
     /** Advances the Anchored Trial loop for all currently participating players. */
