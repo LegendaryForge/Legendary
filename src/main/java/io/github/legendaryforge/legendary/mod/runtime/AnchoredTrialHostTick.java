@@ -49,16 +49,11 @@ public final class AnchoredTrialHostTick {
             if (progress.hasSigilB() && playersWithSigilB.add(playerId)) {
                 runtime.emitStormseekerMilestone(
                         new StormseekerMilestoneOutcome(playerId, StormseekerPhaseMilestone.SIGIL_B_GRANTED));
+            }
 
-                if (progress.hasSigilA()) {
-                    runtime.emitStormseekerMilestone(
-                            new StormseekerMilestoneOutcome(playerId, StormseekerPhaseMilestone.DUAL_SIGILS_GRANTED));
-                }
-
-                if (progress.hasSigilA() && progress.hasSigilB() && playersWithDualSigils.add(playerId)) {
-                    runtime.emitStormseekerMilestone(
-                            new StormseekerMilestoneOutcome(playerId, StormseekerPhaseMilestone.DUAL_SIGILS_GRANTED));
-                }
+            if (progress.hasSigilA() && progress.hasSigilB() && playersWithDualSigils.add(playerId)) {
+                runtime.emitStormseekerMilestone(
+                        new StormseekerMilestoneOutcome(playerId, StormseekerPhaseMilestone.DUAL_SIGILS_GRANTED));
             }
         }
     }
