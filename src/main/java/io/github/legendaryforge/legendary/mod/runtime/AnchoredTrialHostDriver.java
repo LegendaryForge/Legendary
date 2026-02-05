@@ -34,6 +34,21 @@ public final class AnchoredTrialHostDriver {
         hostTick.tick(new ParticipatingOnlyRuntime(runtime, participation));
     }
 
+    /**
+     * Explicit leave+cleanup helper (policy seam).
+     *
+     * <p>Participation membership gates ticking but does not reset session state. If an integration wants
+     * leaving participation to also clear Anchored Trial host tick state, call this method.
+     */
+    public void leaveAndCleanup(
+            StormseekerHostRuntime runtime, AnchoredTrialParticipation participation, String playerId) {
+        Objects.requireNonNull(runtime, "runtime");
+        Objects.requireNonNull(participation, "participation");
+        Objects.requireNonNull(playerId, "playerId");
+        participation.leave(playerId);
+        hostTick.removePlayer(playerId);
+    }
+
     private static final class ParticipatingOnlyRuntime implements StormseekerHostRuntime {
 
         private final StormseekerHostRuntime delegate;
