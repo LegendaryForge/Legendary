@@ -39,6 +39,7 @@ public final class AnchoredTrialHostDriver {
      *
      * <p>Participation membership gates ticking but does not reset session state. If an integration wants
      * leaving participation to also clear Anchored Trial host tick state, call this method.
+     * <p>Leaving participation does not reset host tick session state; cleanup is explicit.
      */
     public void leaveAndCleanup(
             StormseekerHostRuntime runtime, AnchoredTrialParticipation participation, String playerId) {
