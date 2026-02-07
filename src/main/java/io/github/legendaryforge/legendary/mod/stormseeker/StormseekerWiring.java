@@ -42,6 +42,7 @@ public final class StormseekerWiring {
      *
      * <p>Phase C planning seam: Flowing Sigil Trial is driven per-player via FlowingTrialSession.
      * Do not register placeholder systems until a real engine tick/scheduler integration exists.
+     * See: io.github.legendaryforge.legendary.mod.stormseeker.integration.StormseekerEngineIntegrationNotes
      */
     public static void registerSystems(LegendarySystemRegistrar registrar) {
         // Intentionally no-op in Phase C scaffold.
