@@ -62,3 +62,7 @@ Run tests:
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+
+## Integration seams
+- Canonical engine/ECS driving notes (tick entrypoints, participation semantics, and cleanup policy): `src/main/java/io/github/legendaryforge/legendary/mod/stormseeker/integration/StormseekerEngineIntegrationNotes.java`
