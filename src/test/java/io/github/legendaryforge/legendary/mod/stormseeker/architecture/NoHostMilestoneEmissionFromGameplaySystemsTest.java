@@ -4,53 +4,58 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 /**
  * Architectural guardrail:
- * - Gameplay/ECS-side systems mutate progress/state only.
+ * - Gameplay/ECS-side code mutates progress/state only.
  * - Host tick seams observe durable edges and emit milestones/hints/host-facing outputs.
  *
- * This test prevents gameplay classes from acquiring a dependency on host runtime / host tick seams.
+ * This test prevents gameplay packages from acquiring a dependency on host runtime / host tick seams.
  */
 final class NoHostMilestoneEmissionFromGameplaySystemsTest {
 
+    private static final String HOST_RUNTIME_IMPORT =
+            "import io.github.legendaryforge.legendary.mod.runtime.StormseekerHostRuntime;";
+    private static final List<String> HOST_SEAM_IMPORTS = List.of(
+            "import io.github.legendaryforge.legendary.mod.runtime.AnchoredTrialHostTick;",
+            "import io.github.legendaryforge.legendary.mod.runtime.AnchoredTrialHostDriver;",
+            "import io.github.legendaryforge.legendary.mod.runtime.FlowingTrialHostTick;",
+            "import io.github.legendaryforge.legendary.mod.runtime.FlowingTrialHostDriver;");
+
     @Test
-    void gameplayClassesMustNotDependOnHostRuntimeOrHostTicks() throws Exception {
+    void gameplayPackagesMustNotDependOnHostRuntimeOrHostTicks() throws Exception {
         Path repoRoot = Path.of(System.getProperty("user.dir"));
 
-        // Gameplay-side classes that MUST NOT emit milestones or call host hooks.
-        List<Path> gameplayFiles = List.of(
-                repoRoot.resolve(
-                        "src/main/java/io/github/legendaryforge/legendary/mod/stormseeker/trial/anchored/AnchoredSigilGrantSystem.java"),
-                repoRoot.resolve(
-                        "src/main/java/io/github/legendaryforge/legendary/mod/stormseeker/trial/anchored/AnchoredTrialSession.java"),
-                repoRoot.resolve(
-                        "src/main/java/io/github/legendaryforge/legendary/mod/stormseeker/trial/flowing/FlowingTrialSession.java"),
-                repoRoot.resolve(
-                        "src/main/java/io/github/legendaryforge/legendary/mod/stormseeker/trial/flowing/FlowingTrialEvaluator.java"));
+        // Scan gameplay-side source packages (expand this list if/when more gameplay packages are introduced).
+        List<Path> roots = List.of(
+                repoRoot.resolve("src/main/java/io/github/legendaryforge/legendary/mod/stormseeker/trial"),
+                repoRoot.resolve("src/main/java/io/github/legendaryforge/legendary/mod/stormseeker/progress"));
 
-        for (Path f : gameplayFiles) {
-            assertTrue(Files.exists(f), "Expected file to exist: " + f);
+        List<Path> javaFiles = new ArrayList<>();
+        for (Path r : roots) {
+            if (!Files.exists(r)) {
+                continue; // progress package may not exist yet; keep guardrail resilient.
+            }
+            try (Stream<Path> st = Files.walk(r)) {
+                st.filter(p -> p.toString().endsWith(".java")).forEach(javaFiles::add);
+            }
+        }
 
+        assertFalse(javaFiles.isEmpty(), "Expected at least one gameplay java file to be scanned");
+
+        for (Path f : javaFiles) {
             String src = Files.readString(f);
 
-            // Must not depend on host runtime interface.
             assertFalse(
-                    src.contains("import io.github.legendaryforge.legendary.mod.runtime.StormseekerHostRuntime;"),
-                    "Gameplay class must not import StormseekerHostRuntime: " + f);
+                    src.contains(HOST_RUNTIME_IMPORT), "Gameplay class must not import StormseekerHostRuntime: " + f);
 
-            // Must not depend on host tick/driver seams (prevents milestone emission sneaking in).
-            assertFalse(
-                    src.contains("import io.github.legendaryforge.legendary.mod.runtime.AnchoredTrialHostTick;")
-                            || src.contains(
-                                    "import io.github.legendaryforge.legendary.mod.runtime.AnchoredTrialHostDriver;")
-                            || src.contains(
-                                    "import io.github.legendaryforge.legendary.mod.runtime.FlowingTrialHostTick;")
-                            || src.contains(
-                                    "import io.github.legendaryforge.legendary.mod.runtime.FlowingTrialHostDriver;"),
-                    "Gameplay class must not import host tick/driver seams: " + f);
+            for (String imp : HOST_SEAM_IMPORTS) {
+                assertFalse(src.contains(imp), "Gameplay class must not import host seam (" + imp + "): " + f);
+            }
         }
     }
 }
