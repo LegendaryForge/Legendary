@@ -3,6 +3,7 @@ package io.github.legendaryforge.legendary.mod.stormseeker;
 import io.github.legendaryforge.legendary.core.api.gate.GateService;
 import io.github.legendaryforge.legendary.core.api.id.ResourceId;
 import io.github.legendaryforge.legendary.mod.runtime.LegendarySystemRegistrar;
+import io.github.legendaryforge.legendary.mod.runtime.StormseekerHostRuntime;
 import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerQuestAttributes;
 
 public final class StormseekerWiring {
@@ -46,5 +47,20 @@ public final class StormseekerWiring {
      */
     public static void registerSystems(LegendarySystemRegistrar registrar) {
         // Intentionally no-op in Phase C scaffold.
+    }
+
+    /**
+     * Canonical engine/ECS entrypoint.
+     *
+     * <p>This is intentionally a seam: real engine wiring must call exactly once per host tick.
+     *
+     * <p>Until the engine integration is implemented, this is a no-op (deliberately).
+     * See: io.github.legendaryforge.legendary.mod.stormseeker.integration.StormseekerEngineIntegrationNotes
+     */
+    public static void tick(StormseekerHostRuntime host) {
+        // Canonical engine/ECS entrypoint.
+        //
+        // Intentionally a no-op until the real engine integration is implemented.
+        // See: io.github.legendaryforge.legendary.mod.stormseeker.integration.StormseekerEngineIntegrationNotes
     }
 }
