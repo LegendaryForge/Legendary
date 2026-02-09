@@ -1,43 +1,33 @@
 package io.github.legendaryforge.legendary.mod.stormseeker.integration;
 
 import io.github.legendaryforge.legendary.mod.runtime.StormseekerHostRuntime;
-import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerAnchoredTrialService;
-import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerPhase1Loop;
+import io.github.legendaryforge.legendary.mod.stormseeker.StormseekerWiring;
 
 /**
- * Engine/ECS integration notes for Stormseeker.
+ * Engine integration notes (host adapter contract).
  *
- * <h2>What exists today</h2>
- * Stormseeker currently exposes host-driven, tick-based seams. There is intentionally no engine scheduler
- * wiring in this repository yet.
- *
- * <h2>Canonical tick entrypoints</h2>
- * Integrations should drive Stormseeker by calling these entrypoints exactly once per host tick:
+ * <p>Canonical tick seam:
  * <ul>
- *   <li>{@link StormseekerPhase1Loop#tick(StormseekerHostRuntime)} for Phase 1 (Flowing Trial).</li>
- *   <li>{@link StormseekerAnchoredTrialService#tick(StormseekerHostRuntime)} for Phase 2 (Anchored Trial).</li>
+ *   <li>Call {@link StormseekerWiring#tick(StormseekerHostRuntime)} exactly once per engine/simulation tick.</li>
+ *   <li>Host integrations must not call Phase loops/services directly. {@code StormseekerWiring.tick(...)} is the
+ *       only supported per-tick entrypoint.</li>
  * </ul>
  *
- * <h2>Host responsibilities</h2>
- * The {@link StormseekerHostRuntime} is the boundary for:
+ * <p>Host-owned participation policy:
  * <ul>
- *   <li>Supplying the set of player ids to evaluate this tick.</li>
- *   <li>Supplying per-player motion samples for evaluation.</li>
- *   <li>Persisting and returning per-player {@code StormseekerProgress}.</li>
- *   <li>Receiving emissions (step callbacks, hints, durable milestone notifications).</li>
+ *   <li>Anchored Trial participation is a host decision (zone, interaction, UI, etc.).</li>
+ *   <li>Enter: {@link StormseekerWiring#enterAnchoredTrial(String, io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerProgress)}.</li>
+ *   <li>Leave: {@link StormseekerWiring#leaveAnchoredTrial(String)}.</li>
+ *   <li>If your policy requires clearing host-side session state on leave, call
+ *       {@link StormseekerWiring#leaveAndCleanup(StormseekerHostRuntime, String)} instead.</li>
  * </ul>
  *
- * <h2>Policy invariants (do not break)</h2>
+ * <p>Testing only:
  * <ul>
- *   <li>Participation membership gates ticking.</li>
- *   <li>Leaving participation does not reset host tick session state; cleanup is explicit via opt-in seams.</li>
- *   <li>Milestones are durable edge signals and must be order-independent where relevant.</li>
+ *   <li>{@link StormseekerWiring#resetForTesting()} exists to prevent singleton state leakage across JVM-shared tests.</li>
+ *   <li>Do not call {@code resetForTesting()} from real engine code.</li>
  * </ul>
- *
- * <p>This class is documentation-only: it exists to make future engine wiring obvious and to prevent
- * accidental double-ticking or unintended cleanup semantics.</p>
  */
 public final class StormseekerEngineIntegrationNotes {
-
     private StormseekerEngineIntegrationNotes() {}
 }
