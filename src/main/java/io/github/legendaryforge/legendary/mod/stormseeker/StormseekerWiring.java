@@ -4,7 +4,11 @@ import io.github.legendaryforge.legendary.core.api.gate.GateService;
 import io.github.legendaryforge.legendary.core.api.id.ResourceId;
 import io.github.legendaryforge.legendary.mod.runtime.LegendarySystemRegistrar;
 import io.github.legendaryforge.legendary.mod.runtime.StormseekerHostRuntime;
+import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerAnchoredTrialService;
+import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerPhase1Loop;
+import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerProgress;
 import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerQuestAttributes;
+import java.util.Objects;
 
 public final class StormseekerWiring {
 
@@ -13,7 +17,15 @@ public final class StormseekerWiring {
     public static final ResourceId DENY_NOT_ON_REQUIRED_QUEST_STEP =
             ResourceId.of("stormseeker", "not_on_required_quest_step");
 
+    private static final StormseekerPhase1Loop PHASE_1 = new StormseekerPhase1Loop();
+    private static StormseekerAnchoredTrialService PHASE_2 = new StormseekerAnchoredTrialService();
+
     private StormseekerWiring() {}
+
+    /** Test seam: reset singleton wiring state so JVM-shared tests stay isolated. */
+    public static void resetForTesting() {
+        PHASE_2 = new io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerAnchoredTrialService();
+    }
 
     public static void registerGates(GateService gates) {
         // Denies unless the activator is on the required quest step.
@@ -41,9 +53,9 @@ public final class StormseekerWiring {
      *
      * <p>Phase C scope: Flowing Sigil Trial only. No Forge logic. No Anchored Sigil mechanics.
      *
-     * <p>Phase C planning seam: Flowing Sigil Trial is driven per-player via FlowingTrialSession.
-     * Do not register placeholder systems until a real engine tick/scheduler integration exists.
-     * See: io.github.legendaryforge.legendary.mod.stormseeker.integration.StormseekerEngineIntegrationNotes
+     * <p>Phase C planning seam: Flowing Sigil Trial is driven per-player via FlowingTrialSession. Do not
+     * register placeholder systems until a real engine tick/scheduler integration exists. See:
+     * io.github.legendaryforge.legendary.mod.stormseeker.integration.StormseekerEngineIntegrationNotes
      */
     public static void registerSystems(LegendarySystemRegistrar registrar) {
         // Intentionally no-op in Phase C scaffold.
@@ -52,15 +64,17 @@ public final class StormseekerWiring {
     /**
      * Canonical engine/ECS entrypoint.
      *
-     * <p>This is intentionally a seam: real engine wiring must call exactly once per host tick.
+     * <p>The host integration must call this exactly once per engine tick.
      *
-     * <p>Until the engine integration is implemented, this is a no-op (deliberately).
-     * See: io.github.legendaryforge.legendary.mod.stormseeker.integration.StormseekerEngineIntegrationNotes
+     * <p>Keep this minimal: coordinate existing host tick seams only.
      */
+    public static boolean enterAnchoredTrial(String playerId, StormseekerProgress progress) {
+        return PHASE_2.enterAnchoredTrial(playerId, progress);
+    }
+
     public static void tick(StormseekerHostRuntime host) {
-        // Canonical engine/ECS entrypoint.
-        //
-        // Intentionally a no-op until the real engine integration is implemented.
-        // See: io.github.legendaryforge.legendary.mod.stormseeker.integration.StormseekerEngineIntegrationNotes
+        Objects.requireNonNull(host, "host");
+        PHASE_1.tick(host);
+        PHASE_2.tick(host);
     }
 }
