@@ -2,18 +2,31 @@ import net.ltgt.gradle.errorprone.ErrorProneOptions
 import net.ltgt.gradle.errorprone.errorprone
 
 plugins {
+    `maven-publish`
     id("java-library")
     id("net.ltgt.errorprone") version "4.4.0"
     id("com.diffplug.spotless") version "8.2.0"
 }
 
 repositories {
+    mavenLocal()
     mavenCentral()
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("mavenJava") {
+            from(components["java"])
+            groupId = "io.github.legendaryforge"
+            artifactId = "Legendary"
+            version = "0.0.0-SNAPSHOT"
+        }
+    }
 }
 
 dependencies {
     // Resolved via composite build substitution (vendor/LegendaryCore).
-    implementation("com.example:LegendaryCore:1.0.0")
+    implementation("io.github.legendaryforge:LegendaryCore:0.0.0-SNAPSHOT")
 
     errorprone("com.google.errorprone:error_prone_core:2.27.1")
 
