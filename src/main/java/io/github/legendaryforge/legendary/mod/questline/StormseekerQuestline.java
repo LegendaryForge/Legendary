@@ -1,5 +1,6 @@
 package io.github.legendaryforge.legendary.mod.questline;
 
+import io.github.legendaryforge.legendary.core.api.event.EventBus;
 import io.github.legendaryforge.legendary.core.api.gate.GateService;
 import io.github.legendaryforge.legendary.mod.runtime.LegendarySystemRegistrar;
 import io.github.legendaryforge.legendary.mod.stormseeker.StormseekerWiring;
@@ -27,5 +28,10 @@ public final class StormseekerQuestline implements QuestlineModule {
     @Override
     public void registerSystems(LegendarySystemRegistrar registrar) {
         StormseekerWiring.registerSystems(registrar);
+    }
+
+    @Override
+    public void registerListeners(EventBus bus) {
+        StormseekerWiring.registerListeners(bus);
     }
 }

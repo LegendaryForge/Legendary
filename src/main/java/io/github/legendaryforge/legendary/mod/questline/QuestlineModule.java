@@ -1,5 +1,6 @@
 package io.github.legendaryforge.legendary.mod.questline;
 
+import io.github.legendaryforge.legendary.core.api.event.EventBus;
 import io.github.legendaryforge.legendary.core.api.gate.GateService;
 import io.github.legendaryforge.legendary.mod.runtime.LegendarySystemRegistrar;
 
@@ -26,6 +27,15 @@ public interface QuestlineModule {
      * <p>Default is no-op so gate-only questlines remain valid.
      */
     default void registerSystems(LegendarySystemRegistrar registrar) {
+        // no-op by default
+    }
+
+    /**
+     * Register this questline's event listeners into the provided EventBus.
+     *
+     * <p>Default is no-op.
+     */
+    default void registerListeners(EventBus bus) {
         // no-op by default
     }
 }

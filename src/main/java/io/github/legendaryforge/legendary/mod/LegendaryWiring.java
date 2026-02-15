@@ -1,5 +1,6 @@
 package io.github.legendaryforge.legendary.mod;
 
+import io.github.legendaryforge.legendary.core.api.event.EventBus;
 import io.github.legendaryforge.legendary.core.api.gate.GateService;
 import io.github.legendaryforge.legendary.mod.questline.Questlines;
 import io.github.legendaryforge.legendary.mod.runtime.LegendarySystemRegistrar;
@@ -35,6 +36,18 @@ public final class LegendaryWiring {
         for (var questline : Questlines.all()) {
             if (config.isEnabled(questline.id())) {
                 questline.registerSystems(registrar);
+            }
+        }
+    }
+
+    public static void registerAllListeners(EventBus bus) {
+        registerAllListeners(bus, LegendaryConfig.defaults());
+    }
+
+    public static void registerAllListeners(EventBus bus, LegendaryConfig config) {
+        for (var questline : Questlines.all()) {
+            if (config.isEnabled(questline.id())) {
+                questline.registerListeners(bus);
             }
         }
     }

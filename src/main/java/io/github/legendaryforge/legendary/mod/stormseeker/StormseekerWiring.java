@@ -1,9 +1,12 @@
 package io.github.legendaryforge.legendary.mod.stormseeker;
 
+import io.github.legendaryforge.legendary.core.api.encounter.event.EncounterStartedEvent;
+import io.github.legendaryforge.legendary.core.api.event.EventBus;
 import io.github.legendaryforge.legendary.core.api.gate.GateService;
 import io.github.legendaryforge.legendary.core.api.id.ResourceId;
 import io.github.legendaryforge.legendary.mod.runtime.LegendarySystemRegistrar;
 import io.github.legendaryforge.legendary.mod.runtime.StormseekerHostRuntime;
+import io.github.legendaryforge.legendary.mod.stormseeker.integration.StormseekerLifecycleBridge;
 import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerAnchoredTrialService;
 import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerPhase1Loop;
 import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerProgress;
@@ -59,6 +62,10 @@ public final class StormseekerWiring {
      */
     public static void registerSystems(LegendarySystemRegistrar registrar) {
         // Intentionally no-op in Phase C scaffold.
+    }
+
+    public static void registerListeners(EventBus bus) {
+        bus.subscribe(EncounterStartedEvent.class, new StormseekerLifecycleBridge());
     }
 
     /**
