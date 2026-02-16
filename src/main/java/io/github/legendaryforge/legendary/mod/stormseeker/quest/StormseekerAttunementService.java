@@ -1,91 +1,152 @@
 package io.github.legendaryforge.legendary.mod.stormseeker.quest;
 
-import io.github.legendaryforge.legendary.core.api.id.ResourceId;
-import io.github.legendaryforge.legendary.mod.runtime.FlowingTrialHostDriver;
-import io.github.legendaryforge.legendary.mod.runtime.FlowingTrialHostTick;
-import io.github.legendaryforge.legendary.mod.runtime.StormseekerHostRuntime;
-import io.github.legendaryforge.legendary.mod.stormseeker.trial.flowing.FlowingTrialParticipation;
+import io.github.legendaryforge.legendary.core.api.event.EventBus;
+import io.github.legendaryforge.legendary.mod.stormseeker.client.PerceptionToggleHandler;
+import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Phase 1 (Attunement) control surface for the Flowing Trial.
+ * Phase 1.5 (Attunement) authoritative manager.
  *
- * <p>Engine integration will call enter/leave based on triggers (zone, interaction, UI).
- * This service remains engine-agnostic and only manipulates authoritative participation state.
+ * <p>Manages the 30-second Attunement Ritual at the Ancient Air Leyline Calibration Station.
+ * Handles state transitions, diegetic feedback, and player interaction for up to 6 plates independently.
  */
 public final class StormseekerAttunementService {
 
-    public static final ResourceId DENY_ENTER_NOT_IN_PHASE_1 =
-            ResourceId.of("stormseeker", "deny_enter_not_in_phase_1");
+    public interface World {
+        boolean isPlayerOnPlate(String playerId, UUID plateId);
 
-    public static final ResourceId DENY_ENTER_ALREADY_HAS_SIGIL_A =
-            ResourceId.of("stormseeker", "deny_enter_already_has_sigil_a");
+        void applyRootEffect(String playerId);
 
-    private final FlowingTrialParticipation participation = new FlowingTrialParticipation();
-    private final FlowingTrialHostDriver driver;
+        void removeRootEffect(String playerId);
 
-    public StormseekerAttunementService() {
-        this(new FlowingTrialHostDriver(new FlowingTrialHostTick()));
+        void updatePlateVisuals(UUID plateId, float intensity, RitualState state);
+
+        void updatePlateAudio(UUID plateId, float pitch, float volume);
+
+        void setPlateToIdle(UUID plateId);
     }
 
-    public StormseekerAttunementService(FlowingTrialHostDriver driver) {
-        this.driver = Objects.requireNonNull(driver, "driver");
+    public enum RitualState {
+        IDLE,
+        SPOOL_UP,
+        ACTIVE_LOCK,
+        SPOOL_DOWN
     }
 
-    public boolean canEnterFlowingTrial(StormseekerProgress progress) {
-        return denyEnterFlowingTrialReason(progress) == null;
+    private static class RitualInstance {
+        private final String playerId;
+        private RitualState state;
+        private long stateStartTime;
+
+        RitualInstance(String playerId) {
+            this.playerId = playerId;
+            this.state = RitualState.SPOOL_UP;
+            this.stateStartTime = System.currentTimeMillis();
+        }
+    }
+
+    private static final long SPOOL_UP_DURATION = 5000; // 5 seconds
+    private static final long ACTIVE_LOCK_DURATION = 15000; // 15 seconds
+    private static final long SPOOL_DOWN_DURATION = 5000; // 5 seconds
+
+    private final EventBus eventBus;
+    private final World world;
+    private final Map<UUID, RitualInstance> activeRituals = new ConcurrentHashMap<>();
+
+    public StormseekerAttunementService(EventBus eventBus, World world) {
+        this.eventBus = Objects.requireNonNull(eventBus, "eventBus");
+        this.world = Objects.requireNonNull(world, "world");
     }
 
     /**
-     * Returns a stable denial reason when a player cannot enter the Flowing Trial loop.
-     *
-     * @return denial reason id, or null if entry is allowed
+     * Starts the attunement ritual for a player on a specific plate.
+     * Does nothing if a ritual is already active on that plate.
      */
-    public ResourceId denyEnterFlowingTrialReason(StormseekerProgress progress) {
-        Objects.requireNonNull(progress, "progress");
-
-        // Deny if already earned Sigil A (idempotent: no re-entry needed).
-        if (progress.hasSigilA()) {
-            return DENY_ENTER_ALREADY_HAS_SIGIL_A;
-        }
-
-        // Deny if not yet in Phase 1 Attunement (scaffold semantics).
-        if (progress.phase() == StormseekerPhase.PHASE_0_UNEASE) {
-            return DENY_ENTER_NOT_IN_PHASE_1;
-        }
-
-        return null;
+    public void startRitual(UUID plateId, String playerId) {
+        activeRituals.computeIfAbsent(plateId, k -> new RitualInstance(playerId));
     }
 
     /**
-     * Attempts to enter the Flowing Trial loop.
-     *
-     * <p>Returns false if entry is not applicable (e.g., already has Sigil A).
+     * Main tick loop to be called by a system every game tick.
      */
-    public boolean enterFlowingTrial(String playerId, StormseekerProgress progress) {
-        Objects.requireNonNull(playerId, "playerId");
-        Objects.requireNonNull(progress, "progress");
+    public void tick() {
+        for (Map.Entry<UUID, RitualInstance> entry : activeRituals.entrySet()) {
+            UUID plateId = entry.getKey();
+            RitualInstance ritual = entry.getValue();
 
-        if (!canEnterFlowingTrial(progress)) {
-            return false;
+            // Interrupt if the player has moved off the plate, unless in ACTIVE_LOCK (uninterruptible)
+            if (ritual.state != RitualState.ACTIVE_LOCK && !world.isPlayerOnPlate(ritual.playerId, plateId)) {
+                interruptRitual(plateId, ritual);
+                continue;
+            }
+
+            long elapsed = System.currentTimeMillis() - ritual.stateStartTime;
+
+            switch (ritual.state) {
+                case SPOOL_UP:
+                    tickSpoolUp(plateId, ritual, elapsed);
+                    break;
+                case ACTIVE_LOCK:
+                    tickActiveLock(plateId, ritual, elapsed);
+                    break;
+                case SPOOL_DOWN:
+                    tickSpoolDown(plateId, ritual, elapsed);
+                    break;
+            }
         }
-
-        return participation.enter(playerId);
     }
 
-    public boolean leaveFlowingTrial(String playerId) {
-        Objects.requireNonNull(playerId, "playerId");
-        return participation.leave(playerId);
+    private void tickSpoolUp(UUID plateId, RitualInstance ritual, long elapsed) {
+        if (elapsed >= SPOOL_UP_DURATION) {
+            // Transition to ACTIVE_LOCK
+            ritual.state = RitualState.ACTIVE_LOCK;
+            ritual.stateStartTime = System.currentTimeMillis();
+            world.applyRootEffect(ritual.playerId);
+        } else {
+            // Update diegetic feedback
+            float progress = (float) elapsed / SPOOL_UP_DURATION;
+            world.updatePlateVisuals(plateId, progress, RitualState.SPOOL_UP);
+            world.updatePlateAudio(plateId, 0.5f + progress * 0.5f, progress * 0.8f);
+        }
     }
 
-    /** Advances the Flowing Trial loop for all currently participating players. */
-    public void tick(StormseekerHostRuntime runtime) {
-        Objects.requireNonNull(runtime, "runtime");
-        driver.tick(runtime, participation);
+    private void tickActiveLock(UUID plateId, RitualInstance ritual, long elapsed) {
+        if (elapsed >= ACTIVE_LOCK_DURATION) {
+            // Transition to SPOOL_DOWN
+            ritual.state = RitualState.SPOOL_DOWN;
+            ritual.stateStartTime = System.currentTimeMillis();
+            world.removeRootEffect(ritual.playerId);
+        } else {
+            // Update diegetic feedback
+            float progress = (float) elapsed / ACTIVE_LOCK_DURATION;
+            world.updatePlateVisuals(plateId, 1.0f, RitualState.ACTIVE_LOCK);
+            world.updatePlateAudio(plateId, 1.0f, 0.8f + (float) Math.sin(progress * Math.PI * 4) * 0.2f);
+        }
     }
 
-    /** Visible for testing. */
-    boolean isParticipatingForTesting(String playerId) {
-        return participation.contains(playerId);
+    private void tickSpoolDown(UUID plateId, RitualInstance ritual, long elapsed) {
+        if (elapsed >= SPOOL_DOWN_DURATION) {
+            // Handshake: Emit completion event
+            eventBus.post(new PerceptionToggleHandler.AttunementCompleteEvent(ritual.playerId));
+            // Cleanup
+            activeRituals.remove(plateId);
+            world.setPlateToIdle(plateId);
+        } else {
+            // Update diegetic feedback
+            float progress = 1.0f - ((float) elapsed / SPOOL_DOWN_DURATION);
+            world.updatePlateVisuals(plateId, progress, RitualState.SPOOL_DOWN);
+            world.updatePlateAudio(plateId, 0.5f + progress * 0.5f, progress * 0.8f);
+        }
+    }
+
+    private void interruptRitual(UUID plateId, RitualInstance ritual) {
+        if (ritual.state == RitualState.ACTIVE_LOCK) {
+            world.removeRootEffect(ritual.playerId);
+        }
+        activeRituals.remove(plateId);
+        world.setPlateToIdle(plateId);
     }
 }

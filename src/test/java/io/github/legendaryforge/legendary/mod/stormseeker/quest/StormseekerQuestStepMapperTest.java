@@ -10,9 +10,9 @@ final class StormseekerQuestStepMapperTest {
     void phasesBeforeThreeDoNotProduceGateSteps() {
         assertTrue(StormseekerQuestStepMapper.stepFor(StormseekerPhase.PHASE_0_UNEASE)
                 .isEmpty());
-        assertTrue(StormseekerQuestStepMapper.stepFor(StormseekerPhase.PHASE_1_ATTUNEMENT)
+        assertTrue(StormseekerQuestStepMapper.stepFor(StormseekerPhase.PHASE_1_STORM_TREK)
                 .isEmpty());
-        assertTrue(StormseekerQuestStepMapper.stepFor(StormseekerPhase.PHASE_1_5_AFTERSHOCK)
+        assertTrue(StormseekerQuestStepMapper.stepFor(StormseekerPhase.PHASE_1_5_ATTUNEMENT)
                 .isEmpty());
         assertTrue(StormseekerQuestStepMapper.stepFor(StormseekerPhase.PHASE_2_DUAL_SIGILS)
                 .isEmpty());
@@ -31,8 +31,8 @@ final class StormseekerQuestStepMapperTest {
                         .orElseThrow());
 
         assertEquals(
-                StormseekerQuestSteps.PHASE_5_FINAL_TEMPERING,
-                StormseekerQuestStepMapper.stepFor(StormseekerPhase.PHASE_5_FINAL_TEMPERING)
+                StormseekerQuestSteps.PHASE_5_EPILOGUE,
+                StormseekerQuestStepMapper.stepFor(StormseekerPhase.PHASE_5_EPILOGUE)
                         .orElseThrow());
     }
 }

@@ -32,7 +32,7 @@ public final class StormseekerObjectiveSnapshotService {
         }
 
         // Phase 1 (Attunement): Flowing Trial -> Sigil A.
-        if (phase == StormseekerPhase.PHASE_1_ATTUNEMENT) {
+        if (phase == StormseekerPhase.PHASE_1_STORM_TREK) {
             if (progress.hasSigilA()) {
                 out.add(ObjectiveStatus.complete(OBJ_EARN_SIGIL_A));
             } else {

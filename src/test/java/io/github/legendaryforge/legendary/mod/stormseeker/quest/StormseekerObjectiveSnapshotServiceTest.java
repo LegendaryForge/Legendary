@@ -26,7 +26,7 @@ final class StormseekerObjectiveSnapshotServiceTest {
     void phase1ShowsSigilAObjectiveIncompleteUntilGranted() {
         StormseekerObjectiveSnapshotService s = new StormseekerObjectiveSnapshotService();
         StormseekerProgress p = new StormseekerProgress();
-        p.advanceToNextOrThrow(StormseekerPhase.PHASE_1_ATTUNEMENT);
+        p.advanceToNextOrThrow(StormseekerPhase.PHASE_1_STORM_TREK);
 
         List<ObjectiveStatus> snap = s.snapshot(p);
         assertEquals(1, snap.size());

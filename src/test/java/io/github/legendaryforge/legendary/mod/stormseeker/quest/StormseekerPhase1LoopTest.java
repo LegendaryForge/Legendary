@@ -13,21 +13,21 @@ import org.junit.jupiter.api.Test;
 final class StormseekerPhase1LoopTest {
 
     @Test
-    void tickReturnsHostFacingViewsAndOnlyParticipatingPlayersReceiveHints() {
+    void tickReturnsViewsWithObjectiveSnapshotsForAllPlayers() {
         StormseekerPhase1Loop loop = new StormseekerPhase1Loop();
 
-        // p0: Phase 0 (denied)
+        // p0: Phase 0
         StormseekerProgress p0 = new StormseekerProgress();
 
-        // p1: Phase 1 (eligible, no Sigil A yet)
+        // p1: Phase 1 (Storm Trek)
         StormseekerProgress p1 = new StormseekerProgress();
-        p1.advanceToNextOrThrow(StormseekerPhase.PHASE_1_ATTUNEMENT);
+        p1.advanceToNextOrThrow(StormseekerPhase.PHASE_1_STORM_TREK);
 
         Map<String, StormseekerProgress> progress = new HashMap<>();
         progress.put("p0", p0);
         progress.put("p1", p1);
 
-        List<String> hintRecipients = new ArrayList<>();
+        List<StormseekerPhase1TickView> emitted = new ArrayList<>();
 
         var host = new io.github.legendaryforge.legendary.mod.runtime.StormseekerHostRuntime() {
             @Override
@@ -37,7 +37,6 @@ final class StormseekerPhase1LoopTest {
 
             @Override
             public MotionSample motionSample(String playerId) {
-                // Provide a moving sample; eligible participants should cause hint emission.
                 return new MotionSample(1, 0, 0, true);
             }
 
@@ -47,8 +46,11 @@ final class StormseekerPhase1LoopTest {
             }
 
             @Override
-            public void emitFlowHint(String playerId, FlowHintIntent hint) {
-                hintRecipients.add(playerId);
+            public void emitFlowHint(String playerId, FlowHintIntent hint) {}
+
+            @Override
+            public void emitPhase1TickView(StormseekerPhase1TickView view) {
+                emitted.add(view);
             }
         };
 
@@ -64,16 +66,11 @@ final class StormseekerPhase1LoopTest {
                 .findFirst()
                 .orElseThrow();
 
-        assertEquals(StormseekerAttunementService.DENY_ENTER_NOT_IN_PHASE_1, v0.denyEnterReason());
-        assertFalse(v0.participating());
+        // Both players should have objective snapshots.
         assertFalse(v0.objectives().isEmpty());
-
-        assertNull(v1.denyEnterReason());
-        assertTrue(v1.participating());
         assertFalse(v1.objectives().isEmpty());
 
-        // Only participating player should receive hint emissions.
-        assertTrue(hintRecipients.contains("p1"));
-        assertFalse(hintRecipients.contains("p0"));
+        // Views should also be emitted to the host.
+        assertEquals(2, emitted.size());
     }
 }

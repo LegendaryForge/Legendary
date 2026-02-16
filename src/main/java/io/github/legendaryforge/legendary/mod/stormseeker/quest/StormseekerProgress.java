@@ -55,9 +55,9 @@ public final class StormseekerProgress {
      */
     public void advanceIfEligible() {
         switch (phase) {
-            case PHASE_0_UNEASE -> phase = StormseekerPhase.PHASE_1_ATTUNEMENT;
-            case PHASE_1_ATTUNEMENT -> phase = StormseekerPhase.PHASE_1_5_AFTERSHOCK;
-            case PHASE_1_5_AFTERSHOCK -> phase = StormseekerPhase.PHASE_2_DUAL_SIGILS;
+            case PHASE_0_UNEASE -> phase = StormseekerPhase.PHASE_1_STORM_TREK;
+            case PHASE_1_STORM_TREK -> phase = StormseekerPhase.PHASE_1_5_ATTUNEMENT;
+            case PHASE_1_5_ATTUNEMENT -> phase = StormseekerPhase.PHASE_2_DUAL_SIGILS;
 
             case PHASE_2_DUAL_SIGILS -> {
                 if (hasSigilA && hasSigilB) {
@@ -75,7 +75,7 @@ public final class StormseekerProgress {
                 // No automatic advancement in scaffold mode.
             }
 
-            case PHASE_5_FINAL_TEMPERING -> {
+            case PHASE_5_EPILOGUE -> {
                 // Final; no-op.
             }
         }

@@ -27,10 +27,10 @@ public final class StormseekerQuestStepMapper {
      */
     public static Optional<String> stepFor(StormseekerPhase phase) {
         return switch (phase) {
-            case PHASE_0_UNEASE, PHASE_1_ATTUNEMENT, PHASE_1_5_AFTERSHOCK, PHASE_2_DUAL_SIGILS -> Optional.empty();
+            case PHASE_0_UNEASE, PHASE_1_STORM_TREK, PHASE_1_5_ATTUNEMENT, PHASE_2_DUAL_SIGILS -> Optional.empty();
             case PHASE_3_INCOMPLETE_FORM -> Optional.of(StormseekerQuestSteps.PHASE_3_INCOMPLETE_FORM);
             case PHASE_4_STORMS_ANSWER -> Optional.of(StormseekerQuestSteps.PHASE_4_STORMS_ANSWER);
-            case PHASE_5_FINAL_TEMPERING -> Optional.of(StormseekerQuestSteps.PHASE_5_FINAL_TEMPERING);
+            case PHASE_5_EPILOGUE -> Optional.of(StormseekerQuestSteps.PHASE_5_EPILOGUE);
         };
     }
 }

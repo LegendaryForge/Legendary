@@ -20,7 +20,7 @@ public final class StormseekerQuestSteps {
     public static final String PHASE_4_STORMS_ANSWER = "stormseeker.phase4.storms_answer";
 
     /** Player is in Phase 5 (final tempering). */
-    public static final String PHASE_5_FINAL_TEMPERING = "stormseeker.phase5.final_tempering";
+    public static final String PHASE_5_EPILOGUE = "stormseeker.phase5.final_tempering";
 
     private StormseekerQuestSteps() {}
 }

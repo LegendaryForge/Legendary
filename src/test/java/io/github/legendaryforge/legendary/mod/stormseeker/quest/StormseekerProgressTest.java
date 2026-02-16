@@ -12,10 +12,10 @@ final class StormseekerProgressTest {
         assertEquals(StormseekerPhase.PHASE_0_UNEASE, p.phase());
 
         p.advanceIfEligible();
-        assertEquals(StormseekerPhase.PHASE_1_ATTUNEMENT, p.phase());
+        assertEquals(StormseekerPhase.PHASE_1_STORM_TREK, p.phase());
 
         p.advanceIfEligible();
-        assertEquals(StormseekerPhase.PHASE_1_5_AFTERSHOCK, p.phase());
+        assertEquals(StormseekerPhase.PHASE_1_5_ATTUNEMENT, p.phase());
 
         p.advanceIfEligible();
         assertEquals(StormseekerPhase.PHASE_2_DUAL_SIGILS, p.phase());
@@ -49,9 +49,9 @@ final class StormseekerProgressTest {
         StormseekerProgress p = new StormseekerProgress();
 
         assertThrows(
-                IllegalArgumentException.class, () -> p.advanceToNextOrThrow(StormseekerPhase.PHASE_1_5_AFTERSHOCK));
+                IllegalArgumentException.class, () -> p.advanceToNextOrThrow(StormseekerPhase.PHASE_1_5_ATTUNEMENT));
 
-        p.advanceToNextOrThrow(StormseekerPhase.PHASE_1_ATTUNEMENT);
-        assertEquals(StormseekerPhase.PHASE_1_ATTUNEMENT, p.phase());
+        p.advanceToNextOrThrow(StormseekerPhase.PHASE_1_STORM_TREK);
+        assertEquals(StormseekerPhase.PHASE_1_STORM_TREK, p.phase());
     }
 }
