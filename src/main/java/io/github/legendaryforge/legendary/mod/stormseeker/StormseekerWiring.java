@@ -12,7 +12,7 @@ import io.github.legendaryforge.legendary.mod.stormseeker.integration.Stormseeke
 import io.github.legendaryforge.legendary.mod.stormseeker.logic.StormseekerTrekSystem;
 import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerAnchoredTrialService;
 import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerAttunementService;
-import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerPhase1Loop;
+import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerFlowingTrialLoop;
 import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerProgress;
 import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerQuestAttributes;
 import java.util.Objects;
@@ -39,7 +39,7 @@ public final class StormseekerWiring {
     private static StormseekerAttunementService ATTUNEMENT_SERVICE;
 
     // Phase 2: Dual Sigil Trials
-    private static final StormseekerPhase1Loop PHASE_2_FLOWING_TRIAL = new StormseekerPhase1Loop();
+    private static final StormseekerFlowingTrialLoop PHASE_2_FLOWING_TRIAL = new StormseekerFlowingTrialLoop();
     private static StormseekerAnchoredTrialService PHASE_2_ANCHORED_TRIAL = new StormseekerAnchoredTrialService();
 
     private StormseekerWiring() {}

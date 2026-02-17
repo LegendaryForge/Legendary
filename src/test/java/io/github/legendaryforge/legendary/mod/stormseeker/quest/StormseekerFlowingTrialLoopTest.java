@@ -10,24 +10,26 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
-final class StormseekerPhase1LoopTest {
+final class StormseekerFlowingTrialLoopTest {
 
     @Test
     void tickReturnsViewsWithObjectiveSnapshotsForAllPlayers() {
-        StormseekerPhase1Loop loop = new StormseekerPhase1Loop();
+        StormseekerFlowingTrialLoop loop = new StormseekerFlowingTrialLoop();
 
         // p0: Phase 0
         StormseekerProgress p0 = new StormseekerProgress();
 
-        // p1: Phase 1 (Storm Trek)
+        // p1: Phase 2 (Dual Sigils / Flowing Trial)
         StormseekerProgress p1 = new StormseekerProgress();
         p1.advanceToNextOrThrow(StormseekerPhase.PHASE_1_STORM_TREK);
+        p1.advanceToNextOrThrow(StormseekerPhase.PHASE_1_5_ATTUNEMENT);
+        p1.advanceToNextOrThrow(StormseekerPhase.PHASE_2_DUAL_SIGILS);
 
         Map<String, StormseekerProgress> progress = new HashMap<>();
         progress.put("p0", p0);
         progress.put("p1", p1);
 
-        List<StormseekerPhase1TickView> emitted = new ArrayList<>();
+        List<StormseekerFlowingTrialTickView> emitted = new ArrayList<>();
 
         var host = new io.github.legendaryforge.legendary.mod.runtime.StormseekerHostRuntime() {
             @Override
@@ -49,19 +51,19 @@ final class StormseekerPhase1LoopTest {
             public void emitFlowHint(String playerId, FlowHintIntent hint) {}
 
             @Override
-            public void emitPhase1TickView(StormseekerPhase1TickView view) {
+            public void emitFlowingTrialTickView(StormseekerFlowingTrialTickView view) {
                 emitted.add(view);
             }
         };
 
-        List<StormseekerPhase1TickView> views = loop.tick(host);
+        List<StormseekerFlowingTrialTickView> views = loop.tick(host);
         assertEquals(2, views.size());
 
-        StormseekerPhase1TickView v0 = views.stream()
+        StormseekerFlowingTrialTickView v0 = views.stream()
                 .filter(v -> v.playerId().equals("p0"))
                 .findFirst()
                 .orElseThrow();
-        StormseekerPhase1TickView v1 = views.stream()
+        StormseekerFlowingTrialTickView v1 = views.stream()
                 .filter(v -> v.playerId().equals("p1"))
                 .findFirst()
                 .orElseThrow();

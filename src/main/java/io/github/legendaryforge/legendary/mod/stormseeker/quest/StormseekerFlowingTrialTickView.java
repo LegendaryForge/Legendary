@@ -5,12 +5,12 @@ import io.github.legendaryforge.legendary.mod.questline.objective.ObjectiveStatu
 import java.util.List;
 
 /**
- * Host-facing Phase 1 tick view for a single player.
+ * Host-facing Flowing Trial tick view for a single player.
  *
  * <p>Designed as a read model for UI/host integration:
  * - eligibility (stable denial reason or null)
  * - objective snapshot ("what matters now")
- * - whether the Phase 1 loop is treating the player as participating this tick
+ * - whether the Flowing Trial loop is treating the player as participating this tick
  */
-public record StormseekerPhase1TickView(
+public record StormseekerFlowingTrialTickView(
         String playerId, ResourceId denyEnterReason, List<ObjectiveStatus> objectives, boolean participating) {}

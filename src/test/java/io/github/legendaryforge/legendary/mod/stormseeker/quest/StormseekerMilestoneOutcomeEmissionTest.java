@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 public final class StormseekerMilestoneOutcomeEmissionTest {
 
     @Test
-    void emitsPhase1OutcomeExactlyOnceOnSigilAGrant() {
+    void emitsFlowingTrialOutcomeExactlyOnceOnSigilAGrant() {
         var progress = new StormseekerProgress();
         var host = new OutcomeRecordingHostRuntime(List.of("p1"), progress);
         var tick = new FlowingTrialHostTick();
@@ -23,13 +23,13 @@ public final class StormseekerMilestoneOutcomeEmissionTest {
         assertEquals(
                 true, progress.hasSigilA(), "Test precondition: Sigil A should have been granted within tick budget");
 
-        assertEquals(1, host.outcomes.size(), "Phase 1 outcome should emit once on Sigil A grant");
+        assertEquals(1, host.outcomes.size(), "Flowing Trial outcome should emit once on Sigil A grant");
 
         // Additional ticks must not emit again
         tick.tick(host);
         tick.tick(host);
 
-        assertEquals(1, host.outcomes.size(), "Phase 1 outcome must not re-emit on subsequent ticks");
+        assertEquals(1, host.outcomes.size(), "Flowing Trial outcome must not re-emit on subsequent ticks");
     }
 
     @Test

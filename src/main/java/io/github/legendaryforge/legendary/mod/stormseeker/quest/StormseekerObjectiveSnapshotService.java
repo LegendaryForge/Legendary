@@ -13,8 +13,8 @@ import java.util.List;
 public final class StormseekerObjectiveSnapshotService {
 
     // Stable objective ids (string ids to keep this API portable).
-    public static final String OBJ_REACH_ATTUNEMENT = "stormseeker.phase1.reach_attunement";
-    public static final String OBJ_EARN_SIGIL_A = "stormseeker.phase1.sigil_a_flowing";
+    public static final String OBJ_REACH_ATTUNEMENT = "stormseeker.phase2.reach_attunement";
+    public static final String OBJ_EARN_SIGIL_A = "stormseeker.phase2.sigil_a_flowing";
 
     /**
      * Snapshot objectives for the current phase (minimal scaffold).
@@ -31,8 +31,8 @@ public final class StormseekerObjectiveSnapshotService {
             return out;
         }
 
-        // Phase 1 (Attunement): Flowing Trial -> Sigil A.
-        if (phase == StormseekerPhase.PHASE_1_STORM_TREK) {
+        // Phase 2 (Dual Sigils): Flowing Trial -> Sigil A.
+        if (phase == StormseekerPhase.PHASE_2_DUAL_SIGILS) {
             if (progress.hasSigilA()) {
                 out.add(ObjectiveStatus.complete(OBJ_EARN_SIGIL_A));
             } else {

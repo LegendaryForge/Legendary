@@ -9,7 +9,7 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Phase 1 coordinator: builds per-player objective snapshots once per host tick.
+ * Flowing Trial coordinator: builds per-player objective snapshots once per host tick.
  *
  * <p>This class is deliberately engine-agnostic and contains no scheduling assumptions.
  *
@@ -19,15 +19,15 @@ import java.util.Set;
  * <p>Note: Attunement eligibility and Flowing Trial integration are not yet wired.
  * This loop currently provides objective snapshots only.
  */
-public final class StormseekerPhase1Loop {
+public final class StormseekerFlowingTrialLoop {
 
     private final StormseekerObjectiveSnapshotService snapshotService;
 
-    public StormseekerPhase1Loop() {
+    public StormseekerFlowingTrialLoop() {
         this(new StormseekerObjectiveSnapshotService());
     }
 
-    public StormseekerPhase1Loop(StormseekerObjectiveSnapshotService snapshotService) {
+    public StormseekerFlowingTrialLoop(StormseekerObjectiveSnapshotService snapshotService) {
         this.snapshotService = Objects.requireNonNull(snapshotService, "snapshotService");
     }
 
@@ -38,7 +38,7 @@ public final class StormseekerPhase1Loop {
      *
      * @return host-facing per-player views for this tick (one entry per {@link StormseekerHostRuntime#playerIds()}).
      */
-    public List<StormseekerPhase1TickView> tick(StormseekerHostRuntime host) {
+    public List<StormseekerFlowingTrialTickView> tick(StormseekerHostRuntime host) {
         Objects.requireNonNull(host, "host");
 
         // Snapshot current host-visible players.
@@ -54,14 +54,14 @@ public final class StormseekerPhase1Loop {
             present.add(playerId);
         }
 
-        List<StormseekerPhase1TickView> views = new ArrayList<>(present.size());
+        List<StormseekerFlowingTrialTickView> views = new ArrayList<>(present.size());
 
         for (String playerId : present) {
             StormseekerProgress progress = host.progress(playerId);
 
             List<ObjectiveStatus> objectives = snapshotService.snapshot(progress);
-            var view = new StormseekerPhase1TickView(playerId, null, objectives, false);
-            host.emitPhase1TickView(view);
+            var view = new StormseekerFlowingTrialTickView(playerId, null, objectives, false);
+            host.emitFlowingTrialTickView(view);
             views.add(view);
         }
 

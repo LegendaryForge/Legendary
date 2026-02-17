@@ -631,10 +631,15 @@ The code logic itself is generally correct — the names are wrong.
 
 | Code | Current Name | Should Be | Reason |
 |---|---|---|---|
-| `StormseekerPhase1Loop` | "Phase 1 coordinator" | Phase 2 Flowing Trial coordinator | Drives Flowing Trial, which is Phase 2 |
 | `StormseekerAttunementService` | "Phase 1 Attunement control surface" | Phase 1.5 Attunement ritual service | Now correctly refers to attunement (Phase 1.5 redesign); name is accurate but phase label needs updating |
 
 Resolved in v3.0:
+- ~~`StormseekerPhase1Loop`~~ → Fixed: now `StormseekerFlowingTrialLoop` (Phase 2 Flowing Trial coordinator)
+- ~~`StormseekerPhase1Outcome`~~ → Fixed: now `StormseekerFlowingTrialOutcome`
+- ~~`StormseekerPhase1TickView`~~ → Fixed: now `StormseekerFlowingTrialTickView`
+- ~~`emitPhase1TickView()` / `emitPhase1Outcome()`~~ → Fixed: now `emitFlowingTrialTickView()` / `emitFlowingTrialOutcome()`
+- ~~`phase1Attunement()`~~ → Fixed: now `phase2FlowingTrial()`
+- ~~`StormseekerObjectiveSnapshotService` Flowing Trial mapped to Phase 1~~ → Fixed: now mapped to Phase 2
 - ~~`StormseekerPhase.PHASE_1_ATTUNEMENT`~~ → Fixed: now `PHASE_1_STORM_TREK`
 - ~~`StormseekerPhase.PHASE_1_5_AFTERSHOCK`~~ → Fixed: now `PHASE_1_5_ATTUNEMENT`
 - ~~`StormseekerPhase.PHASE_5_FINAL_TEMPERING`~~ → Fixed: now `PHASE_5_EPILOGUE`

@@ -17,8 +17,8 @@ final class StormseekerObjectivesTest {
     }
 
     @Test
-    void phase1AttunementIncludesFlowingTrialOnly() {
-        var list = StormseekerObjectives.phase1Attunement();
+    void phase2FlowingTrialIncludesFlowingTrialOnly() {
+        var list = StormseekerObjectives.phase2FlowingTrial();
         assertEquals(1, list.size());
         assertEquals(StormseekerObjectives.OBJECTIVE_FLOWING_TRIAL, list.get(0).id());
     }

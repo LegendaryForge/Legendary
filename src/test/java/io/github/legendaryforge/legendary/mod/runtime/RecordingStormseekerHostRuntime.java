@@ -1,6 +1,6 @@
 package io.github.legendaryforge.legendary.mod.runtime;
 
-import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerPhase1TickView;
+import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerFlowingTrialTickView;
 import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerProgress;
 import io.github.legendaryforge.legendary.mod.stormseeker.trial.flowing.FlowHintIntent;
 import io.github.legendaryforge.legendary.mod.stormseeker.trial.flowing.FlowingTrialSessionStep;
@@ -20,7 +20,7 @@ public final class RecordingStormseekerHostRuntime implements StormseekerHostRun
 
     private final Iterable<String> playerIds;
 
-    public final Map<String, StormseekerPhase1TickView> lastTickViewByPlayer = new HashMap<>();
+    public final Map<String, StormseekerFlowingTrialTickView> lastTickViewByPlayer = new HashMap<>();
     public final Map<String, List<FlowHintIntent>> flowHintsByPlayer = new HashMap<>();
 
     public RecordingStormseekerHostRuntime(Iterable<String> playerIds) {
@@ -48,7 +48,7 @@ public final class RecordingStormseekerHostRuntime implements StormseekerHostRun
     }
 
     @Override
-    public void emitPhase1TickView(StormseekerPhase1TickView view) {
+    public void emitFlowingTrialTickView(StormseekerFlowingTrialTickView view) {
         lastTickViewByPlayer.put(view.playerId(), view);
     }
 

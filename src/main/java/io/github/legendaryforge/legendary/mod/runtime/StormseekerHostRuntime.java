@@ -1,8 +1,8 @@
 package io.github.legendaryforge.legendary.mod.runtime;
 
+import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerFlowingTrialOutcome;
+import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerFlowingTrialTickView;
 import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerMilestoneOutcome;
-import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerPhase1Outcome;
-import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerPhase1TickView;
 import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerProgress;
 import io.github.legendaryforge.legendary.mod.stormseeker.trial.anchored.AnchoredTrialSessionStep;
 import io.github.legendaryforge.legendary.mod.stormseeker.trial.flowing.FlowHintIntent;
@@ -32,13 +32,13 @@ public interface StormseekerHostRuntime {
     default void onFlowingTrialStep(String playerId, FlowingTrialSessionStep step) {}
 
     /**
-     * Optional host hook: receive the per-player Phase 1 tick read model.
+     * Optional host hook: receive the per-player Flowing Trial tick read model.
      * Default is no-op so host implementations are not forced to handle it.
      */
-    default void emitPhase1TickView(StormseekerPhase1TickView view) {}
+    default void emitFlowingTrialTickView(StormseekerFlowingTrialTickView view) {}
 
     /**
-     * Durable Phase 1 outcome notification (emitted exactly once per player).
+     * Durable Flowing Trial outcome notification (emitted exactly once per player).
      * Default is no-op.
      */
     default void emitStormseekerMilestone(StormseekerMilestoneOutcome outcome) {}
@@ -46,7 +46,7 @@ public interface StormseekerHostRuntime {
     /**
      * Durable milestone signal emitted at most once per player+milestone edge.
      */
-    default void emitPhase1Outcome(StormseekerPhase1Outcome outcome) {
+    default void emitFlowingTrialOutcome(StormseekerFlowingTrialOutcome outcome) {
         emitStormseekerMilestone(new StormseekerMilestoneOutcome(outcome.playerId(), outcome.milestone()));
     }
 

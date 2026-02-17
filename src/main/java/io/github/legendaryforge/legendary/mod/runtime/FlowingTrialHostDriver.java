@@ -1,6 +1,6 @@
 package io.github.legendaryforge.legendary.mod.runtime;
 
-import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerPhase1TickView;
+import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerFlowingTrialTickView;
 import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerProgress;
 import io.github.legendaryforge.legendary.mod.stormseeker.trial.flowing.FlowHintIntent;
 import io.github.legendaryforge.legendary.mod.stormseeker.trial.flowing.FlowingTrialParticipation;
@@ -64,10 +64,10 @@ public final class FlowingTrialHostDriver {
         }
 
         @Override
-        public void emitPhase1TickView(StormseekerPhase1TickView view) {
+        public void emitFlowingTrialTickView(StormseekerFlowingTrialTickView view) {
             for (String id : participation.playerIdsView()) {
                 if (id.equals(view.playerId())) {
-                    delegate.emitPhase1TickView(view);
+                    delegate.emitFlowingTrialTickView(view);
                     return;
                 }
             }

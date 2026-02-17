@@ -7,7 +7,7 @@ import java.util.List;
 /**
  * Canonical Stormseeker objectives (scaffold).
  *
- * <p>Phase 1 (Attunement) begins by proving elemental alignment.
+ * <p>Phase 2 (Dual Sigils) begins by proving elemental alignment.
  * In code, that starts with the Flowing Trial -> Sigil A.
  */
 public final class StormseekerObjectives {
@@ -56,8 +56,8 @@ public final class StormseekerObjectives {
         };
     }
 
-    /** Phase 1 Attunement objective set (scaffold). */
-    public static List<QuestObjective<StormseekerProgress>> phase1Attunement() {
+    /** Phase 2 Flowing Trial objective set (scaffold). */
+    public static List<QuestObjective<StormseekerProgress>> phase2FlowingTrial() {
         return List.of(flowingTrial());
     }
 

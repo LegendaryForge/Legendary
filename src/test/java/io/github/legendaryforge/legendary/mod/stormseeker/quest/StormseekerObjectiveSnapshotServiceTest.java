@@ -23,10 +23,12 @@ final class StormseekerObjectiveSnapshotServiceTest {
     }
 
     @Test
-    void phase1ShowsSigilAObjectiveIncompleteUntilGranted() {
+    void phase2ShowsSigilAObjectiveIncompleteUntilGranted() {
         StormseekerObjectiveSnapshotService s = new StormseekerObjectiveSnapshotService();
         StormseekerProgress p = new StormseekerProgress();
         p.advanceToNextOrThrow(StormseekerPhase.PHASE_1_STORM_TREK);
+        p.advanceToNextOrThrow(StormseekerPhase.PHASE_1_5_ATTUNEMENT);
+        p.advanceToNextOrThrow(StormseekerPhase.PHASE_2_DUAL_SIGILS);
 
         List<ObjectiveStatus> snap = s.snapshot(p);
         assertEquals(1, snap.size());
