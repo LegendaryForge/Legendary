@@ -57,6 +57,7 @@ final class StormseekerAttunementServiceTest {
     @Test
     void constructorRejectsNullArgs() {
         assertThrows(NullPointerException.class, () -> new StormseekerAttunementService(null, NOOP_WORLD));
-        assertThrows(NullPointerException.class, () -> new StormseekerAttunementService(NOOP_EVENT_BUS, null));
+        // world is nullable (no-ops until host provides a real World implementation)
+        assertDoesNotThrow(() -> new StormseekerAttunementService(NOOP_EVENT_BUS, null));
     }
 }

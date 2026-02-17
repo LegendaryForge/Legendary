@@ -3,7 +3,7 @@ package io.github.legendaryforge.legendary.mod.stormseeker.client;
 import io.github.legendaryforge.legendary.core.api.event.Event;
 
 /**
- * Authority: v2.0 Canonical Document
+ * Authority: v3.0 Canonical Document
  * Manages the "Leyline Sight" (Electric Blue vision) client-side state.
  */
 public final class PerceptionToggleHandler {

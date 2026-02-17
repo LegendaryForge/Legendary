@@ -9,7 +9,7 @@ final class StormseekerProgressTest {
     @Test
     void advancesLinearlyThroughEarlyPhases() {
         StormseekerProgress p = new StormseekerProgress();
-        assertEquals(StormseekerPhase.PHASE_0_UNEASE, p.phase());
+        assertEquals(StormseekerPhase.PHASE_0_WATCHING_ELEMENTAL, p.phase());
 
         p.advanceIfEligible();
         assertEquals(StormseekerPhase.PHASE_1_STORM_TREK, p.phase());

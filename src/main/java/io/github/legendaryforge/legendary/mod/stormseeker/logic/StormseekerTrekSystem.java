@@ -63,11 +63,14 @@ public class StormseekerTrekSystem {
 
     public StormseekerTrekSystem(EventBus eventBus, World world) {
         this.eventBus = Objects.requireNonNull(eventBus, "eventBus");
-        this.world = Objects.requireNonNull(world, "world");
+        this.world = world; // nullable until host provides a real World implementation
         // eventBus.subscribe(WeatherChangedEvent.class, this::onWeatherChanged); // Uncomment when event exists
     }
 
     public void tick(StormseekerHostRuntime host) {
+        if (world == null) {
+            return;
+        }
         // Placeholder tick logic for Phase 1
     }
 

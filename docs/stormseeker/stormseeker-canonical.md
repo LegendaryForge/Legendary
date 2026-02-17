@@ -588,7 +588,7 @@ sense that calm is an agreement rather than a guarantee.
 
 **Legendary — Quest Infrastructure:**
 - `StormseekerProgress` — phase tracking + sigil state
-- `StormseekerPhase` enum — phase definitions (names need updating)
+- `StormseekerPhase` enum — phase definitions
 - `StormseekerCapabilities` — capability queries per phase
 - `StormseekerQuestSteps` — gate step identifiers for Phase 3+
 - `StormseekerQuestStepMapper` — maps progress to quest steps
@@ -633,10 +633,14 @@ The code logic itself is generally correct — the names are wrong.
 |---|---|---|---|
 | `StormseekerPhase1Loop` | "Phase 1 coordinator" | Phase 2 Flowing Trial coordinator | Drives Flowing Trial, which is Phase 2 |
 | `StormseekerAttunementService` | "Phase 1 Attunement control surface" | Phase 1.5 Attunement ritual service | Now correctly refers to attunement (Phase 1.5 redesign); name is accurate but phase label needs updating |
-| `StormseekerPhase.PHASE_1_ATTUNEMENT` | "Phase 1 Attunement" | `PHASE_1_STORM_TREK` | Phase 1 is the Trek; Attunement is 1.5 |
-| `StormseekerPhase.PHASE_1_5_AFTERSHOCK` | "Phase 1.5 Aftershock" | `PHASE_1_5_ATTUNEMENT` | This phase IS attunement |
-| `StormseekerPhase.PHASE_5_FINAL_TEMPERING` | "Phase 5 Final Tempering" | `PHASE_5_EPILOGUE` | Tempering is Phase 4; Phase 5 is epilogue |
-| `StormseekerCapabilities.canForgeFinalizeStormseeker()` | Checks PHASE_5 | Should check PHASE_4 | Finalization happens in Phase 4 |
+
+Resolved in v3.0:
+- ~~`StormseekerPhase.PHASE_1_ATTUNEMENT`~~ → Fixed: now `PHASE_1_STORM_TREK`
+- ~~`StormseekerPhase.PHASE_1_5_AFTERSHOCK`~~ → Fixed: now `PHASE_1_5_ATTUNEMENT`
+- ~~`StormseekerPhase.PHASE_5_FINAL_TEMPERING`~~ → Fixed: now `PHASE_5_EPILOGUE`
+- ~~`StormseekerCapabilities.canForgeFinalizeStormseeker()` checks PHASE_5~~ → Fixed: now checks `PHASE_4_STORMS_ANSWER`
+- ~~`StormseekerPhase.PHASE_0_UNEASE`~~ → Fixed: now `PHASE_0_WATCHING_ELEMENTAL`
+- ~~`StormseekerQuestSteps.PHASE_5_EPILOGUE` string value "final_tempering"~~ → Fixed: now `"stormseeker.phase5.epilogue"`
 
 ### Hytale Weather System (Future Integration)
 

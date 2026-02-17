@@ -24,7 +24,7 @@ public final class StormseekerObjectiveSnapshotService {
         StormseekerPhase phase = progress.phase();
 
         // Phase 0: player is not yet in Attunement.
-        if (phase == StormseekerPhase.PHASE_0_UNEASE) {
+        if (phase == StormseekerPhase.PHASE_0_WATCHING_ELEMENTAL) {
             out.add(ObjectiveStatus.incomplete(
                     OBJ_REACH_ATTUNEMENT,
                     "Advance to Phase 1 (Attunement) to begin elemental alignment.")); // scaffold hint

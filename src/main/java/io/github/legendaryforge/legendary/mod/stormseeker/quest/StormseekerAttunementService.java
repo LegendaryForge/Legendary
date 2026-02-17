@@ -58,7 +58,7 @@ public final class StormseekerAttunementService {
 
     public StormseekerAttunementService(EventBus eventBus, World world) {
         this.eventBus = Objects.requireNonNull(eventBus, "eventBus");
-        this.world = Objects.requireNonNull(world, "world");
+        this.world = world; // nullable until host provides a real World implementation
     }
 
     /**
@@ -66,6 +66,9 @@ public final class StormseekerAttunementService {
      * Does nothing if a ritual is already active on that plate.
      */
     public void startRitual(UUID plateId, String playerId) {
+        if (world == null) {
+            return;
+        }
         activeRituals.computeIfAbsent(plateId, k -> new RitualInstance(playerId));
     }
 
@@ -73,6 +76,9 @@ public final class StormseekerAttunementService {
      * Main tick loop to be called by a system every game tick.
      */
     public void tick() {
+        if (world == null) {
+            return;
+        }
         for (Map.Entry<UUID, RitualInstance> entry : activeRituals.entrySet()) {
             UUID plateId = entry.getKey();
             RitualInstance ritual = entry.getValue();

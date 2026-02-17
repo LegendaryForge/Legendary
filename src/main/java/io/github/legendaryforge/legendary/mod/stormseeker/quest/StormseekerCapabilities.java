@@ -10,14 +10,14 @@ public final class StormseekerCapabilities {
 
     public boolean canSenseStorms(StormseekerProgress progress) {
         return switch (progress.phase()) {
-            case PHASE_0_UNEASE -> false;
+            case PHASE_0_WATCHING_ELEMENTAL -> false;
             default -> true;
         };
     }
 
     public boolean canTrackSigils(StormseekerProgress progress) {
         return switch (progress.phase()) {
-            case PHASE_0_UNEASE, PHASE_1_STORM_TREK, PHASE_1_5_ATTUNEMENT -> false;
+            case PHASE_0_WATCHING_ELEMENTAL, PHASE_1_STORM_TREK, PHASE_1_5_ATTUNEMENT -> false;
             default -> true;
         };
     }
@@ -27,7 +27,7 @@ public final class StormseekerCapabilities {
     }
 
     public boolean canForgeFinalizeStormseeker(StormseekerProgress progress) {
-        return progress.phase() == StormseekerPhase.PHASE_5_EPILOGUE;
+        return progress.phase() == StormseekerPhase.PHASE_4_STORMS_ANSWER;
     }
 
     /**

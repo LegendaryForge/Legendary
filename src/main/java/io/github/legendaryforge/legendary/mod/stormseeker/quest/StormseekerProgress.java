@@ -18,7 +18,7 @@ public final class StormseekerProgress {
     private boolean hasSigilB;
 
     public StormseekerProgress() {
-        this.phase = StormseekerPhase.PHASE_0_UNEASE;
+        this.phase = StormseekerPhase.PHASE_0_WATCHING_ELEMENTAL;
         this.hasSigilA = false;
         this.hasSigilB = false;
     }
@@ -55,7 +55,7 @@ public final class StormseekerProgress {
      */
     public void advanceIfEligible() {
         switch (phase) {
-            case PHASE_0_UNEASE -> phase = StormseekerPhase.PHASE_1_STORM_TREK;
+            case PHASE_0_WATCHING_ELEMENTAL -> phase = StormseekerPhase.PHASE_1_STORM_TREK;
             case PHASE_1_STORM_TREK -> phase = StormseekerPhase.PHASE_1_5_ATTUNEMENT;
             case PHASE_1_5_ATTUNEMENT -> phase = StormseekerPhase.PHASE_2_DUAL_SIGILS;
 

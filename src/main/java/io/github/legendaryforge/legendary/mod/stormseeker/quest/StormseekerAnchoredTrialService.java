@@ -45,7 +45,9 @@ public final class StormseekerAnchoredTrialService {
 
     public boolean enterAnchoredTrial(String playerId, StormseekerProgress progress) {
         Objects.requireNonNull(playerId, "playerId");
-        Objects.requireNonNull(progress, "progress");
+        if (progress == null) {
+            return false;
+        }
 
         if (!canEnterAnchoredTrial(progress)) {
             return false;

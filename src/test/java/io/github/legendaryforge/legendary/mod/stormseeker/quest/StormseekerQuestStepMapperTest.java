@@ -8,7 +8,7 @@ final class StormseekerQuestStepMapperTest {
 
     @Test
     void phasesBeforeThreeDoNotProduceGateSteps() {
-        assertTrue(StormseekerQuestStepMapper.stepFor(StormseekerPhase.PHASE_0_UNEASE)
+        assertTrue(StormseekerQuestStepMapper.stepFor(StormseekerPhase.PHASE_0_WATCHING_ELEMENTAL)
                 .isEmpty());
         assertTrue(StormseekerQuestStepMapper.stepFor(StormseekerPhase.PHASE_1_STORM_TREK)
                 .isEmpty());

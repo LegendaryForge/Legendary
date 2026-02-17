@@ -18,7 +18,7 @@ import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerQuest
 import java.util.Objects;
 
 /**
- * Authority: v2.0 Canonical Document - Phase structure 1 -> 1.5 -> 2
+ * Authority: v3.0 Canonical Document - Phase structure 0 -> 1 -> 1.5 -> 2
  * * Central wiring hub for the Stormseeker questline.
  * Coordinates the hand-off between Trekking, Attunement, and Trials.
  */

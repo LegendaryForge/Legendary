@@ -11,7 +11,7 @@ final class StormseekerObjectiveSnapshotServiceTest {
     @Test
     void phase0ShowsReachAttunementObjective() {
         StormseekerObjectiveSnapshotService s = new StormseekerObjectiveSnapshotService();
-        StormseekerProgress p = new StormseekerProgress(); // PHASE_0_UNEASE
+        StormseekerProgress p = new StormseekerProgress(); // PHASE_0_WATCHING_ELEMENTAL
 
         List<ObjectiveStatus> snap = s.snapshot(p);
         assertEquals(1, snap.size());

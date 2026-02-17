@@ -1,7 +1,7 @@
 package io.github.legendaryforge.legendary.mod.stormseeker.quest;
 
 /**
- * Canonical Stormseeker questline phases (v2.0).
+ * Canonical Stormseeker questline phases (v3.0).
  *
  * <p>Rules:
  * <ul>
@@ -10,7 +10,7 @@ package io.github.legendaryforge.legendary.mod.stormseeker.quest;
  * </ul>
  */
 public enum StormseekerPhase {
-    PHASE_0_UNEASE,
+    PHASE_0_WATCHING_ELEMENTAL,
     PHASE_1_STORM_TREK,
     PHASE_1_5_ATTUNEMENT,
     PHASE_2_DUAL_SIGILS,
@@ -24,7 +24,7 @@ public enum StormseekerPhase {
 
     public StormseekerPhase next() {
         return switch (this) {
-            case PHASE_0_UNEASE -> PHASE_1_STORM_TREK;
+            case PHASE_0_WATCHING_ELEMENTAL -> PHASE_1_STORM_TREK;
             case PHASE_1_STORM_TREK -> PHASE_1_5_ATTUNEMENT;
             case PHASE_1_5_ATTUNEMENT -> PHASE_2_DUAL_SIGILS;
             case PHASE_2_DUAL_SIGILS -> PHASE_3_INCOMPLETE_FORM;
