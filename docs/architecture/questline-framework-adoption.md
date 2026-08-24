@@ -70,10 +70,12 @@ CoreRuntime runtime = new DefaultCoreRuntime();
 QuestlineRegistry questlines = new QuestlineRegistry().register(new StormseekerQuestline());
 LegendaryConfig config = LegendaryConfig.enablingAll(questlines);
 
-LegendaryWiring.registerAllGates(questlines, runtime.services().get(GateService.class), config);
+LegendaryWiring.registerAllGates(questlines, runtime.services().require(GateService.class), config);
 LegendaryWiring.registerAllListeners(questlines, runtime.events(), config);
 LegendaryWiring.registerAllSystems(questlines, system -> getEntityStoreRegistry().registerSystem(system), config);
 ```
+
+`services().require(...)` is used rather than `get(...)` because `get` returns `Optional<T>` whereas `registerAllGates` expects `GateService` directly; `require` throws if the service is not registered, which is the correct behavior at boot time.
 
 `LegendarySystemRegistrar.register` takes `Object` precisely so the host adapts
 it to the engine's ECS type — that lambda is the adapter, and it is why no
