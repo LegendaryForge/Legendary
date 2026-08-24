@@ -1,4 +1,4 @@
-package io.github.legendaryforge.hytale.stormseeker;
+package io.github.legendaryforge.legendary.mod.stormseeker.persistence;
 
 import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerPhase;
 import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerProgress;
@@ -12,6 +12,11 @@ import java.util.Properties;
 /**
  * Persists StormseekerProgress to/from disk using Java Properties files.
  *
+ * <p>Note this is NOT an implementation of the {@code mod.runtime.StormseekerProgressStore}
+ * port: that is keyed by {@code PlayerRef} and returns {@code Optional}, while this is keyed
+ * by a raw player-id string and substitutes a fresh progress for a missing or unreadable
+ * file. The two were unrelated types sharing one simple name until 2026-08-24.
+ *
  * <p>One file per player: {dataDir}/{playerId}.properties
  *
  * <p>Format:
@@ -21,11 +26,11 @@ import java.util.Properties;
  * sigilB=false
  * </pre>
  */
-public final class StormseekerProgressStore {
+public final class PropertiesProgressStore {
 
     private final Path dataDir;
 
-    public StormseekerProgressStore(Path dataDir) {
+    public PropertiesProgressStore(Path dataDir) {
         this.dataDir = dataDir;
     }
 
@@ -62,7 +67,7 @@ public final class StormseekerProgressStore {
 
             return progress;
         } catch (Exception e) {
-            System.err.println("[LegendaryHytale] Failed to load progress for " + playerId + ": " + e.getMessage());
+            System.err.println("[Stormseeker] Failed to load progress for " + playerId + ": " + e.getMessage());
             return new StormseekerProgress();
         }
     }
@@ -85,7 +90,7 @@ public final class StormseekerProgressStore {
                 props.store(writer, "Stormseeker quest progress for " + playerId);
             }
         } catch (IOException e) {
-            System.err.println("[LegendaryHytale] Failed to save progress for " + playerId + ": " + e.getMessage());
+            System.err.println("[Stormseeker] Failed to save progress for " + playerId + ": " + e.getMessage());
         }
     }
 

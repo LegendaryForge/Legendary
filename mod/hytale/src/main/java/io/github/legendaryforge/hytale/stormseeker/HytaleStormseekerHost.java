@@ -3,6 +3,7 @@ package io.github.legendaryforge.hytale.stormseeker;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import io.github.legendaryforge.legendary.mod.runtime.StormseekerHostRuntime;
+import io.github.legendaryforge.legendary.mod.stormseeker.persistence.PropertiesProgressStore;
 import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerFlowingTrialOutcome;
 import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerFlowingTrialTickView;
 import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerMilestoneOutcome;
@@ -21,9 +22,9 @@ public final class HytaleStormseekerHost implements StormseekerHostRuntime {
     private static final double MOVING_THRESHOLD = 0.01;
 
     private final Map<String, PlayerState> players = new ConcurrentHashMap<>();
-    private final StormseekerProgressStore store;
+    private final PropertiesProgressStore store;
 
-    public HytaleStormseekerHost(StormseekerProgressStore store) {
+    public HytaleStormseekerHost(PropertiesProgressStore store) {
         this.store = store;
     }
 

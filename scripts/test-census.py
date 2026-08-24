@@ -15,7 +15,7 @@ import time
 
 from gradle_modules import discover_modules
 
-EXPECTED = int(os.environ.get("EXPECTED_TESTS", "204"))
+EXPECTED = int(os.environ.get("EXPECTED_TESTS", "213"))
 # Derived from settings.gradle.kts, not hardcoded: a hardcoded list silently
 # omits a new module while this script keeps reporting all-modules-GREEN.
 MODULES = discover_modules()
