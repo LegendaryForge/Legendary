@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [feat/stormseeker-bridge]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Satisfies the committed foojay daemon pin (gradle/gradle-daemon-jvm.properties,
+      # toolchainVersion=25 vendor=ADOPTIUM) from the runner cache instead of
+      # downloading a JDK on every run.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Build
+        run: ./gradlew build --console=plain
+
+      # Runners cannot have the proprietary Hytale server jar, so mod/hytale
+      # compiles zero sources here and reports EXEMPT. That gap is restated on
+      # every run rather than inferred. An UNDECLARED zero-compile fails the
+      # build inside ./gradlew build above.
+      - name: Module coverage census
+        run: python3 scripts/coverage-census.py
+
+      - name: Test census
+        run: python3 scripts/test-census.py
