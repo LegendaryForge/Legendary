@@ -8,7 +8,8 @@ repositories {
 
 spotless {
     kotlinGradle {
-        target("*.gradle.kts", "*/*.gradle.kts", "*/*/*.gradle.kts", "*/*/*/*.gradle.kts")
+        target("**/*.gradle.kts")
+        targetExclude("**/build/**", "**/.gradle/**")
         ktlint()
         trimTrailingWhitespace()
         endWithNewline()

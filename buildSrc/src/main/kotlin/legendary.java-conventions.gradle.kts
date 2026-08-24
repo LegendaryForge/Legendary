@@ -13,7 +13,12 @@ repositories {
 }
 
 val libs = extensions.getByType<VersionCatalogsExtension>().named("libs")
-val javaVersion = libs.findVersion("java").get().requiredVersion.toInt()
+val javaVersion =
+    libs
+        .findVersion("java")
+        .get()
+        .requiredVersion
+        .toInt()
 val palantirVersion = libs.findVersion("palantir").get().requiredVersion
 
 dependencies {
@@ -77,7 +82,11 @@ val checkModuleCoverage by tasks.registering {
         // either does not emit invalid JSON that breaks json.load() in the census.
         val escapedReason = reason?.replace("\\", "\\\\")?.replace("\"", "\\\"")
 
-        val report = layout.buildDirectory.file("module-coverage.json").get().asFile
+        val report =
+            layout.buildDirectory
+                .file("module-coverage.json")
+                .get()
+                .asFile
         report.parentFile.mkdirs()
         report.writeText(
             """{"module":"${project.path}","onDisk":$onDisk,"compiled":$compiled,""" +
