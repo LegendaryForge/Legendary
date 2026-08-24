@@ -225,7 +225,7 @@ public final class DefaultEncounterManager implements EncounterManager {
         private final EncounterDefinition definition;
         private final EncounterContext context;
 
-        // Legendary-only metadata (populated when definition is a LegendaryEncounterDefinition)
+        // Owner-party metadata (populated when definition.capturesOwnerParty() is true)
         private final java.util.Optional<java.util.UUID> ownerPartyId;
         private final java.util.Set<java.util.UUID> ownerPartyMembersAtStart;
 
