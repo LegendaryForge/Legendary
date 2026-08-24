@@ -12,8 +12,7 @@ repositories {
 }
 
 dependencies {
-    implementation(libs.gson)
-    implementation(libs.jetbrains.annotations)
+    api(project(":core"))
     errorprone(libs.errorprone.core)
 
     testImplementation(platform(libs.junit.bom))
@@ -60,25 +59,3 @@ spotless {
         endWithNewline()
     }
 }
-
-val checkNoPlatformImports by tasks.registering {
-    group = "verification"
-    description = "Fails if core contains any com.hypixel.* import. core must stay engine-agnostic."
-    val javaSources = fileTree("src") { include("**/*.java") }
-    inputs.files(javaSources)
-    outputs.upToDateWhen { false }
-    doLast {
-        val offenders = javaSources.files.filter { it.readText().contains("com.hypixel.") }
-        if (offenders.isNotEmpty()) {
-            throw GradleException(
-                buildString {
-                    appendLine("core must remain engine-agnostic, but ${offenders.size} file(s) import com.hypixel.*:")
-                    offenders.forEach { appendLine("  " + it.relativeTo(projectDir)) }
-                    appendLine("Platform-specific code belongs in :platform:hytale.")
-                },
-            )
-        }
-    }
-}
-
-tasks.named("check") { dependsOn(checkNoPlatformImports) }

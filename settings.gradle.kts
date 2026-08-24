@@ -5,3 +5,4 @@ plugins {
 rootProject.name = "Legendary"
 
 include(":core")
+include(":quests:stormseeker")
