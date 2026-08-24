@@ -12,6 +12,19 @@
 
 **Baseline:** `feat/stormseeker-bridge` @ `8997f53`, tree clean, `./gradlew build` green at 204 tests.
 
+> **Corrections applied after execution.** Two defects in this plan were found by
+> its own implementers and are corrected in place below, noted here so the record
+> is honest about them:
+>
+> 1. **Task 1 Step 4** originally expected `./gradlew :buildSrc:build` to succeed
+>    *before* Step 5 converted the root script. Gradle configures the whole project
+>    graph, so the root's still-version-bearing `alias(spotless)` collides first —
+>    the very all-or-nothing collision the Global Constraints describe.
+> 2. **Task 2 Step 2** used `$path` inside the task's `doLast`, where the receiver
+>    is the Task, not the Project — yielding `:mod:hytale:checkModuleCoverage`
+>    instead of `:mod:hytale` and contradicting the step's own stated expected
+>    output. Corrected to `${project.path}`.
+
 ## Global Constraints
 
 Every one of these was established by a spike against this repo at `8997f53`, not by recollection. Ignoring any of them produces a build that does not configure.
@@ -132,10 +145,13 @@ spotless {
 }
 ```
 
-- [ ] **Step 4: Verify buildSrc compiles on its own**
+- [ ] **Step 4: Verify buildSrc's own Kotlin compiles**
 
 Run: `./gradlew :buildSrc:build --console=plain`
-Expected: `BUILD SUCCESSFUL`. If you see `Unresolved reference 'plugins'`, Step 1 was skipped.
+
+Expected: buildSrc's own compile tasks succeed. **The overall invocation will still FAIL at this point**, with `Error resolving plugin [id: 'com.diffplug.spotless'] ... already on the classpath with an unknown version` — Gradle configures the whole project graph, and the root script has not been converted yet (Step 5). That failure is expected here and is the all-or-nothing collision described in the Global Constraints.
+
+What you are checking for is the *absence* of `Unresolved reference 'plugins'`, which would mean Step 1 was skipped or its file is wrong. Proceed to Step 5 as long as that message does not appear.
 
 - [ ] **Step 5: Replace the root `build.gradle.kts`**
 
@@ -386,14 +402,14 @@ val checkModuleCoverage by tasks.registering {
         val report = layout.buildDirectory.file("module-coverage.json").get().asFile
         report.parentFile.mkdirs()
         report.writeText(
-            """{"module":"$path","onDisk":$onDisk,"compiled":$compiled,""" +
+            """{"module":"${project.path}","onDisk":$onDisk,"compiled":$compiled,""" +
                 """"state":"$state","reason":${if (reason == null) "null" else "\"$reason\""}}""",
         )
 
         if (state == "FAIL") {
             throw GradleException(
                 buildString {
-                    appendLine("$path has $onDisk Java source file(s) but compiled 0 of them.")
+                    appendLine("${project.path} has $onDisk Java source file(s) but compiled 0 of them.")
                     if (reason == null) {
                         appendLine("No moduleCoverage exemption is declared for this module.")
                         appendLine("Either fix the build so sources compile, or declare:")
