@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Counts JUnit tests per Gradle module from test-result XML.
 
-The EXPECTED-test invariant (see EXPECTED below) is load-bearing during the
-module boundary realignment, so it is executable rather than remembered.
+EXPECTED is a FLOOR, not an equality: the count may rise freely but must never
+fall. Strict equality failed every commit that added a test, which trains
+readers to ignore the verdict -- the precise failure this gate exists to avoid.
 Prints a verdict LINE, not just an exit code -- exit status is positional and
 any wrapper swallows it.
 """
@@ -44,7 +45,7 @@ for module in MODULES:
     failed += bad
 
 age = "never run" if oldest is None else f"{int(time.time() - oldest)}s ago"
-green = total == EXPECTED and failed == 0
-print(f"{'TOTAL':22} tests={total:4} failures+errors={failed}  (expected {EXPECTED})")
+green = total >= EXPECTED and failed == 0
+print(f"{'TOTAL':22} tests={total:4} failures+errors={failed}  (expected at least {EXPECTED})")
 print(f"CENSUS_VERDICT: {'GREEN' if green else 'RED'} | {total} tests | {failed} failures | oldest result {age}")
 sys.exit(0 if green else 1)
