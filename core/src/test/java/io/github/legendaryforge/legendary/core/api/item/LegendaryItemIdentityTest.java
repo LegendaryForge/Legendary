@@ -1,10 +1,8 @@
-package io.github.legendaryforge.legendary.mod.item;
+package io.github.legendaryforge.legendary.core.api.item;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.github.legendaryforge.legendary.core.api.item.LegendaryItemIdentity;
-import io.github.legendaryforge.legendary.core.api.item.LegendaryItemRole;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
