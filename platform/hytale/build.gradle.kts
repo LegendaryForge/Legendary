@@ -81,7 +81,7 @@ val checkHytaleJarVersion =
     tasks.register("checkHytaleJarVersion") {
         description =
             "Verifies the installed Hytale server jar's class-file version is compatible " +
-                "with this build's target Java version."
+            "with this build's target Java version."
         onlyIf { hasHytaleServerJar }
         doLast {
             val jarJava = hytaleJarJavaVersion(hytaleServerJar)
