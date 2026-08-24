@@ -83,9 +83,7 @@ final class PropertiesProgressStoreTest {
 
         StormseekerProgress loaded = new PropertiesProgressStore(dir).load("p1");
 
-        // valueOf throws, the catch-all swallows it, and the player restarts the questline.
-        // Pinned as observed behaviour, not endorsed: silently resetting progress on a bad
-        // enum name is data loss, and this test is where a decision to change it will surface.
+        // load stays total: a bad save must not break player connect.
         assertEquals(StormseekerPhase.PHASE_0_WATCHING_ELEMENTAL, loaded.phase());
         assertFalse(loaded.hasSigilA());
     }
@@ -99,6 +97,60 @@ final class PropertiesProgressStoreTest {
             StormseekerProgress loaded = new PropertiesProgressStore(dir).load("p1");
             assertEquals(StormseekerPhase.PHASE_0_WATCHING_ELEMENTAL, loaded.phase());
         });
+    }
+
+    @Test
+    void load_thatFails_quarantinesTheOriginalInsteadOfLeavingItToBeOverwritten(@TempDir Path dir) throws IOException {
+        Path file = dir.resolve("p1.properties");
+        String original = "phase=PHASE_4_STORMS_ANSWER\nsigilA=true\nsigilB=true\n";
+        Files.writeString(file, original);
+        var store = new PropertiesProgressStore(dir);
+
+        // Connect: the phase name is fine, but suppose the file cannot be parsed at all.
+        Files.writeString(file, "\u0000not a properties file\nphase=\\uZZZZ\n");
+        store.load("p1");
+
+        List<Path> quarantined;
+        try (var stream = Files.list(dir)) {
+            quarantined = stream.filter(f -> f.getFileName().toString().contains(".corrupt-"))
+                    .toList();
+        }
+        assertEquals(
+                1, quarantined.size(), "an unreadable save must be preserved, not left in place to be overwritten");
+    }
+
+    @Test
+    void failedLoad_thenSave_doesNotDestroyTheOriginalBytes(@TempDir Path dir) throws IOException {
+        // The real lifecycle: HytaleStormseekerHost loads on connect and saves on
+        // disconnect. Before quarantining, a single unreadable read permanently
+        // replaced a finished questline with PHASE_0 the moment the player left.
+        Path file = dir.resolve("p1.properties");
+        String original = "phase=PHASE_4_STORMS_ANSWER\nsigilA=true\nsigilB=true\n";
+        Files.writeString(file, original);
+        var store = new PropertiesProgressStore(dir);
+        Files.writeString(file, "phase=PHASE_9_NOT_A_REAL_PHASE\n");
+
+        StormseekerProgress loaded = store.load("p1");
+        store.save("p1", loaded);
+
+        String preserved;
+        try (var stream = Files.list(dir)) {
+            Path quarantine = stream.filter(f -> f.getFileName().toString().contains(".corrupt-"))
+                    .findFirst()
+                    .orElseThrow(() -> new AssertionError("no quarantine file was written"));
+            preserved = Files.readString(quarantine);
+        }
+        assertTrue(preserved.contains("PHASE_9_NOT_A_REAL_PHASE"), "the unreadable bytes must survive for recovery");
+    }
+
+    @Test
+    void load_withNoFileAtAll_quarantinesNothing(@TempDir Path dir) throws IOException {
+        Files.createDirectories(dir);
+        new PropertiesProgressStore(dir).load("newcomer");
+
+        try (var stream = Files.list(dir)) {
+            assertEquals(0, stream.count(), "a first-time player is not a corrupt save");
+        }
     }
 
     @Test
