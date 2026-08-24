@@ -11,3 +11,7 @@ build/
 
 # OS
 .DS_Store
+
+# Python bytecode from scripts/ (gradle_modules.py is imported by the census scripts)
+__pycache__/
+*.py[cod]
