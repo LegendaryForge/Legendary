@@ -1,5 +1,6 @@
 import net.ltgt.gradle.errorprone.ErrorProneOptions
 import net.ltgt.gradle.errorprone.errorprone
+import org.gradle.api.artifacts.ProjectDependency
 
 plugins {
     id("java-library")
@@ -85,7 +86,13 @@ tasks.named("check") { dependsOn(checkNoPlatformImports) }
 
 val checkNoQuestlineImports by tasks.registering {
     group = "verification"
-    description = "Fails if core references any specific questline. core hosts the questline framework, not questlines."
+    description =
+        "Heuristic secondary guard: fails if any file under src/ contains the literal " +
+        "text \"legendary.mod.\" (the package prefix questlines currently use). This is a " +
+        "plain text scan, not an import- or package-aware check -- it cannot see a questline " +
+        "outside the legendary.mod.* prefix, and it does not scan build scripts, so a " +
+        "project() dependency on a questline is invisible to it. See checkNoQuestlineDependency " +
+        "for the check that actually asserts core has no dependency on a questline project."
     val javaSources = fileTree("src") { include("**/*.java") }
     inputs.files(javaSources)
     outputs.upToDateWhen { false }
@@ -104,3 +111,35 @@ val checkNoQuestlineImports by tasks.registering {
 }
 
 tasks.named("check") { dependsOn(checkNoQuestlineImports) }
+
+val checkNoQuestlineDependency by tasks.registering {
+    group = "verification"
+    description =
+        "Fails if :core declares a project dependency on any :quests:* project. " +
+        "core hosts the questline framework; questlines depend on core, never the reverse."
+    outputs.upToDateWhen { false }
+    doLast {
+        val offenders = mutableListOf<String>()
+        configurations.forEach { configuration ->
+            configuration.dependencies.withType(ProjectDependency::class.java).forEach { dependency ->
+                val path = dependency.path
+                if (path.startsWith(":quests")) {
+                    offenders.add("${configuration.name} -> $path")
+                }
+            }
+        }
+        if (offenders.isNotEmpty()) {
+            throw GradleException(
+                buildString {
+                    appendLine(
+                        "core must not depend on a specific questline project, but found ${offenders.size} such dependenc${if (offenders.size == 1) "y" else "ies"}:",
+                    )
+                    offenders.forEach { appendLine("  $it") }
+                    appendLine("Questline code belongs in :quests:<name>; it may depend on :core, not the other way around.")
+                },
+            )
+        }
+    }
+}
+
+tasks.named("check") { dependsOn(checkNoQuestlineDependency) }
