@@ -1,0 +1,142 @@
+package io.github.legendaryforge.legendary.core.internal.encounter;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import io.github.legendaryforge.legendary.core.api.encounter.EncounterAccessPolicy;
+import io.github.legendaryforge.legendary.core.api.encounter.EncounterAnchor;
+import io.github.legendaryforge.legendary.core.api.encounter.EncounterContext;
+import io.github.legendaryforge.legendary.core.api.encounter.EncounterDefinition;
+import io.github.legendaryforge.legendary.core.api.encounter.EncounterInstance;
+import io.github.legendaryforge.legendary.core.api.encounter.ParticipationRole;
+import io.github.legendaryforge.legendary.core.api.encounter.SpectatorPolicy;
+import io.github.legendaryforge.legendary.core.api.encounter.event.EncounterStartedEvent;
+import io.github.legendaryforge.legendary.core.api.event.Event;
+import io.github.legendaryforge.legendary.core.api.event.EventBus;
+import io.github.legendaryforge.legendary.core.api.event.EventListener;
+import io.github.legendaryforge.legendary.core.api.event.Subscription;
+import io.github.legendaryforge.legendary.core.api.id.ResourceId;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.Test;
+
+final class DefaultEncounterManagerStartedEventConcurrencyTest {
+
+    private static final class RecordingEventBus implements EventBus {
+        private final List<Event> events = new CopyOnWriteArrayList<>();
+
+        @Override
+        public <E extends Event> Subscription subscribe(Class<E> type, EventListener<E> listener) {
+            throw new UnsupportedOperationException("subscribe not needed");
+        }
+
+        @Override
+        public void post(Event event) {
+            events.add(event);
+        }
+
+        List<Event> events() {
+            return events;
+        }
+    }
+
+    @Test
+    void startedEventPostedOnce_underConcurrentParticipantJoins() throws Exception {
+        RecordingEventBus bus = new RecordingEventBus();
+        DefaultEncounterManager mgr = new DefaultEncounterManager(Optional.empty(), Optional.empty(), Optional.of(bus));
+
+        EncounterInstance inst = mgr.create(def(), ctx());
+
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        CountDownLatch ready = new CountDownLatch(2);
+        CountDownLatch start = new CountDownLatch(1);
+
+        UUID p1 = UUID.fromString("00000000-0000-0000-0000-0000000000A1");
+        UUID p2 = UUID.fromString("00000000-0000-0000-0000-0000000000A2");
+
+        var f1 = pool.submit(() -> {
+            ready.countDown();
+            start.await();
+            mgr.join(p1, inst, ParticipationRole.PARTICIPANT);
+            return null;
+        });
+        var f2 = pool.submit(() -> {
+            ready.countDown();
+            start.await();
+            mgr.join(p2, inst, ParticipationRole.PARTICIPANT);
+            return null;
+        });
+
+        ready.await(5, TimeUnit.SECONDS);
+        start.countDown();
+
+        f1.get(5, TimeUnit.SECONDS);
+        f2.get(5, TimeUnit.SECONDS);
+
+        pool.shutdown();
+        pool.awaitTermination(5, TimeUnit.SECONDS);
+
+        int started = 0;
+        for (Event e : bus.events()) {
+            if (e instanceof EncounterStartedEvent) {
+                started++;
+            }
+        }
+        assertEquals(1, started);
+    }
+
+    private static EncounterDefinition def() {
+        return new EncounterDefinition() {
+            @Override
+            public ResourceId id() {
+                return ResourceId.parse("test:encounter");
+            }
+
+            @Override
+            public String displayName() {
+                return "test";
+            }
+
+            @Override
+            public EncounterAccessPolicy accessPolicy() {
+                return EncounterAccessPolicy.PUBLIC;
+            }
+
+            @Override
+            public SpectatorPolicy spectatorPolicy() {
+                return SpectatorPolicy.ALLOW_VIEW_ONLY;
+            }
+
+            @Override
+            public int maxParticipants() {
+                return 2;
+            }
+
+            @Override
+            public int maxSpectators() {
+                return 2;
+            }
+        };
+    }
+
+    private static EncounterContext ctx() {
+        UUID party = UUID.fromString("00000000-0000-0000-0000-000000000002");
+        return new EncounterContext() {
+            @Override
+            public EncounterAnchor anchor() {
+                return new EncounterAnchor(ResourceId.parse("test:world"), Optional.empty(), Optional.of(party));
+            }
+
+            @Override
+            public Map<String, Object> metadata() {
+                return Map.of();
+            }
+        };
+    }
+}

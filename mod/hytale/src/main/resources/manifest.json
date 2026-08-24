@@ -1,0 +1,19 @@
+{
+    "Group": "io.github.legendaryforge",
+    "Name": "LegendaryHytale",
+    "Version": "0.0.1-SNAPSHOT",
+    "Description": "Legendary questline integration for Hytale - Stormseeker and beyond",
+    "Authors": [
+        {
+            "Name": "LegendaryForge",
+            "Url": "https://github.com/LegendaryForge"
+        }
+    ],
+    "Website": "https://github.com/LegendaryForge",
+    "DisabledByDefault": false,
+    "IncludesAssetPack": false,
+    "Dependencies": {},
+    "OptionalDependencies": {},
+    "ServerVersion": "*",
+    "Main": "io.github.legendaryforge.hytale.LegendaryHytalePlugin"
+}

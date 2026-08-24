@@ -1,8 +1,8 @@
 # Stormseeker — Canonical Questline Document
 
-> **Version:** 2.0 (Rebuilt from scratch)
-> **Last Updated:** 2026-02-10
-> **Status:** Narrative locked. Materials locked. Mechanics in progress. Implementation partial.
+> **Version:** 3.0 (Phase 0/1/1.5 redesigned)
+> **Last Updated:** 2026-02-16
+> **Status:** Narrative locked. Materials locked. Phase 0/1/1.5 mechanics redesigned (movement restriction removed). Implementation partial.
 > **Inspiration:** Thunderfury, Blessed Blade of the Windseeker (World of Warcraft)
 
 This document is the **single source of truth** for the Stormseeker questline. It replaces all
@@ -44,9 +44,9 @@ Stormseeker is a legendary weapon questline inspired by World of Warcraft's Thun
 
 | Phase | Name | Purpose | Player Knows? |
 |---|---|---|---|
-| 0 | Storm Unease | Elemental invitation; first contact | No — feels like a strange storm event |
-| 1 | Storm Trek | Follow the elemental toward convergence structure | Partially — player senses direction |
-| 1.5 | Attunement | Perceptual unlock; leyline sight granted | Yes — world visibly changes |
+| 0 | The Watching Elemental | Elemental appears, watches, bolts toward Resonator leaving a trail | No — feels like a strange storm event |
+| 1 | The Trek | Follow scorched earth trail to the Resonator | Partially — player follows visible trail |
+| 1.5 | Attunement | Step on Resonator plate; leyline sight granted | Yes — world visibly changes |
 | 2 | Dual Sigil Trials | Prove competence; earn Sigil A and Sigil B | Yes — explicit trials |
 | 3 | Craft Frame | Construct the Stormseeker frame | Yes — gathering and crafting |
 | 4 | Final Encounter | Boss fight + temper/energize into finished sword | Yes — climactic encounter |
@@ -54,133 +54,183 @@ Stormseeker is a legendary weapon questline inspired by World of Warcraft's Thun
 
 ---
 
-## Phase 0 — Storm Unease
+## Phase 0 — The Watching Elemental
 
-### Narrative
+### Resonator Structure (Independent Behavior)
 
-The player is going about their business when a storm rolls in. During the storm, an air/electrical
-elemental manifests near the player. This elemental is not hostile — it is a storm expression,
-something that would occur whether the player was watching or not.
+The Resonator (Ancient Air Leyline Calibration Station) exists in the world as a permanent
+structure. **Regardless of any player's quest state**, it exhibits the following behavior:
 
-The elemental begins casting a dust-devil / mini-cyclone effect on the player. This effect subtly
-restricts the player's movement based on direction:
+- **During thunder storms:** The Resonator activates — emits strong DynamicLight, visually glows, becomes alive
+- **Outside storms:** Dormant, unremarkable
 
-- **Moving toward the elemental:** No restriction. Movement feels normal.
-- **Moving away from the elemental:** Increasing resistance (degree TBD). Movement feels heavy.
+This is not quest-gated. Any player exploring during a storm can see a glowing structure in the
+distance. This is intentional.
 
-The elemental visually and audibly conveys effort — when the player resists (moves away), the
-elemental's particle effects intensify and its sound grows strained. When the player yields
-(moves toward), the effects calm.
+**Skip path:** Any player who enters the Resonator's radius and steps on a plate during a thunder
+storm triggers Phase 1.5 (Attunement), regardless of whether they've encountered the elemental or
+followed a trail. Right place, right time — rewarded. Phases 0 and 1 are skipped.
 
-**The message is physical, not textual: the storm noticed you, and it's inviting you somewhere.**
+### Trigger
 
-### Player Experience
+- Player is Phase 0 (new to the questline)
+- A thunder storm is active
+- **Pre-validation passes:** A viable Resonator exists within range (~500 blocks) with no ocean
+  crossing required. If no valid path exists, the elemental does not appear. The player never
+  knows about a failed check.
 
-- No journal entry. No markers. No quest popup.
-- The player feels something unusual happening during a storm.
-- The movement restriction is a tactile hint, not a wall — the player CAN break away.
-- If the player breaks away, the elemental dissipates. The opt-out is clean.
+### Behavior
+
+1. An **air/electrical elemental** spawns near the player (~25 blocks away)
+2. The elemental **does not approach, does not attack, does not interact** — it hovers and watches
+3. It persists for the duration of the storm, drifting subtly to stay visible (e.g., repositioning
+   if the player turns away)
+4. **First approach:** When the player comes within ~10 blocks, the elemental reacts immediately:
+   - It **streaks away** at high speed toward the Resonator
+   - As it flies, it leaves **scorched earth / electrified ground patches** on the natural terrain below
+   - After traveling a visible distance, it moves beyond the player's sight and **despawns**
+   - The trail remains until the storm ends
+
+### If the Player Ignores the Elemental
+
+- The elemental fades when the storm ends
+- Next thunder storm: the elemental appears again, same behavior
+- No punishment, no lost progress, no conditioning to ignore it
+
+### Key Design Decisions
+
+- The elemental appears on the **first storm** of a Phase 0 player's experience (pending path validation)
+- The elemental **bolts on the first approach** — no multi-storm watching phase, no training the player to ignore it
+- Within a single storm, the watching period is brief (~1-2 minutes of hovering before the player approaches)
+- The entire Phase 0 → 1 → 1.5 sequence is **completable within a single storm**
 
 ### Transition to Phase 1
 
-If the player moves toward the elemental and continues following, the elemental begins moving
-toward the nearest storm convergence structure. This movement marks the beginning of Phase 1.
-
-### Open Design Questions
-
-- **When does the elemental first appear?** (First storm? After several storms? Random chance
-  after baseline playtime?)
-- **If the player opts out, does the elemental return?** (Next storm? Increasing intervals?
-  Fixed attempts?)
-- **What is the maximum movement restriction?** (Percentage slowdown? Directional only?)
+When the player approaches the elemental (~10 blocks), the elemental bolts toward the Resonator,
+leaving a trail of scorched earth. The trail marks the beginning of Phase 1.
 
 ### Systems Required
 
 - Storm weather detection (when is a storm active?)
-- Elemental spawn logic (proximity to player during storm)
-- Movement restriction system (directional, gradient-based)
-- Elemental visual/audio feedback (effort scaling)
-- Player approach/retreat detection
-- Opt-out detection (player breaks away from restriction radius)
+- Pre-flight validation (Resonator within ~500 blocks, no ocean crossing; ~50 block water cap)
+- Elemental entity registration + spawn logic (proximity to player during storm)
+- Elemental hover/drift behavior (stay visible, reposition subtly)
+- Player proximity detection (~10 block approach trigger)
+- Elemental bolt behavior (streak toward Resonator at high speed)
+- Scorched earth trail placement (along bolt path, ground-snapped to highest natural block)
+- Elemental despawn after traveling beyond player sight
 
 ---
 
-## Phase 1 — Storm Trek
+## Phase 1 — The Trek
 
-### Narrative
+### Trigger
 
-The elemental moves through the world toward a storm convergence structure. Initially it guides
-the direction, then **fades away**, leaving the player to find their own way using storm signals.
+The elemental has bolted, leaving a trail of scorched earth toward the Resonator.
 
-The trek is not an escort quest. Storm signals (wind intensity, thunder rhythm, lightning
-direction) strengthen when the player is aligned with the correct path and weaken when they
-diverge. If the player veers off course, the dust-devil resistance mechanic from Phase 0 returns
-to nudge them back on track. The opt-out remains available — the player can break away at any time.
+### Behavior
 
-Along the way, the world itself reinforces the journey:
+1. The player follows the trail of scorched/electrified ground patches toward the Resonator
+2. The trail is **self-directed** — no escort, no guide, no timer pressure beyond the storm's duration
+3. The Resonator is already **glowing in the distance** (independent storm behavior), serving as a
+   long-range visual beacon
+4. Distant lightning VFX may appear at the Resonator's location for additional atmospheric guidance
 
-- Elevation and exposure affect signal strength.
-- Storms have "centers" that the trek passes through or near.
-- Terrain can amplify or dampen the storm's coherence.
+### Trail Characteristics
 
-### Player Experience
+**Placement:**
+- Scorched earth patches placed every ~20 blocks (15-25 range) along the elemental's flight path
+- Placed on the **highest natural block** at each position (ground-snapped)
+- Only placed on **natural blocks** (grass, dirt, sand, stone, snow, etc.)
+- **Not placed on artificial/player-built blocks** — trail naturally skips over structures
 
-- The player is learning the storm's directional language through movement.
-- There's no minimap arrow — just the feeling that "this direction is right."
-- The trek ends at a **storm convergence structure**: a storm-scarred formation, ruin-adjacent
-  anchor, or similar landmark where the storm gathers with unusual intensity.
-- The convergence structure is NOT the Ancient Forge. It is NOT a crafting site. It is the place
-  where the storm is loudest.
+**Obstacle Handling:**
+- **Natural terrain (cliffs, ravines, rivers, small bodies of water):** The trail goes straight
+  through. These are fair game — the player climbs, swims, bridges across. This is part of the adventure.
+- **Artificial structures (player builds, walls, castles):** The elemental's flight path curves
+  around these. The elemental is a sentient, natural entity — it wouldn't fly through a building.
+  The trail reflects this intelligence.
+- **Large gaps:** Where structures create a gap in the trail, the Resonator's storm glow and distant
+  lightning serve as long-range direction confirmation.
+
+**Trail Intelligence:**
+The elemental knows the player can't fly. While it moves through the air, the trail it leaves is
+designed to be followable on foot. It doesn't pathfind a perfectly walkable route (natural obstacles
+are fair game), but it avoids leading the player into artificial dead ends.
+
+Implementation approach: scan ahead along the flight vector, detect artificial blocks, nudge the
+path laterally to go around them. Not full A* pathfinding — more like "smart straight line with
+structure avoidance."
+
+**Leave No Trace:**
+- All scorched earth patches store the original block state before modification
+- When the storm ends, **all patches are restored** to their original state
+- The world returns to normal — no permanent modification
+
+### If the Player Doesn't Reach the Resonator Before the Storm Ends
+
+- Trail dissipates (blocks restored via Leave No Trace)
+- No punishment, no lost progress
+- Next thunder storm: Phase 0 resets — elemental appears again, same sequence
+- Player gets unlimited attempts
 
 ### Transition to Phase 1.5
 
-Phase 1 ends when the player reaches a storm convergence structure during a sufficiently
-coherent storm state. Nothing "completes" — the place just feels like the storm's focal point.
+Phase 1 ends when the player reaches the Resonator during an active thunder storm.
 
-### Open Design Questions
+### Worldgen Consideration
 
-- **How far is the trek?** (Minimum distance? Biome-spanning?)
-- **What happens if the player loses the elemental before it fades?** (Storm signals guide
-  without it? It respawns ahead?)
-- **Can the trek span multiple storms / play sessions?** (Progress saved? Must be continuous?)
-- **Anti-escort rule:** Nothing "waits" for the player. Signals strengthen/weaken naturally.
-  How strictly do we enforce this?
+Resonator structures must be placed at a density that ensures:
+- At least one Resonator is likely within ~500 blocks of any given player position
+- The Resonator is reachable within the duration of a single thunder storm (accounting for terrain
+  traversal, not straight-line distance)
+- Storm duration and Resonator density are balanced so the Phase 0→1→1.5 sequence is completable
+  in one storm without rushing
 
 ### Systems Required
 
-- Elemental pathfinding toward convergence structure (initial guidance)
-- Elemental fade-out logic (after initial direction is established)
-- Storm coherence evaluation (player alignment with intended direction)
-- Dust-devil resistance mechanic (reused from Phase 0 for off-course correction)
-- Signal feedback system (wind/thunder/lightning intensity scaling)
-- Convergence structure detection (player arrived at destination)
-- Trek progress tracking (if multi-session is supported)
+- Scorched earth trail placement along elemental bolt path
+- Natural vs. artificial block detection (trail skips player-built blocks)
+- Structure avoidance (lateral nudge around artificial structures)
+- Block state read/write (store original, place scorched, restore on cleanup)
+- Leave No Trace cleanup (restore all patches when storm ends)
+- Resonator DynamicLight activation during thunder storms (independent behavior)
+- Player proximity detection (arrived at Resonator)
 
 ---
 
 ## Phase 1.5 — Attunement
 
-### Narrative
+### Trigger
 
-At the convergence structure, during the storm, something shifts. The storm recognizes the player
-as capable of perceiving deeper structure. This is attunement — a permanent perceptual change.
+- Player reaches the Resonator during a thunder storm
+- Player **steps on one of the structure's plates**
 
-The convergence structure itself doesn't transform. The player's perception does.
+### Behavior
 
-### Player Experience
+The 30-second Attunement Ritual begins (per `StormseekerAttunementService.java`):
 
-- The player gains **leyline sight**: a toggled perception ability.
-- Leylines always existed in the world. Now the player can see them on demand.
-- Leylines are NOT quest arrows. They are world geometry — influence flows, energy paths beneath
-  the terrain.
-- Outside storms, cues may linger faintly, but storms remain the primary "loud" state.
-- The player also gains persistent **storm literacy**: a subtle ongoing sensitivity to storm
-  direction and intensity.
+- **Spool Up (5s):** Plate activates, visuals and audio intensify
+- **Active Lock (15s):** Player is rooted, full intensity, uninterruptible
+- **Spool Down (5s):** Energy dissipates, ritual completes
+
+On completion: `AttunementCompleteEvent` fires, Leyline Sight unlocks.
+
+- Up to 6 plates can handle independent rituals simultaneously
+- Stepping off during Spool Up interrupts the ritual (player can retry)
 
 ### What the Player Gains
 
-- **Leyline-vision toggle:** Persistent ability (survives logout). Toggleable on/off.
-- **Storm literacy:** Passive. Subtle environmental awareness even outside storms.
+- **Leyline Sight toggle** (`PerceptionToggleHandler`): Persistent ability (survives logout). Toggleable on/off.
+- Leylines always existed in the world. Now the player can see them on demand.
+- Leylines are NOT quest arrows. They are world geometry — influence flows, energy paths beneath
+  the terrain.
+
+### Post-Attunement
+
+- Player advances to Phase 2 (Dual Sigil Trials)
+- The Flowing and Anchored Trials become available
+- Leyline Sight is unlocked but keybind not yet wired
 
 ### Transition to Phase 2
 
@@ -188,9 +238,13 @@ Attunement is the pivot. Phase 2 becomes available immediately after.
 
 ### Systems Required
 
-- Attunement event trigger (player at convergence structure during storm)
+- Attunement ritual state machine (Spool Up → Active Lock → Spool Down)
+- Plate interaction detection (player steps on/off plate)
+- Player rooting during Active Lock phase
+- `AttunementCompleteEvent` emission
+- Multi-plate support (up to 6 simultaneous rituals)
 - Player capability component: "can perceive leylines"
-- Leyline-vision toggle ability (persistent across sessions)
+- Leyline Sight toggle ability (persistent across sessions)
 - Attunement milestone emission (durable edge, at most once per player)
 
 ---
@@ -534,7 +588,7 @@ sense that calm is an agreement rather than a guarantee.
 
 **Legendary — Quest Infrastructure:**
 - `StormseekerProgress` — phase tracking + sigil state
-- `StormseekerPhase` enum — phase definitions (names need updating)
+- `StormseekerPhase` enum — phase definitions
 - `StormseekerCapabilities` — capability queries per phase
 - `StormseekerQuestSteps` — gate step identifiers for Phase 3+
 - `StormseekerQuestStepMapper` — maps progress to quest steps
@@ -561,9 +615,9 @@ sense that calm is an agreement rather than a guarantee.
 
 ### What Does NOT Exist Yet
 
-- Phase 0: Elemental spawn, movement restriction, approach detection, dust-devil mechanic
-- Phase 1: Elemental pathfinding, fade-out, storm coherence trek evaluation
-- Phase 1.5: Attunement event trigger, leyline-vision toggle, capability component wiring
+- Phase 0: Pre-flight validation (ocean check), elemental entity registration + spawn, hover/drift behavior, approach detection, bolt behavior, scorched earth trail placement
+- Phase 1: Natural vs. artificial block detection, structure avoidance (lateral nudge), block state read/write, Leave No Trace cleanup, Resonator DynamicLight storm activation
+- Phase 1.5: Attunement ritual state machine (spool up/active lock/spool down), plate interaction detection, player rooting, `AttunementCompleteEvent`, multi-plate support, leyline-vision toggle, capability component wiring
 - Phase 3: Frame crafting system, material gathering, assembly state machine
 - Phase 4: Final encounter orchestration, energizing progression
 - Phase 5: Post-completion systems, epilogue flags
@@ -577,21 +631,30 @@ The code logic itself is generally correct — the names are wrong.
 
 | Code | Current Name | Should Be | Reason |
 |---|---|---|---|
-| `StormseekerPhase1Loop` | "Phase 1 coordinator" | Phase 2 Flowing Trial coordinator | Drives Flowing Trial, which is Phase 2 |
-| `StormseekerAttunementService` | "Phase 1 Attunement control surface" | Flowing Trial entry service | Controls Flowing Trial entry, not attunement |
-| `StormseekerPhase.PHASE_1_ATTUNEMENT` | "Phase 1 Attunement" | `PHASE_1_STORM_TREK` | Phase 1 is the Trek; Attunement is 1.5 |
-| `StormseekerPhase.PHASE_1_5_AFTERSHOCK` | "Phase 1.5 Aftershock" | `PHASE_1_5_ATTUNEMENT` | This phase IS attunement |
-| `StormseekerPhase.PHASE_5_FINAL_TEMPERING` | "Phase 5 Final Tempering" | `PHASE_5_EPILOGUE` | Tempering is Phase 4; Phase 5 is epilogue |
-| `StormseekerCapabilities.canForgeFinalizeStormseeker()` | Checks PHASE_5 | Should check PHASE_4 | Finalization happens in Phase 4 |
+| `StormseekerAttunementService` | "Phase 1 Attunement control surface" | Phase 1.5 Attunement ritual service | Now correctly refers to attunement (Phase 1.5 redesign); name is accurate but phase label needs updating |
+
+Resolved in v3.0:
+- ~~`StormseekerPhase1Loop`~~ → Fixed: now `StormseekerFlowingTrialLoop` (Phase 2 Flowing Trial coordinator)
+- ~~`StormseekerPhase1Outcome`~~ → Fixed: now `StormseekerFlowingTrialOutcome`
+- ~~`StormseekerPhase1TickView`~~ → Fixed: now `StormseekerFlowingTrialTickView`
+- ~~`emitPhase1TickView()` / `emitPhase1Outcome()`~~ → Fixed: now `emitFlowingTrialTickView()` / `emitFlowingTrialOutcome()`
+- ~~`phase1Attunement()`~~ → Fixed: now `phase2FlowingTrial()`
+- ~~`StormseekerObjectiveSnapshotService` Flowing Trial mapped to Phase 1~~ → Fixed: now mapped to Phase 2
+- ~~`StormseekerPhase.PHASE_1_ATTUNEMENT`~~ → Fixed: now `PHASE_1_STORM_TREK`
+- ~~`StormseekerPhase.PHASE_1_5_AFTERSHOCK`~~ → Fixed: now `PHASE_1_5_ATTUNEMENT`
+- ~~`StormseekerPhase.PHASE_5_FINAL_TEMPERING`~~ → Fixed: now `PHASE_5_EPILOGUE`
+- ~~`StormseekerCapabilities.canForgeFinalizeStormseeker()` checks PHASE_5~~ → Fixed: now checks `PHASE_4_STORMS_ANSWER`
+- ~~`StormseekerPhase.PHASE_0_UNEASE`~~ → Fixed: now `PHASE_0_WATCHING_ELEMENTAL`
+- ~~`StormseekerQuestSteps.PHASE_5_EPILOGUE` string value "final_tempering"~~ → Fixed: now `"stormseeker.phase5.epilogue"`
 
 ### Hytale Weather System (Future Integration)
 
 Hytale has a weather system with classes for `Weather`, `WeatherForecast`, `WeatherParticle`,
 `UpdateWeather` packets, fog, clouds, and time-of-day colors. This will be critical for:
 
-- Phase 0: Storm detection for elemental spawn
-- Phase 1: Storm coherence evaluation during trek
-- Phase 1.5: Storm state check for attunement trigger
+- Phase 0: Storm detection for elemental spawn + pre-flight validation
+- Phase 1: Storm duration tracking (trail lifetime, Leave No Trace cleanup trigger)
+- Phase 1.5: Storm state check for attunement trigger at Resonator
 - Phase 3: Storm-timed crafting (if storm timing is required)
 
 Weather integration has not been explored yet but the server-side classes exist.
@@ -620,3 +683,9 @@ StormseekerWiring.tick(host)
 - **v2.0 (2026-02-10):** Complete rewrite. Corrected phase structure, clarified sigil placement
   (Phase 2 only), added Thunderfury parallels, materials taxonomy, full code audit, documented
   open questions, consolidated into single source of truth.
+- **v3.0 (2026-02-16):** Phase 0/1/1.5 redesign. Removed movement restriction mechanic (not
+  exposed in Hytale API). Phase 0 is now a watching elemental that bolts on approach, leaving a
+  scorched earth trail. Phase 1 is self-directed trail following to the Resonator. Phase 1.5 is
+  a 30-second attunement ritual at the Resonator's plates. Added Resonator independent storm
+  behavior, skip path, pre-flight ocean validation, Leave No Trace cleanup, structure avoidance.
+  See `phase-0-1-redesign-final.md` for full rationale.

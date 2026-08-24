@@ -1,164 +1,134 @@
-# Hytale Integration Status
+# Hytale Integration Notes
 
-> **Last Updated:** 2026-02-09
-> **Repository:** https://github.com/LegendaryForge/LegendaryHytale
+> **Last verified:** 2026-08-24 against the sources in `mod/hytale/`.
+> **Module:** `mod/hytale/` — the only module in this repository that may import `com.hypixel.*`
+> (enforced by `:core:checkNoPlatformImports`).
 
-## Current State
-
-### LegendaryHytale Plugin
-
-**Status:** Initial setup complete, builds successfully
-
-**What exists:**
-- Hytale plugin project created from official template
-- Configured for `io.github.legendaryforge` organization
-- Main plugin class: `LegendaryHytalePlugin`
-- Event listener: `PlayerJoinListener` (listens to `PlayerConnectEvent`)
-- Successfully compiles to JAR
-
-**What works:**
-- Plugin loads in Hytale
-- Can register and respond to game events
-- Logging infrastructure operational
-
-**What does NOT work yet:**
-- No actual quest logic integrated
-- Not tested in live Hytale server
-- No connection to LegendaryCore/Legendary code
+This document records what has been learned about the Hytale server API. Every package and
+class name below is taken from imports that currently compile in `mod/hytale/src/main/java`,
+not from inspection notes — the previous version of this file was written from exploratory
+JAR inspection in February and several of its claims had drifted.
 
 ---
 
-## Hytale API Discoveries
+## Consuming the server API
 
-### Package Structure
+The Hytale server JAR is **not** a published artifact. It is read from the local game install:
 
-Hytale uses different package naming than initially assumed:
+```kotlin
+compileOnly(files(hytaleServerJar))
+```
 
+`mod/hytale/build.gradle.kts` locates it under the Flatpak or `~/.local/share` install path,
+or an explicit `-Phytale_home=`. When no install is found the module excludes its Hytale
+sources and the rest of the build proceeds — see the README for what that means for CI.
+
+**Do not pin the game version in documentation.** It moves without notice: an auto-update on
+2026-08-17 shipped a Java 25 jar against a build targeting Java 21 and broke compilation
+project-wide. `:mod:hytale:checkHytaleJarVersion` now reads the jar's class-file version and
+fails with one explicit message instead of a cascade. To see the version in use, inspect the
+jar the build resolves.
+
+---
+
+## Package structure
+
+The API lives under `com.hypixel.hytale.*`, but not where a plugin author would first guess —
+there is no `com.hypixel.hytale.plugin.*`. Verified imports currently in use:
+
+**Plugin lifecycle**
 ```java
-// CORRECT packages:
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
+```
+
+**ECS** — closely matches this project's own architectural assumptions
+```java
+import com.hypixel.hytale.component.Ref;                       // entity reference
+import com.hypixel.hytale.component.Store;                     // the ECS store
+import com.hypixel.hytale.component.system.tick.TickingSystem; // per-tick system base
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+```
+
+**World, players, transforms**
+```java
+import com.hypixel.hytale.server.core.universe.World;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
+import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
+```
+
+**Events**
+```java
 import com.hypixel.hytale.server.core.event.events.player.PlayerConnectEvent;
-
-// NOT (these dont exist):
-// import com.hypixel.hytale.plugin.* 
+import com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent;
 ```
 
-### ECS Structure
-
-**Hytale's ECS closely matches our architectural assumptions:**
-
-- `EntityStore` - Wraps the core ECS Store
-- `Store<EntityStore>` - The actual ECS store
-- `Ref<EntityStore>` - Entity references (like we assumed)
-- `ComponentRegistry<EntityStore>` - Component type registration
-- `CommandBuffer<EntityStore>` - Thread-safe mutation queue
-- `RefSystem` - System base class for entity lifecycle
-- `Query<EntityStore>` - Entity filtering by components
-
-**Key classes located:**
-```
-com.hypixel.hytale.server.core.universe.world.storage.EntityStore
-com.hypixel.hytale.component.Store
-com.hypixel.hytale.component.Ref
-com.hypixel.hytale.component.CommandBuffer
-com.hypixel.hytale.component.system.RefSystem
-```
-
-### Events
-
-**Available player events:**
-- `PlayerConnectEvent` - When player connects
-- `PlayerDisconnectEvent` - When player disconnects  
-- `PlayerInteractEvent` - Player interactions
-- `PlayerCraftEvent` - Crafting events
-
-**Event registration:**
+Registration idiom:
 ```java
 getEventRegistry().registerGlobal(PlayerConnectEvent.class, listener::method);
 ```
 
----
-
-## Integration Strategy
-
-### Current Approach: Standalone First
-
-**Decision:** Build LegendaryHytale as a standalone plugin initially, bundling LegendaryCore and Legendary inside the JAR.
-
-**Rationale:**
-- Simpler for players (one file to install)
-- Easier to develop and test
-- Can extract LegendaryCore as separate library later if needed
-
-### Dependency Challenge
-
-Attempted to use Gradle `includeBuild` to reference local Legendary projects, but the scaffoldit plugin interfered. 
-
-**Current solution:** Develop integration code directly in LegendaryHytale until we figure out clean dependency wiring.
-
-**Future solution:** Add Maven publishing to LegendaryCore/Legendary, or copy necessary classes.
-
----
-
-## Next Steps
-
-### Immediate (Next Session)
-
-1. **Test the plugin in Hytale server**
-   - Run local dev server from IntelliJ
-   - Verify plugin loads
-   - Confirm player connect event fires
-
-2. **Map Legendary ECS to Hytale ECS**
-   - Understand how to create custom components
-   - Learn how to register systems
-   - Figure out entity creation/mutation
-
-3. **Start Phase 1 integration proof-of-concept**
-   - Create a minimal "Storm Attunement" trigger
-   - Prove we can track quest progress
-   - Test milestone emission
-
-### Medium Term
-
-- Integrate LegendaryCore dependency properly
-- Map `StormseekerProgress` to Hytale components
-- Implement Phase 1 tick loop in Hytale
-- Create Hytale-specific presentation (particles, UI)
-
-### Long Term
-
-- Full Phase 0-2 integration
-- Design Phase 3+
-- Player testing and feedback
-
----
-
-## Technical Notes
-
-### Build Configuration
-
-**Java Version:** Java 25 (required by Hytale)
-
-**Gradle:** Using scaffoldit plugin v0.2.+
-
-**Hytale Server Dependency:**
-```kotlin
-implementation("com.hypixel.hytale:Server:+")
+**Commands**
+```java
+import com.hypixel.hytale.server.core.command.system.basecommands.AbstractPlayerCommand;
+import com.hypixel.hytale.server.core.command.system.CommandContext;
 ```
 
-This pulls the latest Hytale server version (currently `2026.02.06-aa1b071c2`).
+**Messaging**
+```java
+import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.protocol.FormattedMessage;
+```
 
-### Development Environment
+**Weather** — used by the Stormseeker weather reader
+```java
+import com.hypixel.hytale.builtin.weather.components.WeatherTracker;
+import com.hypixel.hytale.server.core.asset.type.weather.config.Weather;
+```
 
-- **OS:** Garuda Linux (Arch-based)
-- **IDE:** IntelliJ IDEA Community Edition
-- **Desktop:** X11 (Hytale has Wayland scroll bugs)
-- **Terminal:** Konsole with Fish shell
+### Not everything is under `com.hypixel`
 
-### Known Issues
+Vectors come from **JOML**, not from a Hytale package:
 
-- Hytale server JAR is decompiled (no source), must inspect via JAR inspection
-- JetBrains JDK not installed (DCEVM hot-swap unavailable)
-- Branch protection enabled on all repos (must use PR workflow)
+```java
+import org.joml.Vector3d;
+```
+
+This one has bitten the project. `Vector3d` was previously at
+`com.hypixel.hytale.math.vector.Vector3d`; it moved, and because the integration layer had no
+build that could compile it at the time, **nothing noticed for roughly six months**. When
+tracking down a missing type, check whether it has moved to a third-party library before
+assuming it was removed.
+
+---
+
+## Integration shape
+
+Superseding the February plan, which proposed building a standalone plugin that bundled the
+other projects inside its JAR and wrestled with `includeBuild` and a `scaffoldit` plugin:
+**that problem no longer exists.** All code lives in one Gradle multi-project and internal
+dependencies are plain `project(":core")` / `project(":quests:stormseeker")`. The `scaffoldit`
+plugin is gone.
+
+The layering is:
+
+- `core/` and `quests/stormseeker/` are **engine-agnostic** and must stay so. No `com.hypixel`
+  import may appear under `core/src`; the build fails if one does.
+- `mod/hytale/` holds every adapter that bridges the two — the plugin entrypoint, commands,
+  the tick system, the weather reader, and the progress store.
+
+`core.api.platform.CoreRuntime` exists as a platform seam, but its only implementation is
+`DefaultCoreRuntime` inside `core`. There is no Hytale implementation of it; `mod/hytale`
+talks to the game directly. Writing one is new construction, deferred until there is a second
+platform target or a need to run `mod/hytale` headless in tests.
+
+---
+
+## Known constraints
+
+- **The server JAR is decompiled and ships no sources.** API discovery means inspecting the
+  JAR; there is no Javadoc to read.
+- **`mod/hytale` has no tests.** Eight source files, zero test files — simultaneously the
+  least-covered module and the one most exposed to game churn.
+- **The game updates underneath the build.** Treat any compile failure in this module after a
+  launcher update as a candidate API drift, and check `checkHytaleJarVersion`'s output first.

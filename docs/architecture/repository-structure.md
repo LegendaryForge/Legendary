@@ -1,5 +1,18 @@
 # Repository Structure
 
+> ⚠️ **STALE — describes a repository layout that no longer exists.**
+>
+> Everything below this banner describes the **pre-consolidation, three-separate-repository**
+> world (`LegendaryCore` / `Legendary` / `LegendaryContent`, Gradle composite builds,
+> `../LegendaryCore` substitution). None of that is true today. This repository is now a
+> **single Gradle multi-project build** with four modules: `core`, `quests/stormseeker`,
+> `mod/hytale`, and `harness`.
+>
+> For the current layout and how the module boundaries work, read
+> [`questline-framework-adoption.md`](./questline-framework-adoption.md) and the root
+> [`README.md`](../../README.md). This document is left in place as historical record; it has
+> not been rewritten for the current structure (that is separately-scoped roadmap work).
+
 > **Source:** Legendary Content Architecture v1.5
 > **Last Updated:** 2026-02-04
 
