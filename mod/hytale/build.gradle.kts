@@ -23,6 +23,10 @@ val hytaleHome =
 val hytaleServerJar = file("$hytaleHome/install/$patchlineProp/package/game/latest/Server/HytaleServer.jar")
 val hasHytaleServerJar = hytaleHome.isNotBlank() && hytaleServerJar.exists()
 
+moduleCoverage {
+    zeroCompileAllowedWhen("no Hytale server jar in this environment") { !hasHytaleServerJar }
+}
+
 /**
  * Class-file major 65 = Java 21, 69 = Java 25. Returns null on genuine I/O errors
  * reading the jar. Throws if the jar has no com/hypixel classes at all — that is a
