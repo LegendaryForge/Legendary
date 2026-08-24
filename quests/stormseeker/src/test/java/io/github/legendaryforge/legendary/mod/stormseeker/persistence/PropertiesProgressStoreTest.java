@@ -170,9 +170,13 @@ final class PropertiesProgressStoreTest {
         store.save("a.b", advanced);
         StormseekerProgress other = store.load("a/b");
 
-        // Both sanitise to "a_b". Pinned deliberately: this is a real collision, and the
-        // test exists so that a future switch to a hash or an escape scheme is a visible
-        // decision rather than an accident.
+        // Both sanitise to "a_b". LATENT, not live: the only production caller passes
+        // playerRef.getUuid().toString(), which is [0-9a-f-] and never rewritten, so the
+        // sanitiser is a no-op today and no two real ids can collide. Nothing enforces
+        // that, though — the parameter is a String, so a future caller passing a username
+        // makes this live immediately. Pinned so that change fails a test instead of
+        // silently merging two players' progress; not worth a key-encoding migration while
+        // the sole caller keeps it unreachable.
         assertEquals(StormseekerPhase.PHASE_1_STORM_TREK, other.phase());
     }
 
