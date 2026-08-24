@@ -72,11 +72,16 @@ val checkModuleCoverage by tasks.registering {
                 else -> "FULL"
             }
 
+        // Escape backslashes and double quotes before interpolating reason into
+        // hand-built JSON -- backslash first, then quote, so a reason containing
+        // either does not emit invalid JSON that breaks json.load() in the census.
+        val escapedReason = reason?.replace("\\", "\\\\")?.replace("\"", "\\\"")
+
         val report = layout.buildDirectory.file("module-coverage.json").get().asFile
         report.parentFile.mkdirs()
         report.writeText(
             """{"module":"${project.path}","onDisk":$onDisk,"compiled":$compiled,""" +
-                """"state":"$state","reason":${if (reason == null) "null" else "\"$reason\""}}""",
+                """"state":"$state","reason":${if (escapedReason == null) "null" else "\"$escapedReason\""}}""",
         )
 
         if (state == "FAIL") {

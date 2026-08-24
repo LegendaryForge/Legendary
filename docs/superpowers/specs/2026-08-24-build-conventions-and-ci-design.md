@@ -143,8 +143,10 @@ still compiles nothing, the exemption does not apply and the build fails. So the
 declaration documents a known environmental gap without ever excusing a genuine
 one.
 
-It prints a `COVERAGE_VERDICT:` line naming each module's compiled/on-disk ratio,
-its exemption state, and which of {Error Prone, Spotless, tests} it ran.
+It prints a `COVERAGE_VERDICT:` line naming each module's compiled/on-disk ratio
+and its exemption state. Per-module detail on which of {Error Prone, Spotless,
+tests} ran is not printed, and would now be redundant anyway: the convention
+plugin applies the same checks to all four modules uniformly.
 
 The verdict is a printed **line**, not an exit code, following the local rule
 that exit status is positional and any wrapper swallows it. The line is
