@@ -75,6 +75,28 @@ tasks.withType<JavaCompile>().configureEach {
     }
 }
 
+// The manifest names the plugin entrypoint as a string, invisible to the compiler. This
+// guard is wired into `check` rather than `compileJava` because it reads sources, not
+// classes, and so is meaningful on machines with no game jar — CI included, where this
+// module compiles nothing at all.
+val checkManifestEntrypoint =
+    tasks.register<ManifestEntrypointCheck>("checkManifestEntrypoint") {
+        group = "verification"
+        description =
+            "Verifies the Main entrypoint named in manifest.json exists in this module's " +
+            "sources with a matching package declaration."
+        manifest.set(layout.projectDirectory.file("src/main/resources/manifest.json"))
+        sources.from(
+            layout.projectDirectory
+                .dir("src/main/java")
+                .asFileTree
+                .matching { include("**/*.java") },
+        )
+        outputs.upToDateWhen { false }
+    }
+
+tasks.named("check") { dependsOn(checkManifestEntrypoint) }
+
 tasks.named("compileJava") {
     dependsOn(checkHytaleJarVersion)
 }
