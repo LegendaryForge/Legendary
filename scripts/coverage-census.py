@@ -47,13 +47,28 @@ for module in missing:
 failed = [r for r in rows if r["state"] == "FAIL"]
 partial = [r for r in rows if r["state"] == "PARTIAL"]
 empty = [r for r in rows if r["state"] == "EMPTY"]
-green = not failed and not missing
+
+# An EMPTY module contributes nothing to the build, which is the same outcome as an
+# undeclared zero-compile and is reached by an ordinary refactor: move every source out
+# of a module and it reports 0/0 EMPTY with the build still SUCCESSFUL. Demonstrated
+# 2026-08-24 by deleting mod/hytale/src/main/java -- guard green, census GREEN, nothing
+# said a module had vanished.
+#
+# The guard's truth table tests EMPTY first and deliberately requires no declaration;
+# changing that contradicts its approved spec and remains an open operator question.
+# This is the census half, and it needs no new API: an exemption reason is already
+# carried in the JSON, so a module declared with zeroCompileAllowedWhen stays green
+# while one that simply lost its sources goes RED.
+empty_undeclared = [r for r in empty if not r.get("reason")]
+green = not failed and not missing and not empty_undeclared
 exempt = sum(1 for r in rows if r["state"] == "EXEMPT")
 age = "never run" if oldest is None else f"{int(time.time() - oldest)}s ago"
 print(
     f"COVERAGE_VERDICT: {'GREEN' if green else 'RED'} | "
     f"{len(rows)}/{len(MODULES)} modules reported | {exempt} exempt | "
-    f"{len(partial)} partial | {len(empty)} empty | {len(failed)} failing | "
+    f"{len(partial)} partial | {len(empty)} empty"
+    f"{f' ({len(empty_undeclared)} undeclared)' if empty_undeclared else ''} | "
+    f"{len(failed)} failing | "
     f"oldest result {age}"
 )
 sys.exit(0 if green else 1)
