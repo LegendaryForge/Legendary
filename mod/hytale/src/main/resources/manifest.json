@@ -15,5 +15,5 @@
     "Dependencies": {},
     "OptionalDependencies": {},
     "ServerVersion": "*",
-    "Main": "io.github.legendaryforge.hytale.LegendaryHytalePlugin"
+    "Main": "io.github.legendaryforge.legendary.mod.hytale.LegendaryHytalePlugin"
 }

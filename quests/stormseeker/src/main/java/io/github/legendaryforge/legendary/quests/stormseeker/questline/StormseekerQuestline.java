@@ -1,0 +1,38 @@
+package io.github.legendaryforge.legendary.quests.stormseeker.questline;
+
+import io.github.legendaryforge.legendary.core.api.event.EventBus;
+import io.github.legendaryforge.legendary.core.api.gate.GateService;
+import io.github.legendaryforge.legendary.core.api.questline.QuestlineModule;
+import io.github.legendaryforge.legendary.core.api.questline.runtime.LegendarySystemRegistrar;
+import io.github.legendaryforge.legendary.quests.stormseeker.StormseekerWiring;
+
+/** Stormseeker questline module wrapper. */
+public final class StormseekerQuestline implements QuestlineModule {
+
+    public static final String ID = "stormseeker";
+
+    @Override
+    public String id() {
+        return ID;
+    }
+
+    @Override
+    public String displayName() {
+        return "Stormseeker";
+    }
+
+    @Override
+    public void registerGates(GateService gates) {
+        StormseekerWiring.registerGates(gates);
+    }
+
+    @Override
+    public void registerSystems(LegendarySystemRegistrar registrar) {
+        StormseekerWiring.registerSystems(registrar);
+    }
+
+    @Override
+    public void registerListeners(EventBus bus) {
+        StormseekerWiring.registerListeners(bus);
+    }
+}
