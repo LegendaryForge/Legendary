@@ -11,7 +11,7 @@ import re
 import sys
 import time
 
-EXPECTED = int(os.environ.get("EXPECTED_TESTS", "194"))
+EXPECTED = int(os.environ.get("EXPECTED_TESTS", "196"))
 MODULES = ["core", "quests/stormseeker", "mod/hytale", "harness"]
 
 total = failed = 0

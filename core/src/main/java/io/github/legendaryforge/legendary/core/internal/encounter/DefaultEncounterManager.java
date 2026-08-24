@@ -89,9 +89,7 @@ public final class DefaultEncounterManager implements EncounterManager {
             java.util.Optional<java.util.UUID> ownerPartyId = java.util.Optional.empty();
             java.util.Set<java.util.UUID> ownerPartyMembersAtStart = java.util.Set.of();
 
-            if (definition
-                    instanceof
-                    io.github.legendaryforge.legendary.core.api.legendary.definition.LegendaryEncounterDefinition) {
+            if (definition.capturesOwnerParty()) {
                 ownerPartyId = context.partyId();
                 if (ownerPartyId.isPresent() && parties.isPresent()) {
                     ownerPartyMembersAtStart =

@@ -26,4 +26,9 @@ public interface LegendaryEncounterDefinition extends EncounterDefinition {
      * Empty means no explicit cooldown at the core layer.
      */
     Optional<Duration> completionCooldown();
+
+    @Override
+    default boolean capturesOwnerParty() {
+        return true;
+    }
 }

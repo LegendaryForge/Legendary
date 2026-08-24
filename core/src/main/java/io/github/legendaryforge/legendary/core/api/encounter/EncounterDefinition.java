@@ -21,4 +21,12 @@ public interface EncounterDefinition {
      * Maximum spectators. A value <= 0 means "no explicit limit" (implementation-defined).
      */
     int maxSpectators();
+
+    /**
+     * Whether creating an instance of this encounter should capture the activating party's
+     * membership at start. Default false; richer encounter models override.
+     */
+    default boolean capturesOwnerParty() {
+        return false;
+    }
 }
