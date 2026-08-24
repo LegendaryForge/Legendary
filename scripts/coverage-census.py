@@ -39,7 +39,12 @@ for module in MODULES:
 for row in rows:
     # Just the reason: the state itself is already the previous field, so repeating
     # the word here rendered ":mod:hytale 0/7 EXEMPT  EXEMPT (no Hytale server jar...)".
-    suffix = f" ({row['reason']})" if row["state"] == "EXEMPT" else ""
+    #
+    # Shown for EVERY non-FULL state that carries one, not only EXEMPT. A declared
+    # module drifting into PARTIAL or EMPTY previously printed a bare "1/8 PARTIAL"
+    # with its declaration nowhere on the line, so the reader could not tell a
+    # declared gap from an undeclared one in exactly the states where that matters.
+    suffix = f" ({row['reason']})" if row["state"] != "FULL" and row.get("reason") else ""
     print(f"{row['module']:22} {row['compiled']:3}/{row['onDisk']:<3} {row['state']}{suffix}")
 for module in missing:
     print(f"{module:22} (no report -- run ./gradlew check)")
