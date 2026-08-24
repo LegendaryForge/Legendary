@@ -34,13 +34,16 @@ val checkNoQuestlineImports =
         group = "verification"
         description =
             "Heuristic secondary guard: fails if any file under src/ contains the literal " +
-            "text \"legendary.mod.\" (the package prefix questlines currently use). This is a " +
-            "plain text scan, not an import- or package-aware check -- it cannot see a questline " +
-            "outside the legendary.mod.* prefix, and it does not scan build scripts, so a " +
+            "text \"legendary.quests.\" -- the package prefix EVERY questline uses, because " +
+            "package paths mirror Gradle module paths (:quests:<name> -> legendary.quests.<name>). " +
+            "Before the 2026-08-24 rename this needle was \"legendary.mod.\", which matched only " +
+            "because Stormseeker happened to occupy that prefix; it was correct by accident and " +
+            "would have matched nothing once a second questline arrived. It is still a plain text " +
+            "scan, not import- or package-aware, and it does not read build scripts, so a " +
             "project() dependency on a questline is invisible to it. See checkNoQuestlineDependency " +
             "for the check that actually asserts core has no dependency on a questline project."
         sources.from(coreJavaSources)
-        forbiddenText.set("legendary.mod.")
+        forbiddenText.set("legendary.quests.")
         headline.set("core must not reference a specific questline, but %d file(s) do:")
         remedy.set("Questline code belongs in :quests:<name>; register it from :mod:hytale.")
         relativeTo.set(layout.projectDirectory)
