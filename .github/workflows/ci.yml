@@ -10,13 +10,14 @@ permissions:
 
 # What CI does and does not cover:
 # On every run the Hytale game jar is absent, so mod/hytale is ALWAYS EXEMPT,
-# its 8 sources never compile, and checkHytaleJarVersion is onlyIf-gated off.
+# its 7 sources never compile, and checkHytaleJarVersion is onlyIf-gated off.
 # CI genuinely adds: lint/format parity (Error Prone + Spotless) across all
 # four modules, and the guarantee that a NEW module cannot go dark undeclared.
 # It does NOT detect Hytale API drift (e.g. the Vector3d package move, or a
-# game jar bumping past this build's Java version) -- that remains detectable
-# at exactly one observation point: a human running `./gradlew build` on the
-# single machine with the game installed.
+# game jar bumping past this build's Java version). Detecting that requires
+# compiling against a real game install, which no runner can do, so it happens
+# only on a machine that has the game -- and nothing in THIS repository
+# schedules that. If you maintain a fork, that gap is yours to cover.
 jobs:
   build:
     runs-on: ubuntu-latest
