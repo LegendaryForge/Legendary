@@ -37,7 +37,9 @@ for module in MODULES:
     oldest = mtime if oldest is None else min(oldest, mtime)
 
 for row in rows:
-    suffix = f"  EXEMPT ({row['reason']})" if row["state"] == "EXEMPT" else ""
+    # Just the reason: the state itself is already the previous field, so repeating
+    # the word here rendered ":mod:hytale 0/7 EXEMPT  EXEMPT (no Hytale server jar...)".
+    suffix = f" ({row['reason']})" if row["state"] == "EXEMPT" else ""
     print(f"{row['module']:22} {row['compiled']:3}/{row['onDisk']:<3} {row['state']}{suffix}")
 for module in missing:
     print(f"{module:22} (no report -- run ./gradlew check)")
