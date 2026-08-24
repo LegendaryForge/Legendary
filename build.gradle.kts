@@ -28,7 +28,7 @@ dependencies {
     // Resolved via composite build substitution (vendor/LegendaryCore).
     implementation("io.github.legendaryforge:LegendaryCore:0.0.0-SNAPSHOT")
 
-    errorprone("com.google.errorprone:error_prone_core:2.27.1")
+    errorprone("com.google.errorprone:error_prone_core:2.50.0")
 
     testImplementation(platform("org.junit:junit-bom:5.10.2"))
     testImplementation("org.junit.jupiter:junit-jupiter")
@@ -41,7 +41,7 @@ tasks.test {
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(21))
+        languageVersion.set(JavaLanguageVersion.of(25))
     }
 }
 
@@ -63,7 +63,7 @@ spotless {
 
 tasks.withType<JavaCompile>().configureEach {
     options.encoding = Charsets.UTF_8.name()
-    options.release = 21
+    options.release = 25
 
     options.errorprone.isEnabled.set(true)
     (options.errorprone as ErrorProneOptions).disableWarningsInGeneratedCode.set(true)
