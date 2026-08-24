@@ -65,23 +65,38 @@ val targetJava =
         .get()
         .toInt()
 
-if (hasHytaleServerJar) {
-    val jarJava = hytaleJarJavaVersion(hytaleServerJar)
-    if (jarJava != null && jarJava > targetJava) {
-        throw GradleException(
-            """
-            |Hytale server jar requires Java $jarJava but this build targets Java $targetJava.
-            |The game was updated underneath the build; javac cannot read newer class files.
-            |Fix: set java = "$jarJava" in gradle/libs.versions.toml (and install a matching JDK).
-            |Jar: $hytaleServerJar
-            """.trimMargin(),
-        )
-    }
-} else {
+if (!hasHytaleServerJar) {
     logger.lifecycle(
         "Hytale install not detected; skipping Server API jar. Set hytale_home in gradle.properties for local dev.",
     )
 }
+
+// Detection above (hasHytaleServerJar) stays at configuration time — it's a boolean
+// used to shape the dependency set and compiled sources for this module. The actual
+// jar inspection and both throws are deferred into this task's action so they run at
+// *execution* time, scoped to this module's own tasks. Previously both throws sat in
+// top-level script code, which meant they ran at *configuration* time for every task
+// in the build — including e.g. `:core:build`, a module with zero Hytale involvement.
+val checkHytaleJarVersion =
+    tasks.register("checkHytaleJarVersion") {
+        description =
+            "Verifies the installed Hytale server jar's class-file version is compatible " +
+                "with this build's target Java version."
+        onlyIf { hasHytaleServerJar }
+        doLast {
+            val jarJava = hytaleJarJavaVersion(hytaleServerJar)
+            if (jarJava != null && jarJava > targetJava) {
+                throw GradleException(
+                    """
+                    |Hytale server jar requires Java $jarJava but this build targets Java $targetJava.
+                    |The game was updated underneath the build; javac cannot read newer class files.
+                    |Fix: set java = "$jarJava" in gradle/libs.versions.toml (and install a matching JDK).
+                    |Jar: $hytaleServerJar
+                    """.trimMargin(),
+                )
+            }
+        }
+    }
 
 dependencies {
     api(project(":quests:stormseeker"))
@@ -109,6 +124,10 @@ tasks.withType<JavaCompile>().configureEach {
     if (!hasHytaleServerJar) {
         exclude("**/hytale/**")
     }
+}
+
+tasks.named("compileJava") {
+    dependsOn(checkHytaleJarVersion)
 }
 
 tasks.test {
