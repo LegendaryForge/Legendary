@@ -12,6 +12,7 @@ import io.github.legendaryforge.legendary.mod.stormseeker.trial.anchored.Anchore
 import io.github.legendaryforge.legendary.mod.stormseeker.trial.flowing.FlowHintIntent;
 import io.github.legendaryforge.legendary.mod.stormseeker.trial.flowing.FlowingTrialSessionStep;
 import io.github.legendaryforge.legendary.mod.stormseeker.trial.flowing.MotionSample;
+import io.github.legendaryforge.legendary.mod.stormseeker.trial.flowing.PositionMotionTracker;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.joml.Vector3d;
@@ -20,6 +21,11 @@ public final class HytaleStormseekerHost implements StormseekerHostRuntime {
 
     private static final MotionSample ZERO_MOTION = new MotionSample(0, 0, 0, false);
     private static final double MOVING_THRESHOLD = 0.01;
+
+    // The delta/threshold arithmetic lives in PositionMotionTracker over in
+    // :quests:stormseeker. It touches no platform type, and keeping it here meant it could
+    // not be compiled or tested anywhere without the game jar. This class now only reads
+    // coordinates off the engine and hands them over as plain doubles.
 
     private final Map<String, PlayerState> players = new ConcurrentHashMap<>();
     private final PropertiesProgressStore store;
@@ -91,7 +97,7 @@ public final class HytaleStormseekerHost implements StormseekerHostRuntime {
         if (state == null) {
             return ZERO_MOTION;
         }
-        return state.lastMotion;
+        return state.motion.latest();
     }
 
     @Override
@@ -139,12 +145,8 @@ public final class HytaleStormseekerHost implements StormseekerHostRuntime {
     private static final class PlayerState {
         final PlayerRef playerRef;
         final StormseekerProgress progress;
-        MotionSample lastMotion = ZERO_MOTION;
+        final PositionMotionTracker motion = new PositionMotionTracker(MOVING_THRESHOLD);
         FlowingTrialSessionStep lastFlowingStep = null;
-
-        double prevX = Double.NaN;
-        double prevY = Double.NaN;
-        double prevZ = Double.NaN;
 
         PlayerState(PlayerRef playerRef, StormseekerProgress progress) {
             this.playerRef = playerRef;
@@ -152,23 +154,7 @@ public final class HytaleStormseekerHost implements StormseekerHostRuntime {
         }
 
         void updatePosition(double x, double y, double z) {
-            if (Double.isNaN(prevX)) {
-                prevX = x;
-                prevY = y;
-                prevZ = z;
-                lastMotion = ZERO_MOTION;
-                return;
-            }
-
-            double dx = x - prevX;
-            double dy = y - prevY;
-            double dz = z - prevZ;
-            boolean moving = Math.sqrt(dx * dx + dy * dy + dz * dz) > MOVING_THRESHOLD;
-
-            lastMotion = new MotionSample(dx, dy, dz, moving);
-            prevX = x;
-            prevY = y;
-            prevZ = z;
+            motion.accept(x, y, z);
         }
     }
 }
