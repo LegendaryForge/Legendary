@@ -12,7 +12,7 @@ import sys
 import time
 
 EXPECTED = int(os.environ.get("EXPECTED_TESTS", "194"))
-MODULES = ["core", "quests/stormseeker", "platform/hytale", "mod/hytale", "harness"]
+MODULES = ["core", "quests/stormseeker", "mod/hytale", "harness"]
 
 total = failed = 0
 newest = 0.0

@@ -74,7 +74,7 @@ val checkNoPlatformImports by tasks.registering {
                 buildString {
                     appendLine("core must remain engine-agnostic, but ${offenders.size} file(s) import com.hypixel.*:")
                     offenders.forEach { appendLine("  " + it.relativeTo(projectDir)) }
-                    appendLine("Platform-specific code belongs in :platform:hytale.")
+                    appendLine("Platform-specific code belongs in :mod:hytale.")
                 },
             )
         }
