@@ -12,7 +12,7 @@ import io.github.legendaryforge.legendary.mod.stormseeker.trial.flowing.MotionSa
 
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
-import com.hypixel.hytale.math.vector.Vector3d;
+import org.joml.Vector3d;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -64,7 +64,7 @@ public final class HytaleStormseekerHost implements StormseekerHostRuntime {
                     continue;
                 }
                 Vector3d pos = transform.getPosition();
-                state.updatePosition(pos.getX(), pos.getY(), pos.getZ());
+                state.updatePosition(pos.x(), pos.y(), pos.z());
             } catch (Exception e) {
                 // Defensive - don't let one player break the tick loop
             }

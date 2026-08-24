@@ -52,7 +52,7 @@ public class StormseekerStatusCommand extends AbstractPlayerCommand {
         var pos = playerRef.getTransform();
         if (pos != null) {
             var p = pos.getPosition();
-            sb.append("Position: ").append(String.format("%.1f, %.1f, %.1f", p.getX(), p.getY(), p.getZ())).append("\n");
+            sb.append("Position: ").append(String.format("%.1f, %.1f, %.1f", p.x(), p.y(), p.z())).append("\n");
         }
 
         // Weather
