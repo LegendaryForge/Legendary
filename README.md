@@ -1,6 +1,6 @@
 # Legendary
 
-[![CI](https://github.com/LegendaryForge/Legendary/actions/workflows/ci.yml/badge.svg?branch=feat/stormseeker-bridge)](https://github.com/LegendaryForge/Legendary/actions/workflows/ci.yml)
+[![CI](https://github.com/LegendaryForge/Legendary/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/LegendaryForge/Legendary/actions/workflows/ci.yml)
 
 Questline content for [Hytale](https://hytale.com), built as a single Gradle multi-project
 in Java 25.
