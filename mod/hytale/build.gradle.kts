@@ -24,7 +24,7 @@ val hytaleServerJar = file("$hytaleHome/install/$patchlineProp/package/game/late
 val hasHytaleServerJar = hytaleHome.isNotBlank() && hytaleServerJar.exists()
 
 moduleCoverage {
-    zeroCompileAllowedWhen("no Hytale server jar in this environment") { !hasHytaleServerJar }
+    incompleteCompilationAllowedWhen("no Hytale server jar in this environment") { !hasHytaleServerJar }
 }
 
 val targetJava =

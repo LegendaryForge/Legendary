@@ -54,18 +54,24 @@ abstract class ModuleCoverageCheck : DefaultTask() {
         val reason = exemptionReason.orNull
         val exempt = exemptionHolds.get()
 
-        // EMPTY requires a declaration, exactly as a zero-compile does (operator decision,
-        // 2026-08-24). Both describe the same outcome — this module contributes nothing to
-        // the build — and differ only in why: sources excluded, or sources absent. Letting
-        // the absent case pass free meant the check could be defeated by deleting the
-        // evidence, so an ordinary refactor that moved every file out of a module turned a
-        // FAIL-worthy condition into a green 0/0 EMPTY. Demonstrated by deleting
-        // mod/hytale/src/main/java: guard green, census GREEN, build SUCCESSFUL, nothing
-        // saying a module had vanished.
+        // EVERY shortfall requires a declaration (operator decisions, 2026-08-24). FULL is
+        // the only state that needs nothing said about it; PARTIAL, EXEMPT and EMPTY all
+        // describe a module compiling less than its source set, and each fails when
+        // undeclared. Only EXEMPT originally did.
         //
-        // This restores decision D1 of the design spec — "it must be impossible for a NEW
-        // module to go dark unnoticed" — which the original table undercut by exempting the
-        // one state a brand-new module is actually in.
+        // Both gaps were closed because both were reachable by ordinary work rather than
+        // sabotage, and both failed GREEN:
+        //   EMPTY   — move every source out of a module and a FAIL-worthy condition became
+        //             a green 0/0. Demonstrated by deleting mod/hytale/src/main/java.
+        //   PARTIAL — add ONE portable file to mod/hytale and it flips from
+        //             "0/7 EXEMPT (no Hytale server jar...)" to a bare "1/8 PARTIAL" on any
+        //             jar-less machine. Seven of eight sources stop compiling, and the
+        //             declaration the guard exists to print silently stops being printed.
+        //
+        // Together these restore decision D1 — "it must be impossible for a NEW module to go
+        // dark unnoticed" — which the original table undercut twice: EMPTY exempted the one
+        // state a brand-new module is in, and PARTIAL let a declared module drift out of its
+        // declaration by growing a single file.
         val state =
             when {
                 onDiskCount == 0 && reason == null -> "FAIL"
@@ -74,6 +80,8 @@ abstract class ModuleCoverageCheck : DefaultTask() {
                 compiledCount == 0 && reason == null -> "FAIL"
                 compiledCount == 0 && !exempt -> "FAIL"
                 compiledCount == 0 -> "EXEMPT"
+                compiledCount < onDiskCount && reason == null -> "FAIL"
+                compiledCount < onDiskCount && !exempt -> "FAIL"
                 compiledCount < onDiskCount -> "PARTIAL"
                 else -> "FULL"
             }
@@ -101,22 +109,35 @@ abstract class ModuleCoverageCheck : DefaultTask() {
                         if (reason == null) {
                             appendLine("If the module is newly scaffolded and its sources are not written yet,")
                             appendLine("declare that:")
-                            appendLine("  moduleCoverage { zeroCompileAllowedWhen(\"sources not written yet\") { true } }")
+                            appendLine("  moduleCoverage { incompleteCompilationAllowedWhen(\"sources not written yet\") { true } }")
                             appendLine("If it previously had sources, they have been moved or deleted — the")
                             appendLine("module is now dead weight in settings.gradle.kts.")
                         } else {
                             appendLine("An exemption is declared (\"$reason\") but its predicate is FALSE,")
                             appendLine("so the exemption does not apply.")
                         }
-                    } else {
+                    } else if (compiledCount == 0) {
                         appendLine("$path has $onDiskCount Java source file(s) but compiled 0 of them.")
                         if (reason == null) {
-                            appendLine("No moduleCoverage exemption is declared for this module.")
+                            appendLine("No moduleCoverage declaration exists for this module.")
                             appendLine("Either fix the build so sources compile, or declare:")
-                            appendLine("  moduleCoverage { zeroCompileAllowedWhen(\"why\") { condition } }")
+                            appendLine("  moduleCoverage { incompleteCompilationAllowedWhen(\"why\") { condition } }")
                         } else {
-                            appendLine("An exemption is declared (\"$reason\") but its predicate is FALSE,")
-                            appendLine("so the exemption does not apply. This is a real breakage.")
+                            appendLine("A declaration exists (\"$reason\") but its predicate is FALSE,")
+                            appendLine("so it does not apply. This is a real breakage.")
+                        }
+                    } else {
+                        appendLine(
+                            "$path compiled $compiledCount of its $onDiskCount Java source file(s) — " +
+                                "${onDiskCount - compiledCount} were excluded.",
+                        )
+                        if (reason == null) {
+                            appendLine("A module may compile less than its source set, but it must say why.")
+                            appendLine("Find the exclude responsible and either remove it, or declare:")
+                            appendLine("  moduleCoverage { incompleteCompilationAllowedWhen(\"why\") { condition } }")
+                        } else {
+                            appendLine("A declaration exists (\"$reason\") but its predicate is FALSE,")
+                            appendLine("so it does not apply. This is a real breakage.")
                         }
                     }
                 },

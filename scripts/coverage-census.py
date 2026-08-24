@@ -65,7 +65,8 @@ empty = [r for r in rows if r["state"] == "EMPTY"]
 # build stopped first. This branch still fires if the census is run against stale JSON,
 # or if the guard is ever weakened again, which is exactly when a second opinion is
 # worth having. An exemption reason is already carried in the JSON, so a module declared
-# with zeroCompileAllowedWhen stays green while one that simply lost its sources is RED.
+# with incompleteCompilationAllowedWhen stays green while one that simply lost its
+# sources is RED.
 empty_undeclared = [r for r in empty if not r.get("reason")]
 green = not failed and not missing and not empty_undeclared
 exempt = sum(1 for r in rows if r["state"] == "EXEMPT")
