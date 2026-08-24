@@ -3,12 +3,12 @@ package io.github.legendaryforge.legendary.mod.stormseeker.trial.flowing.runtime
 import io.github.legendaryforge.legendary.core.api.questline.runtime.ActivePlayerProvider;
 import io.github.legendaryforge.legendary.core.api.questline.runtime.LegendaryTickContext;
 import io.github.legendaryforge.legendary.core.api.questline.runtime.PlayerRef;
-import io.github.legendaryforge.legendary.mod.runtime.FlowHintSink;
-import io.github.legendaryforge.legendary.mod.runtime.MotionSampleSource;
 import io.github.legendaryforge.legendary.mod.runtime.StormseekerProgressStore;
 import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerProgress;
+import io.github.legendaryforge.legendary.mod.stormseeker.trial.flowing.FlowHintSink;
 import io.github.legendaryforge.legendary.mod.stormseeker.trial.flowing.FlowingTrialSession;
 import io.github.legendaryforge.legendary.mod.stormseeker.trial.flowing.FlowingTrialSessionStep;
+import io.github.legendaryforge.legendary.mod.stormseeker.trial.flowing.MotionSampleSource;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
