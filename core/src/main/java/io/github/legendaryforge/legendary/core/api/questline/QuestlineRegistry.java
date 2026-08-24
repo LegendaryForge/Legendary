@@ -28,7 +28,12 @@ public final class QuestlineRegistry {
         return this;
     }
 
-    /** Registered questlines, in registration order. */
+    /**
+     * Registered questlines, in registration order.
+     *
+     * <p>This is a live unmodifiable view over the registry's backing list, not a copy: it
+     * reflects any {@link #register} calls made after this method returns.
+     */
     public List<QuestlineModule> all() {
         return Collections.unmodifiableList(modules);
     }

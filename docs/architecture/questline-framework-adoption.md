@@ -90,10 +90,12 @@ commands — those are Hytale adapters, not questline registration, and they sta
 ## How to tell it worked
 
 Adding questline #2 should require: a new `quests/<name>/` module, one
-`include` in `settings.gradle.kts`, its Hytale adapters under
-`mod/hytale/.../hytale/<name>/`, and **one `.register(new <Name>Questline())`
-line**. If it requires anything else in `LegendaryHytalePlugin.start()`, the
-migration is incomplete.
+`include` in `settings.gradle.kts`, one `api(project(":quests:<name>"))` line
+in `mod/hytale/build.gradle.kts` (`mod/hytale` reaches Stormseeker only
+through that line today, so a second questline needs its own), its Hytale
+adapters under `mod/hytale/.../hytale/<name>/`, and **one
+`.register(new <Name>Questline())` line**. If it requires anything else in
+`LegendaryHytalePlugin.start()`, the migration is incomplete.
 
 ## Related
 
