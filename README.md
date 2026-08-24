@@ -63,7 +63,7 @@ module excludes its Hytale sources and the rest of the build proceeds normally, 
 `quests/stormseeker` and `harness` all compile and test.
 
 This is reported, not hidden: `coverage-census.py` prints
-`:mod:hytale 0/8 EXEMPT (no Hytale server jar in this environment)` on every such run. An
+`:mod:hytale 0/7 EXEMPT (no Hytale server jar in this environment)` on every such run. An
 *undeclared* zero-compile in any module fails the build instead.
 
 CI runs on GitHub-hosted runners, which cannot have the proprietary jar. **CI therefore does
