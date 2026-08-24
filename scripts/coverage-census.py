@@ -59,11 +59,13 @@ empty = [r for r in rows if r["state"] == "EMPTY"]
 # 2026-08-24 by deleting mod/hytale/src/main/java -- guard green, census GREEN, nothing
 # said a module had vanished.
 #
-# The guard's truth table tests EMPTY first and deliberately requires no declaration;
-# changing that contradicts its approved spec and remains an open operator question.
-# This is the census half, and it needs no new API: an exemption reason is already
-# carried in the JSON, so a module declared with zeroCompileAllowedWhen stays green
-# while one that simply lost its sources goes RED.
+# SUPERSEDED as the primary catch, kept as a backstop. The guard itself now fails an
+# undeclared empty module (operator decision 2026-08-24), so in a normal run such a
+# module never reaches this script with state EMPTY -- it reaches it as FAIL, or the
+# build stopped first. This branch still fires if the census is run against stale JSON,
+# or if the guard is ever weakened again, which is exactly when a second opinion is
+# worth having. An exemption reason is already carried in the JSON, so a module declared
+# with zeroCompileAllowedWhen stays green while one that simply lost its sources is RED.
 empty_undeclared = [r for r in empty if not r.get("reason")]
 green = not failed and not missing and not empty_undeclared
 exempt = sum(1 for r in rows if r["state"] == "EXEMPT")

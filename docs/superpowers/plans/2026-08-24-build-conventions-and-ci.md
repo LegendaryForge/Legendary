@@ -389,6 +389,13 @@ val checkModuleCoverage by tasks.registering {
         val reason = moduleCoverage.exemptionReason
         val exempt = moduleCoverage.exemptionPredicate?.invoke() ?: false
 
+> **Superseded 2026-08-24 (same day, operator decision).** The `onDisk == 0 -> "EMPTY"`
+> row below passes with no declaration, which meant the check could be defeated by
+> deleting the evidence: move every source out of a module and a FAIL-worthy state
+> became a green `0/0 EMPTY`. `EMPTY` now requires a declaration exactly as a
+> zero-compile does. The block below is kept as the historical record of what was
+> planned and built; `buildSrc/src/main/kotlin/ModuleCoverageCheck.kt` is authoritative.
+
         val state =
             when {
                 onDisk == 0 -> "EMPTY"
