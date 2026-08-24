@@ -13,8 +13,12 @@ import re
 import sys
 import time
 
-EXPECTED = int(os.environ.get("EXPECTED_TESTS", "204"))
-MODULES = ["core", "quests/stormseeker", "mod/hytale", "harness"]
+from gradle_modules import discover_modules
+
+EXPECTED = int(os.environ.get("EXPECTED_TESTS", "216"))
+# Derived from settings.gradle.kts, not hardcoded: a hardcoded list silently
+# omits a new module while this script keeps reporting all-modules-GREEN.
+MODULES = discover_modules()
 
 total = failed = 0
 oldest = None

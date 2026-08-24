@@ -1,4 +1,4 @@
-package io.github.legendaryforge.hytale.stormseeker;
+package io.github.legendaryforge.legendary.mod.stormseeker.persistence;
 
 import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerPhase;
 import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerProgress;
@@ -12,6 +12,11 @@ import java.util.Properties;
 /**
  * Persists StormseekerProgress to/from disk using Java Properties files.
  *
+ * <p>Note this is NOT an implementation of the {@code mod.runtime.StormseekerProgressStore}
+ * port: that is keyed by {@code PlayerRef} and returns {@code Optional}, while this is keyed
+ * by a raw player-id string and substitutes a fresh progress for a missing or unreadable
+ * file. The two were unrelated types sharing one simple name until 2026-08-24.
+ *
  * <p>One file per player: {dataDir}/{playerId}.properties
  *
  * <p>Format:
@@ -21,11 +26,11 @@ import java.util.Properties;
  * sigilB=false
  * </pre>
  */
-public final class StormseekerProgressStore {
+public final class PropertiesProgressStore {
 
     private final Path dataDir;
 
-    public StormseekerProgressStore(Path dataDir) {
+    public PropertiesProgressStore(Path dataDir) {
         this.dataDir = dataDir;
     }
 
@@ -62,7 +67,8 @@ public final class StormseekerProgressStore {
 
             return progress;
         } catch (Exception e) {
-            System.err.println("[LegendaryHytale] Failed to load progress for " + playerId + ": " + e.getMessage());
+            System.err.println("[Stormseeker] Failed to load progress for " + playerId + ": " + e.getMessage());
+            quarantine(file, playerId);
             return new StormseekerProgress();
         }
     }
@@ -85,7 +91,7 @@ public final class StormseekerProgressStore {
                 props.store(writer, "Stormseeker quest progress for " + playerId);
             }
         } catch (IOException e) {
-            System.err.println("[LegendaryHytale] Failed to save progress for " + playerId + ": " + e.getMessage());
+            System.err.println("[Stormseeker] Failed to save progress for " + playerId + ": " + e.getMessage());
         }
     }
 
@@ -96,6 +102,30 @@ public final class StormseekerProgressStore {
             Iterable<String> playerIds, java.util.function.Function<String, StormseekerProgress> progressLookup) {
         for (String playerId : playerIds) {
             save(playerId, progressLookup.apply(playerId));
+        }
+    }
+
+    /**
+     * Moves aside a save file that could not be read, so a failed load cannot become data loss.
+     *
+     * <p>Without this, an unreadable file was left exactly where it was and {@link #load} returned
+     * fresh progress. The caller then saved that fresh progress on disconnect, overwriting the file
+     * it had failed to read — so one bad read permanently replaced a finished questline with
+     * PHASE_0, and the original bytes were gone before anyone could look at them.
+     *
+     * <p>Deliberately best-effort and silent-on-failure: {@code load} must stay total, because it
+     * runs on player connect and throwing there would turn an unreadable save into a failed login.
+     * A name collision needs two failed loads for one player inside the same millisecond; the move
+     * then fails and is logged, leaving the newer file in place.
+     */
+    private void quarantine(Path file, String playerId) {
+        Path target = file.resolveSibling(file.getFileName() + ".corrupt-" + System.currentTimeMillis());
+        try {
+            Files.move(file, target);
+            System.err.println("[Stormseeker] Preserved unreadable save for " + playerId + " at " + target);
+        } catch (IOException moveFailure) {
+            System.err.println("[Stormseeker] Could not preserve unreadable save for " + playerId + ": "
+                    + moveFailure.getMessage());
         }
     }
 
