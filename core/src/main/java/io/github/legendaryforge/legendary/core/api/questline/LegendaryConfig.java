@@ -1,6 +1,6 @@
-package io.github.legendaryforge.legendary.mod;
+package io.github.legendaryforge.legendary.core.api.questline;
 
-import io.github.legendaryforge.legendary.mod.questline.StormseekerQuestline;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -14,8 +14,13 @@ public record LegendaryConfig(Map<String, Boolean> questlinesEnabled) {
         questlinesEnabled = Map.copyOf(questlinesEnabled);
     }
 
-    public static LegendaryConfig defaults() {
-        return new LegendaryConfig(Map.of(StormseekerQuestline.ID, true));
+    /** Enables every questline in {@code registry}. Replaces the former hard-coded {@code defaults()}. */
+    public static LegendaryConfig enablingAll(QuestlineRegistry registry) {
+        Map<String, Boolean> enabled = new LinkedHashMap<>();
+        for (QuestlineModule module : registry.all()) {
+            enabled.put(module.id(), true);
+        }
+        return new LegendaryConfig(enabled);
     }
 
     public static LegendaryConfig allDisabled() {

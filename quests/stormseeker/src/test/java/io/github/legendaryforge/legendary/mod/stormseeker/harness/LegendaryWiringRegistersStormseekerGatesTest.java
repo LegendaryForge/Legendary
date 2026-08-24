@@ -7,8 +7,11 @@ import io.github.legendaryforge.legendary.core.api.gate.ConditionGate;
 import io.github.legendaryforge.legendary.core.api.gate.GateDecision;
 import io.github.legendaryforge.legendary.core.api.gate.GateService;
 import io.github.legendaryforge.legendary.core.api.id.ResourceId;
+import io.github.legendaryforge.legendary.core.api.questline.LegendaryConfig;
+import io.github.legendaryforge.legendary.core.api.questline.LegendaryWiring;
+import io.github.legendaryforge.legendary.core.api.questline.QuestlineRegistry;
 import io.github.legendaryforge.legendary.core.internal.gate.DefaultGateService;
-import io.github.legendaryforge.legendary.mod.LegendaryWiring;
+import io.github.legendaryforge.legendary.mod.questline.StormseekerQuestline;
 import io.github.legendaryforge.legendary.mod.stormseeker.StormseekerWiring;
 import java.util.Map;
 import java.util.Optional;
@@ -20,7 +23,8 @@ final class LegendaryWiringRegistersStormseekerGatesTest {
     @Test
     void registerAllGates_registersStormseekerActivationGate() {
         GateService gates = new DefaultGateService();
-        LegendaryWiring.registerAllGates(gates);
+        QuestlineRegistry questlines = new QuestlineRegistry().register(new StormseekerQuestline());
+        LegendaryWiring.registerAllGates(questlines, gates, LegendaryConfig.enablingAll(questlines));
 
         // Evaluate the gate; if it wasn’t registered, DefaultGateService returns a well-known denial reason.
         ConditionGate.GateRequest req = new ConditionGate.GateRequest(
