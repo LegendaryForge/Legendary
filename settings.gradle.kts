@@ -6,3 +6,4 @@ rootProject.name = "Legendary"
 
 include(":core")
 include(":quests:stormseeker")
+include(":platform:hytale")
