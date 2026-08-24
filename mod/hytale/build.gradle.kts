@@ -1,12 +1,8 @@
 import java.util.zip.ZipFile
 
 plugins {
-    id("java-library")
+    id("legendary.java-conventions")
     alias(libs.plugins.shadow)
-}
-
-repositories {
-    mavenCentral()
 }
 
 // --- Hytale install detection (Linux) ---
@@ -109,16 +105,7 @@ dependencies {
     testRuntimeOnly(libs.junit.platform.launcher)
 }
 
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(targetJava))
-    }
-}
-
 tasks.withType<JavaCompile>().configureEach {
-    options.encoding = Charsets.UTF_8.name()
-    options.release = targetJava
-
     // Without the Hytale jar these cannot compile; skip them so the rest of the
     // module still builds on a machine with no game installed.
     if (!hasHytaleServerJar) {
@@ -128,8 +115,4 @@ tasks.withType<JavaCompile>().configureEach {
 
 tasks.named("compileJava") {
     dependsOn(checkHytaleJarVersion)
-}
-
-tasks.test {
-    useJUnitPlatform()
 }

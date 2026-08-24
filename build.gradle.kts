@@ -1,6 +1,5 @@
 plugins {
-    alias(libs.plugins.spotless)
-    alias(libs.plugins.errorprone) apply false
+    id("com.diffplug.spotless")
 }
 
 repositories {
