@@ -19,8 +19,7 @@ import org.junit.jupiter.api.Test;
 
 public final class EncounterAccessPolicyDogfoodTest {
 
-    private record SimpleContext(EncounterAnchor anchor, Map<String, Object> metadata)
-            implements EncounterContext {}
+    private record SimpleContext(EncounterAnchor anchor, Map<String, Object> metadata) implements EncounterContext {}
 
     private static final class PolicyDefinition implements EncounterDefinition {
 
@@ -69,29 +68,27 @@ public final class EncounterAccessPolicyDogfoodTest {
         EncounterManager encounters = runtime.encounters();
 
         EncounterAnchor anchor = EncounterAnchor.of(
-                ResourceId.of("legendarydogfood", "world"),
-                ResourceId.of("legendarydogfood", "arena_access")
-        );
+                ResourceId.of("legendarydogfood", "world"), ResourceId.of("legendarydogfood", "arena_access"));
         EncounterContext ctx = new SimpleContext(anchor, Map.of());
 
         UUID player = UUID.randomUUID();
 
         EncounterInstance pub = encounters.create(
-                new PolicyDefinition(ResourceId.of("legendarydogfood", "pub"), EncounterAccessPolicy.PUBLIC),
-                ctx
-        );
+                new PolicyDefinition(ResourceId.of("legendarydogfood", "pub"), EncounterAccessPolicy.PUBLIC), ctx);
         assertEquals(JoinResult.SUCCESS, encounters.join(player, pub, ParticipationRole.PARTICIPANT));
 
         EncounterInstance partyOnly = encounters.create(
                 new PolicyDefinition(ResourceId.of("legendarydogfood", "party_only"), EncounterAccessPolicy.PARTY_ONLY),
-                ctx
-        );
-        assertEquals(JoinResult.DENIED_POLICY, encounters.join(UUID.randomUUID(), partyOnly, ParticipationRole.PARTICIPANT));
+                ctx);
+        assertEquals(
+                JoinResult.DENIED_POLICY, encounters.join(UUID.randomUUID(), partyOnly, ParticipationRole.PARTICIPANT));
 
         EncounterInstance inviteOnly = encounters.create(
-                new PolicyDefinition(ResourceId.of("legendarydogfood", "invite_only"), EncounterAccessPolicy.INVITE_ONLY),
-                ctx
-        );
-        assertEquals(JoinResult.DENIED_POLICY, encounters.join(UUID.randomUUID(), inviteOnly, ParticipationRole.PARTICIPANT));
+                new PolicyDefinition(
+                        ResourceId.of("legendarydogfood", "invite_only"), EncounterAccessPolicy.INVITE_ONLY),
+                ctx);
+        assertEquals(
+                JoinResult.DENIED_POLICY,
+                encounters.join(UUID.randomUUID(), inviteOnly, ParticipationRole.PARTICIPANT));
     }
 }

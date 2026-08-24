@@ -9,7 +9,6 @@ import com.hypixel.hytale.server.core.command.system.basecommands.AbstractPlayer
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-
 import io.github.legendaryforge.hytale.stormseeker.HytaleStormseekerHost;
 import io.github.legendaryforge.legendary.mod.stormseeker.StormseekerWiring;
 import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerProgress;
@@ -31,8 +30,8 @@ public class StormseekerTrialCommand extends AbstractPlayerCommand {
     }
 
     @Override
-    protected void execute(CommandContext context, Store<EntityStore> store,
-                           Ref<EntityStore> ref, PlayerRef playerRef, World world) {
+    protected void execute(
+            CommandContext context, Store<EntityStore> store, Ref<EntityStore> ref, PlayerRef playerRef, World world) {
         String playerId = playerRef.getUuid().toString();
         StormseekerProgress progress = host.progress(playerId);
 

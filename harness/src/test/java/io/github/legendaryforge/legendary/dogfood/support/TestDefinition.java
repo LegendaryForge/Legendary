@@ -21,8 +21,7 @@ public final class TestDefinition implements EncounterDefinition {
             EncounterAccessPolicy accessPolicy,
             SpectatorPolicy spectatorPolicy,
             int maxParticipants,
-            int maxSpectators
-    ) {
+            int maxSpectators) {
         this.id = Objects.requireNonNull(id, "id");
         this.displayName = Objects.requireNonNull(displayName, "displayName");
         this.accessPolicy = Objects.requireNonNull(accessPolicy, "accessPolicy");

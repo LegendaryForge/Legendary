@@ -15,8 +15,7 @@ import org.junit.jupiter.api.Test;
 
 public final class ScriptCleanupBridgeIntegrationTest {
 
-    private record SimpleContext(EncounterAnchor anchor, Map<String, Object> metadata)
-            implements EncounterContext {}
+    private record SimpleContext(EncounterAnchor anchor, Map<String, Object> metadata) implements EncounterContext {}
 
     @Test
     void cleanupEvent_isForwardedToScript() {
@@ -26,10 +25,9 @@ public final class ScriptCleanupBridgeIntegrationTest {
         ToyLightningEncounterDefinition def =
                 new ToyLightningEncounterDefinition(ResourceId.of("legendarycontent", "toy_lightning"));
 
-        EncounterAnchor anchor =
-                EncounterAnchor.of(
-                        ResourceId.of("legendarycontent", "world"),
-                        ResourceId.of("legendarycontent", "arena_cleanup_bridge_test"));
+        EncounterAnchor anchor = EncounterAnchor.of(
+                ResourceId.of("legendarycontent", "world"),
+                ResourceId.of("legendarycontent", "arena_cleanup_bridge_test"));
         EncounterContext ctx = new SimpleContext(anchor, Map.of());
 
         EncounterInstance instance = encounters.create(def, ctx);

@@ -1,10 +1,10 @@
 package io.github.legendaryforge.legendarycontent.stormseeker;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import io.github.legendaryforge.legendary.mod.stormseeker.StormseekerWiring;
 import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerProgress;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 public class AnchoredTrialHarnessTest {
 
@@ -23,7 +23,8 @@ public class AnchoredTrialHarnessTest {
         }
 
         assertFalse(host.anchoredStepsView().isEmpty(), "Expected anchored step callbacks");
-        assertTrue(host.milestonesView().stream().anyMatch(m -> m.contains("SIGIL_B")),
+        assertTrue(
+                host.milestonesView().stream().anyMatch(m -> m.contains("SIGIL_B")),
                 "Expected a Sigil B milestone, got: " + host.milestonesView());
     }
 }

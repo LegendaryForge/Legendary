@@ -15,19 +15,18 @@ import org.junit.jupiter.api.Test;
 
 public final class ToyStormRewardEvaluatorTest {
 
-    private record SimpleContext(EncounterAnchor anchor, Map<String, Object> metadata)
-            implements EncounterContext {}
+    private record SimpleContext(EncounterAnchor anchor, Map<String, Object> metadata) implements EncounterContext {}
 
     @Test
     void evaluatesEligibilityDeterministicallyFromEndSummary() {
         DefaultCoreRuntime runtime = new DefaultCoreRuntime();
         EncounterManager encounters = runtime.encounters();
 
-        ToyStormEncounterDefinition def = new ToyStormEncounterDefinition(ResourceId.of("legendarycontent", "toy_storm"));
+        ToyStormEncounterDefinition def =
+                new ToyStormEncounterDefinition(ResourceId.of("legendarycontent", "toy_storm"));
         EncounterAnchor anchor = EncounterAnchor.of(
                 ResourceId.of("legendarycontent", "world"),
-                ResourceId.of("legendarycontent", "arena_toystorm_reward_eval")
-        );
+                ResourceId.of("legendarycontent", "arena_toystorm_reward_eval"));
         EncounterContext ctx = new SimpleContext(anchor, Map.of());
 
         ToyStormScript script = new ToyStormScript();

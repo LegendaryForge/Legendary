@@ -1,6 +1,5 @@
 package io.github.legendaryforge.legendary.content;
 
-import io.github.legendaryforge.legendary.core.api.encounter.EncounterInstance;
 import io.github.legendaryforge.legendary.core.api.encounter.EncounterManager;
 import io.github.legendaryforge.legendary.core.api.encounter.event.EncounterEndedEvent;
 import io.github.legendaryforge.legendary.core.api.encounter.event.EncounterStartedEvent;
@@ -25,9 +24,9 @@ public final class ScriptEventBridge {
     }
 
     private void onStarted(EncounterStartedEvent event) {
-        encounters.byInstanceId(event.instanceId()).ifPresent(instance ->
-                script.onStart(instance, event.triggeringPlayerId())
-        );
+        encounters
+                .byInstanceId(event.instanceId())
+                .ifPresent(instance -> script.onStart(instance, event.triggeringPlayerId()));
     }
 
     private void onEnded(EncounterEndedEvent event) {

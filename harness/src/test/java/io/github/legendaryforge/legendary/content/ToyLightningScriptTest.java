@@ -23,14 +23,11 @@ public final class ToyLightningScriptTest {
         DefaultCoreRuntime runtime = new DefaultCoreRuntime();
         EncounterManager encounters = runtime.encounters();
 
-        ToyLightningEncounterDefinition def = new ToyLightningEncounterDefinition(
-                ResourceId.of("legendarycontent", "toy_lightning")
-        );
+        ToyLightningEncounterDefinition def =
+                new ToyLightningEncounterDefinition(ResourceId.of("legendarycontent", "toy_lightning"));
 
         EncounterAnchor anchor = EncounterAnchor.of(
-                ResourceId.of("legendarycontent", "world"),
-                ResourceId.of("legendarycontent", "arena_script_test")
-        );
+                ResourceId.of("legendarycontent", "world"), ResourceId.of("legendarycontent", "arena_script_test"));
         EncounterContext ctx = new SimpleContext(anchor, Map.of());
 
         EncounterInstance instance = encounters.create(def, ctx);

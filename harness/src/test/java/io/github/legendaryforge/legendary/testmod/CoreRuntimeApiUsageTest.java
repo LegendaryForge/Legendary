@@ -1,10 +1,10 @@
 package io.github.legendaryforge.legendary.testmod;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import io.github.legendaryforge.legendary.core.api.platform.CoreRuntime;
 import io.github.legendaryforge.legendary.core.api.registry.RegistryAccess;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Compile-time validation of the platform-agnostic CoreRuntime adapter surface.

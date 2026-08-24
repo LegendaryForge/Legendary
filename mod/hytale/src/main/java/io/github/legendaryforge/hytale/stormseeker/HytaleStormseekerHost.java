@@ -1,21 +1,19 @@
 package io.github.legendaryforge.hytale.stormseeker;
 
+import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
 import io.github.legendaryforge.legendary.mod.runtime.StormseekerHostRuntime;
-import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerMilestoneOutcome;
 import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerFlowingTrialOutcome;
 import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerFlowingTrialTickView;
+import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerMilestoneOutcome;
 import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerProgress;
 import io.github.legendaryforge.legendary.mod.stormseeker.trial.anchored.AnchoredTrialSessionStep;
 import io.github.legendaryforge.legendary.mod.stormseeker.trial.flowing.FlowHintIntent;
 import io.github.legendaryforge.legendary.mod.stormseeker.trial.flowing.FlowingTrialSessionStep;
 import io.github.legendaryforge.legendary.mod.stormseeker.trial.flowing.MotionSample;
-
-import com.hypixel.hytale.server.core.universe.PlayerRef;
-import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
-import org.joml.Vector3d;
-
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.joml.Vector3d;
 
 public final class HytaleStormseekerHost implements StormseekerHostRuntime {
 
@@ -40,7 +38,8 @@ public final class HytaleStormseekerHost implements StormseekerHostRuntime {
         PlayerState state = players.remove(playerId);
         if (state != null) {
             store.save(playerId, state.progress);
-            System.out.println("[LegendaryHytale] Saved progress for " + playerId + ": phase=" + state.progress.phase());
+            System.out.println(
+                    "[LegendaryHytale] Saved progress for " + playerId + ": phase=" + state.progress.phase());
         }
     }
 
@@ -104,8 +103,7 @@ public final class HytaleStormseekerHost implements StormseekerHostRuntime {
     }
 
     @Override
-    public void emitFlowHint(String playerId, FlowHintIntent hint) {
-    }
+    public void emitFlowHint(String playerId, FlowHintIntent hint) {}
 
     @Override
     public void emitStormseekerMilestone(StormseekerMilestoneOutcome outcome) {
@@ -119,8 +117,7 @@ public final class HytaleStormseekerHost implements StormseekerHostRuntime {
     }
 
     @Override
-    public void emitFlowingTrialTickView(StormseekerFlowingTrialTickView view) {
-    }
+    public void emitFlowingTrialTickView(StormseekerFlowingTrialTickView view) {}
 
     @Override
     public void emitFlowingTrialOutcome(StormseekerFlowingTrialOutcome outcome) {
@@ -136,8 +133,7 @@ public final class HytaleStormseekerHost implements StormseekerHostRuntime {
     }
 
     @Override
-    public void onAnchoredTrialStep(String playerId, AnchoredTrialSessionStep step) {
-    }
+    public void onAnchoredTrialStep(String playerId, AnchoredTrialSessionStep step) {}
 
     private static final class PlayerState {
         final PlayerRef playerRef;

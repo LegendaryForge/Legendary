@@ -1,17 +1,15 @@
 package io.github.legendaryforge.legendary.testmod;
 
-import io.github.legendaryforge.legendary.core.api.encounter.EncounterAnchor;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.legendaryforge.legendary.core.api.encounter.*;
+import io.github.legendaryforge.legendary.core.api.encounter.EncounterAnchor;
 import io.github.legendaryforge.legendary.core.api.id.ResourceId;
-import org.junit.jupiter.api.Test;
-
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
 
 /**
  * Compile-time validation of the Encounter API from a consumer module.
@@ -68,21 +66,19 @@ public class EncounterApiUsageTest {
         EncounterDefinition definition = new TestEncounterDefinition();
 
         EncounterContext context = new EncounterContext() {
-      @Override
-      public EncounterAnchor anchor() {
-        return new EncounterAnchor(
-            ResourceId.of("legendarytest", "test_world"),
-            Optional.empty(),
-            Optional.empty());
-      }
+            @Override
+            public EncounterAnchor anchor() {
+                return new EncounterAnchor(
+                        ResourceId.of("legendarytest", "test_world"), Optional.empty(), Optional.empty());
+            }
 
-      @Override
-      public Map<String, Object> metadata() {
-        return Map.of("difficulty", "normal");
-      }
-    };
+            @Override
+            public Map<String, Object> metadata() {
+                return Map.of("difficulty", "normal");
+            }
+        };
 
-EncounterInstance instance = manager.create(definition, context);
+        EncounterInstance instance = manager.create(definition, context);
 
         UUID playerId = UUID.randomUUID();
 

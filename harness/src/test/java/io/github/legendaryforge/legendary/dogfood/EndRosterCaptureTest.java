@@ -9,8 +9,8 @@ import io.github.legendaryforge.legendary.core.api.encounter.EncounterAnchor;
 import io.github.legendaryforge.legendary.core.api.encounter.EncounterContext;
 import io.github.legendaryforge.legendary.core.api.encounter.EncounterDefinition;
 import io.github.legendaryforge.legendary.core.api.encounter.EncounterInstance;
-import io.github.legendaryforge.legendary.core.api.encounter.EndReason;
 import io.github.legendaryforge.legendary.core.api.encounter.EncounterManager;
+import io.github.legendaryforge.legendary.core.api.encounter.EndReason;
 import io.github.legendaryforge.legendary.core.api.encounter.JoinResult;
 import io.github.legendaryforge.legendary.core.api.encounter.ParticipationRole;
 import io.github.legendaryforge.legendary.core.api.encounter.SpectatorPolicy;
@@ -34,9 +34,7 @@ public final class EndRosterCaptureTest {
         EndRosterCapture capture = new EndRosterCapture(runtime.events(), manager);
 
         EncounterAnchor anchor = EncounterAnchor.of(
-                ResourceId.of("legendarydogfood", "world"),
-                ResourceId.of("legendarydogfood", "anchor-roster")
-        );
+                ResourceId.of("legendarydogfood", "world"), ResourceId.of("legendarydogfood", "anchor-roster"));
         EncounterContext context = new TestContext(anchor, Map.of());
 
         EncounterDefinition def = new TestDefinition(
@@ -45,8 +43,7 @@ public final class EndRosterCaptureTest {
                 EncounterAccessPolicy.PUBLIC,
                 SpectatorPolicy.ALLOW_VIEW_ONLY,
                 3,
-                3
-        );
+                3);
 
         EncounterInstance instance = manager.create(def, context);
 

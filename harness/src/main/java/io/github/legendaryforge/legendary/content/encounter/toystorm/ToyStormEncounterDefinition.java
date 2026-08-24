@@ -8,39 +8,39 @@ import java.util.Objects;
 
 public final class ToyStormEncounterDefinition implements EncounterDefinition {
 
-private final ResourceId id;
+    private final ResourceId id;
 
-public ToyStormEncounterDefinition(ResourceId id) {
-this.id = Objects.requireNonNull(id, "id");
-}
+    public ToyStormEncounterDefinition(ResourceId id) {
+        this.id = Objects.requireNonNull(id, "id");
+    }
 
-@Override
-public ResourceId id() {
-return id;
-}
+    @Override
+    public ResourceId id() {
+        return id;
+    }
 
-@Override
-public String displayName() {
-return "Toy Storm Encounter";
-}
+    @Override
+    public String displayName() {
+        return "Toy Storm Encounter";
+    }
 
-@Override
-public EncounterAccessPolicy accessPolicy() {
-return EncounterAccessPolicy.PUBLIC;
-}
+    @Override
+    public EncounterAccessPolicy accessPolicy() {
+        return EncounterAccessPolicy.PUBLIC;
+    }
 
-@Override
-public SpectatorPolicy spectatorPolicy() {
-return SpectatorPolicy.ALLOW_VIEW_ONLY;
-}
+    @Override
+    public SpectatorPolicy spectatorPolicy() {
+        return SpectatorPolicy.ALLOW_VIEW_ONLY;
+    }
 
-@Override
-public int maxParticipants() {
-return 3;
-}
+    @Override
+    public int maxParticipants() {
+        return 3;
+    }
 
-@Override
-public int maxSpectators() {
-return 5;
-}
+    @Override
+    public int maxSpectators() {
+        return 5;
+    }
 }

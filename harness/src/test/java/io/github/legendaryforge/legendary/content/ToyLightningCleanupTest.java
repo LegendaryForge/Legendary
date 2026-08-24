@@ -15,22 +15,19 @@ import org.junit.jupiter.api.Test;
 
 public final class ToyLightningCleanupTest {
 
-    private record SimpleContext(EncounterAnchor anchor, Map<String, Object> metadata)
-            implements EncounterContext {}
+    private record SimpleContext(EncounterAnchor anchor, Map<String, Object> metadata) implements EncounterContext {}
 
     @Test
     void cleanupEvictsPerInstanceState() {
         DefaultCoreRuntime runtime = new DefaultCoreRuntime();
         EncounterManager encounters = runtime.encounters();
 
-        ToyLightningEncounterDefinition def = new ToyLightningEncounterDefinition(
-                ResourceId.of("legendarycontent", "toy_lightning")
-        );
+        ToyLightningEncounterDefinition def =
+                new ToyLightningEncounterDefinition(ResourceId.of("legendarycontent", "toy_lightning"));
 
         EncounterAnchor anchor = EncounterAnchor.of(
                 ResourceId.of("legendarycontent", "world"),
-                ResourceId.of("legendarycontent", "arena_lightning_cleanup_test")
-        );
+                ResourceId.of("legendarycontent", "arena_lightning_cleanup_test"));
         EncounterContext ctx = new SimpleContext(anchor, Map.of());
 
         EncounterInstance instance = encounters.create(def, ctx);

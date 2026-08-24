@@ -1,20 +1,18 @@
 package io.github.legendaryforge.hytale;
 
-import com.hypixel.hytale.server.core.plugin.JavaPlugin;
-import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import com.hypixel.hytale.server.core.event.events.player.PlayerConnectEvent;
 import com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent;
+import com.hypixel.hytale.server.core.plugin.JavaPlugin;
+import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
-
 import io.github.legendaryforge.hytale.command.StormseekerAdvanceCommand;
 import io.github.legendaryforge.hytale.command.StormseekerStatusCommand;
 import io.github.legendaryforge.hytale.command.StormseekerTrialCommand;
 import io.github.legendaryforge.hytale.stormseeker.HytaleStormseekerHost;
 import io.github.legendaryforge.hytale.stormseeker.StormseekerProgressStore;
 import io.github.legendaryforge.hytale.stormseeker.StormseekerTickSystem;
-
-import javax.annotation.Nonnull;
 import java.nio.file.Path;
+import javax.annotation.Nonnull;
 
 public class LegendaryHytalePlugin extends JavaPlugin {
 

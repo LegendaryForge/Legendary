@@ -1,6 +1,5 @@
 package io.github.legendaryforge.legendary.content.encounter.toystorm;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -17,22 +16,19 @@ import org.junit.jupiter.api.Test;
 
 public final class ToyStormCleanupTest {
 
-    private record SimpleContext(EncounterAnchor anchor, Map<String, Object> metadata)
-            implements EncounterContext {}
+    private record SimpleContext(EncounterAnchor anchor, Map<String, Object> metadata) implements EncounterContext {}
 
     @Test
     void cleanupEvictsPerInstanceState() {
         DefaultCoreRuntime runtime = new DefaultCoreRuntime();
         EncounterManager encounters = runtime.encounters();
 
-        ToyStormEncounterDefinition def = new ToyStormEncounterDefinition(
-                ResourceId.of("legendarycontent", "toy_storm")
-        );
+        ToyStormEncounterDefinition def =
+                new ToyStormEncounterDefinition(ResourceId.of("legendarycontent", "toy_storm"));
 
         EncounterAnchor anchor = EncounterAnchor.of(
                 ResourceId.of("legendarycontent", "world"),
-                ResourceId.of("legendarycontent", "arena_storm_cleanup_test")
-        );
+                ResourceId.of("legendarycontent", "arena_storm_cleanup_test"));
         EncounterContext ctx = new SimpleContext(anchor, Map.of());
 
         EncounterInstance instance = encounters.create(def, ctx);

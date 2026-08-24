@@ -6,12 +6,10 @@ import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerProgr
 import io.github.legendaryforge.legendary.mod.stormseeker.trial.anchored.AnchoredTrialSessionStep;
 import io.github.legendaryforge.legendary.mod.stormseeker.trial.flowing.FlowHintIntent;
 import io.github.legendaryforge.legendary.mod.stormseeker.trial.flowing.MotionSample;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class RecordingStormseekerHostRuntime implements StormseekerHostRuntime {

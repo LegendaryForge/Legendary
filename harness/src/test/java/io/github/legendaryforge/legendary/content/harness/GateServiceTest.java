@@ -1,18 +1,17 @@
 package io.github.legendaryforge.legendary.content.harness;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import io.github.legendaryforge.legendary.core.api.gate.ConditionGate;
 import io.github.legendaryforge.legendary.core.api.gate.GateDecision;
 import io.github.legendaryforge.legendary.core.api.gate.GateService;
 import io.github.legendaryforge.legendary.core.api.id.ResourceId;
 import io.github.legendaryforge.legendary.core.api.platform.CoreRuntime;
 import io.github.legendaryforge.legendary.core.internal.runtime.DefaultCoreRuntime;
-import org.junit.jupiter.api.Test;
-
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 
 public final class GateServiceTest {
 
@@ -27,8 +26,7 @@ public final class GateServiceTest {
                 Optional.empty(),
                 Optional.empty(),
                 Optional.empty(),
-                Map.of()
-        ));
+                Map.of()));
 
         assertFalse(decision.allowed());
         assertEquals(ResourceId.of("legendarycore", "gate_not_registered"), decision.reasonCode());
@@ -43,13 +41,7 @@ public final class GateServiceTest {
         gates.register(key, request -> GateDecision.allow());
 
         GateDecision decision = gates.evaluate(new ConditionGate.GateRequest(
-                key,
-                UUID.randomUUID(),
-                Optional.empty(),
-                Optional.empty(),
-                Optional.empty(),
-                Map.of("k", "v")
-        ));
+                key, UUID.randomUUID(), Optional.empty(), Optional.empty(), Optional.empty(), Map.of("k", "v")));
 
         assertTrue(decision.allowed());
         assertEquals(ResourceId.of("legendarycore", "allowed"), decision.reasonCode());

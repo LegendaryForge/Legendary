@@ -1,11 +1,11 @@
 package io.github.legendaryforge.legendary.testmod;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import io.github.legendaryforge.legendary.core.api.lifecycle.Lifecycle;
 import io.github.legendaryforge.legendary.core.api.lifecycle.LifecyclePhase;
 import io.github.legendaryforge.legendary.core.api.lifecycle.ServiceRegistry;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Compile-time validation of Lifecycle and ServiceRegistry APIs from a consumer module.

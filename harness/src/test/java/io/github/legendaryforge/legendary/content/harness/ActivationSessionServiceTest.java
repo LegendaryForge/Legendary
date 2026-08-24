@@ -1,17 +1,16 @@
 package io.github.legendaryforge.legendary.content.harness;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import io.github.legendaryforge.legendary.core.api.activation.session.*;
 import io.github.legendaryforge.legendary.core.api.encounter.*;
 import io.github.legendaryforge.legendary.core.api.id.ResourceId;
 import io.github.legendaryforge.legendary.core.api.platform.CoreRuntime;
 import io.github.legendaryforge.legendary.core.internal.runtime.DefaultCoreRuntime;
-import org.junit.jupiter.api.Test;
-
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 
 public final class ActivationSessionServiceTest {
 
@@ -22,12 +21,35 @@ public final class ActivationSessionServiceTest {
             this.id = id;
         }
 
-        @Override public ResourceId id() { return id; }
-        @Override public String displayName() { return "Harness"; }
-        @Override public EncounterAccessPolicy accessPolicy() { return EncounterAccessPolicy.PARTY_ONLY; }
-        @Override public SpectatorPolicy spectatorPolicy() { return SpectatorPolicy.DISALLOW; }
-        @Override public int maxParticipants() { return 0; }
-        @Override public int maxSpectators() { return 0; }
+        @Override
+        public ResourceId id() {
+            return id;
+        }
+
+        @Override
+        public String displayName() {
+            return "Harness";
+        }
+
+        @Override
+        public EncounterAccessPolicy accessPolicy() {
+            return EncounterAccessPolicy.PARTY_ONLY;
+        }
+
+        @Override
+        public SpectatorPolicy spectatorPolicy() {
+            return SpectatorPolicy.DISALLOW;
+        }
+
+        @Override
+        public int maxParticipants() {
+            return 0;
+        }
+
+        @Override
+        public int maxSpectators() {
+            return 0;
+        }
     }
 
     private static final class TestContext implements EncounterContext {
@@ -37,8 +59,15 @@ public final class ActivationSessionServiceTest {
             this.anchor = anchor;
         }
 
-        @Override public EncounterAnchor anchor() { return anchor; }
-        @Override public Map<String, Object> metadata() { return Map.of(); }
+        @Override
+        public EncounterAnchor anchor() {
+            return anchor;
+        }
+
+        @Override
+        public Map<String, Object> metadata() {
+            return Map.of();
+        }
     }
 
     private static EncounterAnchor anchor() {
@@ -64,14 +93,9 @@ public final class ActivationSessionServiceTest {
         EncounterContext context = ctx();
         EncounterKey key = EncounterKey.of(definition, context);
 
-        ActivationSessionService.ActivationSessionBeginRequest req = new ActivationSessionService.ActivationSessionBeginRequest(
-                activator,
-                key,
-                definition,
-                context,
-                Optional.empty(),
-                Map.of("a", "1")
-        );
+        ActivationSessionService.ActivationSessionBeginRequest req =
+                new ActivationSessionService.ActivationSessionBeginRequest(
+                        activator, key, definition, context, Optional.empty(), Map.of("a", "1"));
 
         ActivationSessionBeginResult first = sessions.begin(req);
         assertEquals(ActivationSessionBeginStatus.CREATED, first.status());
@@ -95,13 +119,15 @@ public final class ActivationSessionServiceTest {
         EncounterContext context = ctx();
         EncounterKey key = EncounterKey.of(definition, context);
 
-        ActivationSessionService.ActivationSessionBeginRequest reqA = new ActivationSessionService.ActivationSessionBeginRequest(
-                UUID.randomUUID(), key, definition, context, Optional.empty(), Map.of());
+        ActivationSessionService.ActivationSessionBeginRequest reqA =
+                new ActivationSessionService.ActivationSessionBeginRequest(
+                        UUID.randomUUID(), key, definition, context, Optional.empty(), Map.of());
         ActivationSessionBeginResult a = sessions.begin(reqA);
         assertEquals(ActivationSessionBeginStatus.CREATED, a.status());
 
-        ActivationSessionService.ActivationSessionBeginRequest reqB = new ActivationSessionService.ActivationSessionBeginRequest(
-                UUID.randomUUID(), key, definition, context, Optional.empty(), Map.of());
+        ActivationSessionService.ActivationSessionBeginRequest reqB =
+                new ActivationSessionService.ActivationSessionBeginRequest(
+                        UUID.randomUUID(), key, definition, context, Optional.empty(), Map.of());
         ActivationSessionBeginResult b = sessions.begin(reqB);
 
         assertEquals(ActivationSessionBeginStatus.DENIED, b.status());
@@ -121,10 +147,12 @@ public final class ActivationSessionServiceTest {
         ActivationSessionBeginResult begin = sessions.begin(new ActivationSessionService.ActivationSessionBeginRequest(
                 UUID.randomUUID(), key, definition, context, Optional.empty(), Map.of()));
 
-        ActivationSessionAbortResult first = sessions.abort(begin.sessionId(), ResourceId.of("legendarycontent", "cancelled"));
+        ActivationSessionAbortResult first =
+                sessions.abort(begin.sessionId(), ResourceId.of("legendarycontent", "cancelled"));
         assertEquals(ActivationSessionAbortStatus.ABORTED, first.status());
 
-        ActivationSessionAbortResult second = sessions.abort(begin.sessionId(), ResourceId.of("legendarycontent", "cancelled"));
+        ActivationSessionAbortResult second =
+                sessions.abort(begin.sessionId(), ResourceId.of("legendarycontent", "cancelled"));
         assertEquals(ActivationSessionAbortStatus.ALREADY_ABORTED, second.status());
 
         ActivationSessionView view = sessions.get(begin.sessionId()).orElseThrow();
@@ -147,7 +175,8 @@ public final class ActivationSessionServiceTest {
                 UUID.randomUUID(), key, definition, context, Optional.empty(), Map.of()));
 
         ActivationSessionCommitResult first = sessions.commit(begin.sessionId());
-        assertTrue(first.status() == ActivationSessionCommitStatus.COMMITTED || first.status() == ActivationSessionCommitStatus.FAILED);
+        assertTrue(first.status() == ActivationSessionCommitStatus.COMMITTED
+                || first.status() == ActivationSessionCommitStatus.FAILED);
 
         ActivationSessionCommitResult second = sessions.commit(begin.sessionId());
         assertEquals(ActivationSessionCommitStatus.ALREADY_COMMITTED, second.status());

@@ -23,12 +23,16 @@ public final class TestEventCounter {
 
     private void onStarted(EncounterStartedEvent e) {
         startedTotal.incrementAndGet();
-        startedByInstance.computeIfAbsent(e.instanceId(), __ -> new AtomicInteger()).incrementAndGet();
+        startedByInstance
+                .computeIfAbsent(e.instanceId(), __ -> new AtomicInteger())
+                .incrementAndGet();
     }
 
     private void onEnded(EncounterEndedEvent e) {
         endedTotal.incrementAndGet();
-        endedByInstance.computeIfAbsent(e.instanceId(), __ -> new AtomicInteger()).incrementAndGet();
+        endedByInstance
+                .computeIfAbsent(e.instanceId(), __ -> new AtomicInteger())
+                .incrementAndGet();
     }
 
     public int startedTotal() {

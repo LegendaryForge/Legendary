@@ -19,8 +19,7 @@ import org.junit.jupiter.api.Test;
 
 public final class ScriptEventBridgeIntegrationTest {
 
-    private record SimpleContext(EncounterAnchor anchor, Map<String, Object> metadata)
-            implements EncounterContext {}
+    private record SimpleContext(EncounterAnchor anchor, Map<String, Object> metadata) implements EncounterContext {}
 
     private static final class RecordingScript implements EncounterScript {
 
@@ -70,14 +69,12 @@ public final class ScriptEventBridgeIntegrationTest {
         // Join via decorator
         EncounterManager encounters = new ScriptedEncounterManager(core, script);
 
-        ToyLightningEncounterDefinition def = new ToyLightningEncounterDefinition(
-                ResourceId.of("legendarycontent", "toy_lightning")
-        );
+        ToyLightningEncounterDefinition def =
+                new ToyLightningEncounterDefinition(ResourceId.of("legendarycontent", "toy_lightning"));
 
         EncounterAnchor anchor = EncounterAnchor.of(
                 ResourceId.of("legendarycontent", "world"),
-                ResourceId.of("legendarycontent", "arena_event_bridge_integration")
-        );
+                ResourceId.of("legendarycontent", "arena_event_bridge_integration"));
         EncounterContext ctx = new SimpleContext(anchor, Map.of("note", "event_bridge_integration"));
 
         EncounterInstance instance = encounters.create(def, ctx);

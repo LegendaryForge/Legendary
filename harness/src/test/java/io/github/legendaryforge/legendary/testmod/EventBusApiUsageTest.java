@@ -1,12 +1,12 @@
 package io.github.legendaryforge.legendary.testmod;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import io.github.legendaryforge.legendary.core.api.event.Event;
 import io.github.legendaryforge.legendary.core.api.event.EventBus;
 import io.github.legendaryforge.legendary.core.api.event.EventListener;
 import io.github.legendaryforge.legendary.core.api.event.Subscription;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Compile-time validation of the LegendaryCore EventBus API from a consumer module.

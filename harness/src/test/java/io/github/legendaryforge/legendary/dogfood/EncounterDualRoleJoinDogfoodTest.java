@@ -20,8 +20,7 @@ import org.junit.jupiter.api.Test;
 
 public final class EncounterDualRoleJoinDogfoodTest {
 
-    private record SimpleContext(EncounterAnchor anchor, Map<String, Object> metadata)
-            implements EncounterContext {}
+    private record SimpleContext(EncounterAnchor anchor, Map<String, Object> metadata) implements EncounterContext {}
 
     private static final class TestDefinition implements EncounterDefinition {
 
@@ -68,10 +67,8 @@ public final class EncounterDualRoleJoinDogfoodTest {
         EncounterManager encounters = runtime.encounters();
 
         EncounterDefinition def = new TestDefinition(ResourceId.of("dogfood", "dual_role_join"));
-        EncounterAnchor anchor = EncounterAnchor.of(
-                ResourceId.of("dogfood", "world"),
-                ResourceId.of("dogfood", "arena_dual_role_join")
-        );
+        EncounterAnchor anchor =
+                EncounterAnchor.of(ResourceId.of("dogfood", "world"), ResourceId.of("dogfood", "arena_dual_role_join"));
         EncounterContext ctx = new SimpleContext(anchor, Map.of());
 
         EncounterInstance instance = encounters.create(def, ctx);
@@ -83,10 +80,13 @@ public final class EncounterDualRoleJoinDogfoodTest {
 
         // Second join as spectator must not result in dual-membership.
         JoinResult second = encounters.join(player, instance, ParticipationRole.SPECTATOR);
-        assertTrue(second == JoinResult.SUCCESS || second == JoinResult.DENIED_POLICY || second == JoinResult.DENIED_STATE);
+        assertTrue(second == JoinResult.SUCCESS
+                || second == JoinResult.DENIED_POLICY
+                || second == JoinResult.DENIED_STATE);
 
         // Hard invariant: never in both sets.
-        assertFalse(instance.participants().contains(player) && instance.spectators().contains(player));
+        assertFalse(instance.participants().contains(player)
+                && instance.spectators().contains(player));
 
         // Additionally, if second succeeded, enforce exclusivity (exactly one set contains player).
         if (second == JoinResult.SUCCESS) {

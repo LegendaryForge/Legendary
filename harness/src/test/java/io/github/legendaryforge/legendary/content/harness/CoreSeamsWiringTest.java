@@ -1,13 +1,13 @@
 package io.github.legendaryforge.legendary.content.harness;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import io.github.legendaryforge.legendary.core.api.activation.ActivationService;
 import io.github.legendaryforge.legendary.core.api.activation.session.ActivationSessionService;
 import io.github.legendaryforge.legendary.core.api.gate.GateService;
 import io.github.legendaryforge.legendary.core.api.platform.CoreRuntime;
 import io.github.legendaryforge.legendary.core.internal.runtime.DefaultCoreRuntime;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 public final class CoreSeamsWiringTest {
 

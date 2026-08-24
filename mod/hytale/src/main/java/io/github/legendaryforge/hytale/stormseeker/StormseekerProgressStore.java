@@ -2,7 +2,6 @@ package io.github.legendaryforge.hytale.stormseeker;
 
 import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerPhase;
 import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerProgress;
-
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
@@ -93,7 +92,8 @@ public final class StormseekerProgressStore {
     /**
      * Saves all players' progress.
      */
-    public void saveAll(Iterable<String> playerIds, java.util.function.Function<String, StormseekerProgress> progressLookup) {
+    public void saveAll(
+            Iterable<String> playerIds, java.util.function.Function<String, StormseekerProgress> progressLookup) {
         for (String playerId : playerIds) {
             save(playerId, progressLookup.apply(playerId));
         }

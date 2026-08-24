@@ -1,10 +1,9 @@
 package io.github.legendaryforge.hytale.stormseeker;
 
-import io.github.legendaryforge.legendary.mod.stormseeker.StormseekerWiring;
-
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.component.system.tick.TickingSystem;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import io.github.legendaryforge.legendary.mod.stormseeker.StormseekerWiring;
 
 public final class StormseekerTickSystem extends TickingSystem<EntityStore> {
 

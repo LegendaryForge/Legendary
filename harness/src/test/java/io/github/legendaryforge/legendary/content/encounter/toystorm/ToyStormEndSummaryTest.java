@@ -15,48 +15,46 @@ import org.junit.jupiter.api.Test;
 
 public final class ToyStormEndSummaryTest {
 
-private record SimpleContext(EncounterAnchor anchor, Map<String, Object> metadata) implements EncounterContext {}
+    private record SimpleContext(EncounterAnchor anchor, Map<String, Object> metadata) implements EncounterContext {}
 
-@Test
-void capturesPhaseAndParticipantsAtEndIdempotently() {
-DefaultCoreRuntime runtime = new DefaultCoreRuntime();
-EncounterManager encounters = runtime.encounters();
+    @Test
+    void capturesPhaseAndParticipantsAtEndIdempotently() {
+        DefaultCoreRuntime runtime = new DefaultCoreRuntime();
+        EncounterManager encounters = runtime.encounters();
 
-ToyStormEncounterDefinition def = new ToyStormEncounterDefinition(
-ResourceId.of("legendarycontent", "toy_storm")
-);
+        ToyStormEncounterDefinition def =
+                new ToyStormEncounterDefinition(ResourceId.of("legendarycontent", "toy_storm"));
 
-EncounterAnchor anchor = EncounterAnchor.of(
-ResourceId.of("legendarycontent", "world"),
-ResourceId.of("legendarycontent", "arena_storm_end_summary_test")
-);
-EncounterContext ctx = new SimpleContext(anchor, Map.of());
+        EncounterAnchor anchor = EncounterAnchor.of(
+                ResourceId.of("legendarycontent", "world"),
+                ResourceId.of("legendarycontent", "arena_storm_end_summary_test"));
+        EncounterContext ctx = new SimpleContext(anchor, Map.of());
 
-EncounterInstance instance = encounters.create(def, ctx);
+        EncounterInstance instance = encounters.create(def, ctx);
 
-ToyStormScript script = new ToyStormScript();
-UUID trigger = UUID.randomUUID();
-script.onStart(instance, trigger);
+        ToyStormScript script = new ToyStormScript();
+        UUID trigger = UUID.randomUUID();
+        script.onStart(instance, trigger);
 
-UUID p1 = UUID.randomUUID();
-UUID p2 = UUID.randomUUID();
+        UUID p1 = UUID.randomUUID();
+        UUID p2 = UUID.randomUUID();
 
-encounters.join(p1, instance, ParticipationRole.PARTICIPANT);
-script.onJoin(instance, p1, ParticipationRole.PARTICIPANT);
+        encounters.join(p1, instance, ParticipationRole.PARTICIPANT);
+        script.onJoin(instance, p1, ParticipationRole.PARTICIPANT);
 
-encounters.join(p2, instance, ParticipationRole.PARTICIPANT);
-script.onJoin(instance, p2, ParticipationRole.PARTICIPANT);
+        encounters.join(p2, instance, ParticipationRole.PARTICIPANT);
+        script.onJoin(instance, p2, ParticipationRole.PARTICIPANT);
 
-script.onEnd(instance);
-ToyStormEndSummary summary = script.endSummaryFor(instance.instanceId());
+        script.onEnd(instance);
+        ToyStormEndSummary summary = script.endSummaryFor(instance.instanceId());
 
-assertEquals(instance.instanceId(), summary.instanceId());
-assertEquals(2, summary.participantsAtEnd());
-assertEquals(EncounterPhase.RECOVERY, summary.finalPhase());
+        assertEquals(instance.instanceId(), summary.instanceId());
+        assertEquals(2, summary.participantsAtEnd());
+        assertEquals(EncounterPhase.RECOVERY, summary.finalPhase());
 
-// idempotent end
-script.onEnd(instance);
-ToyStormEndSummary summary2 = script.endSummaryFor(instance.instanceId());
-assertEquals(summary, summary2);
-}
+        // idempotent end
+        script.onEnd(instance);
+        ToyStormEndSummary summary2 = script.endSummaryFor(instance.instanceId());
+        assertEquals(summary, summary2);
+    }
 }

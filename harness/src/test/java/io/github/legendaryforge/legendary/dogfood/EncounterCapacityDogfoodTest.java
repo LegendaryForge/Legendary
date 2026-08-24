@@ -19,8 +19,7 @@ import org.junit.jupiter.api.Test;
 
 public final class EncounterCapacityDogfoodTest {
 
-    private record SimpleContext(EncounterAnchor anchor, Map<String, Object> metadata)
-            implements EncounterContext {}
+    private record SimpleContext(EncounterAnchor anchor, Map<String, Object> metadata) implements EncounterContext {}
 
     private static final class CapacityDefinition implements EncounterDefinition {
 
@@ -70,16 +69,10 @@ public final class EncounterCapacityDogfoodTest {
         DefaultCoreRuntime runtime = new DefaultCoreRuntime();
         EncounterManager encounters = runtime.encounters();
 
-        EncounterDefinition def = new CapacityDefinition(
-                ResourceId.of("legendarydogfood", "encounter_capacity"),
-                2,
-                1
-        );
+        EncounterDefinition def = new CapacityDefinition(ResourceId.of("legendarydogfood", "encounter_capacity"), 2, 1);
 
         EncounterAnchor anchor = EncounterAnchor.of(
-                ResourceId.of("legendarydogfood", "world"),
-                ResourceId.of("legendarydogfood", "arena_capacity")
-        );
+                ResourceId.of("legendarydogfood", "world"), ResourceId.of("legendarydogfood", "arena_capacity"));
         EncounterContext ctx = new SimpleContext(anchor, Map.of());
 
         EncounterInstance instance = encounters.create(def, ctx);
@@ -87,7 +80,8 @@ public final class EncounterCapacityDogfoodTest {
         // Participants: 2 allowed
         assertEquals(JoinResult.SUCCESS, encounters.join(UUID.randomUUID(), instance, ParticipationRole.PARTICIPANT));
         assertEquals(JoinResult.SUCCESS, encounters.join(UUID.randomUUID(), instance, ParticipationRole.PARTICIPANT));
-        assertEquals(JoinResult.DENIED_FULL, encounters.join(UUID.randomUUID(), instance, ParticipationRole.PARTICIPANT));
+        assertEquals(
+                JoinResult.DENIED_FULL, encounters.join(UUID.randomUUID(), instance, ParticipationRole.PARTICIPANT));
 
         // Spectators: 1 allowed
         assertEquals(JoinResult.SUCCESS, encounters.join(UUID.randomUUID(), instance, ParticipationRole.SPECTATOR));

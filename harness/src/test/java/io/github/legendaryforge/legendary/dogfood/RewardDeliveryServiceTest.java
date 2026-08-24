@@ -9,8 +9,8 @@ import io.github.legendaryforge.legendary.core.api.encounter.EncounterContext;
 import io.github.legendaryforge.legendary.core.api.encounter.EncounterDefinition;
 import io.github.legendaryforge.legendary.core.api.encounter.EncounterInstance;
 import io.github.legendaryforge.legendary.core.api.encounter.EncounterKey;
-import io.github.legendaryforge.legendary.core.api.encounter.EndReason;
 import io.github.legendaryforge.legendary.core.api.encounter.EncounterManager;
+import io.github.legendaryforge.legendary.core.api.encounter.EndReason;
 import io.github.legendaryforge.legendary.core.api.encounter.SpectatorPolicy;
 import io.github.legendaryforge.legendary.core.api.id.ResourceId;
 import io.github.legendaryforge.legendary.core.internal.runtime.DefaultCoreRuntime;
@@ -30,9 +30,7 @@ public final class RewardDeliveryServiceTest {
         RewardDeliveryService rewards = new RewardDeliveryService(runtime.events(), "toy-reward-table");
 
         EncounterAnchor anchor = EncounterAnchor.of(
-                ResourceId.of("legendarydogfood", "world"),
-                ResourceId.of("legendarydogfood", "anchor-reward")
-        );
+                ResourceId.of("legendarydogfood", "world"), ResourceId.of("legendarydogfood", "anchor-reward"));
         EncounterContext context = new TestContext(anchor, Map.of());
 
         EncounterDefinition def = new TestDefinition(
@@ -41,8 +39,7 @@ public final class RewardDeliveryServiceTest {
                 EncounterAccessPolicy.PUBLIC,
                 SpectatorPolicy.ALLOW_VIEW_ONLY,
                 1,
-                1
-        );
+                1);
 
         EncounterInstance instance = manager.create(def, context);
         EncounterKey key = EncounterKey.of(def, context);

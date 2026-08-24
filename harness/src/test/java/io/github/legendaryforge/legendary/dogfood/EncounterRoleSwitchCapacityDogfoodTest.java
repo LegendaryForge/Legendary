@@ -21,8 +21,7 @@ import org.junit.jupiter.api.Test;
 
 public final class EncounterRoleSwitchCapacityDogfoodTest {
 
-    private record SimpleContext(EncounterAnchor anchor, Map<String, Object> metadata)
-            implements EncounterContext {}
+    private record SimpleContext(EncounterAnchor anchor, Map<String, Object> metadata) implements EncounterContext {}
 
     private static final class TestDefinition implements EncounterDefinition {
 
@@ -70,9 +69,7 @@ public final class EncounterRoleSwitchCapacityDogfoodTest {
 
         EncounterDefinition def = new TestDefinition(ResourceId.of("dogfood", "role_switch_capacity"));
         EncounterAnchor anchor = EncounterAnchor.of(
-                ResourceId.of("dogfood", "world"),
-                ResourceId.of("dogfood", "arena_role_switch_capacity")
-        );
+                ResourceId.of("dogfood", "world"), ResourceId.of("dogfood", "arena_role_switch_capacity"));
         EncounterContext ctx = new SimpleContext(anchor, Map.of());
 
         EncounterInstance instance = encounters.create(def, ctx);
@@ -88,18 +85,17 @@ public final class EncounterRoleSwitchCapacityDogfoodTest {
 
         // Attempt to switch spectator into participants when participant cap is already full.
         JoinResult switchResult = encounters.join(s1, instance, ParticipationRole.PARTICIPANT);
-        assertTrue(
-                switchResult == JoinResult.DENIED_FULL
-                        || switchResult == JoinResult.DENIED_POLICY
-                        || switchResult == JoinResult.DENIED_STATE
-        );
+        assertTrue(switchResult == JoinResult.DENIED_FULL
+                || switchResult == JoinResult.DENIED_POLICY
+                || switchResult == JoinResult.DENIED_STATE);
 
         // Counts must remain within caps.
         assertTrue(instance.participants().size() <= def.maxParticipants());
         assertTrue(instance.spectators().size() <= def.maxSpectators());
 
         // Hard invariant: never in both sets.
-        assertFalse(instance.participants().contains(s1) && instance.spectators().contains(s1));
+        assertFalse(
+                instance.participants().contains(s1) && instance.spectators().contains(s1));
 
         // If implementation allows switching by moving, it must still respect caps.
         if (switchResult == JoinResult.SUCCESS) {

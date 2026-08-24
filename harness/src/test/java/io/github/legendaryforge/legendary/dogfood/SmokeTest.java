@@ -10,9 +10,9 @@ import io.github.legendaryforge.legendary.core.api.encounter.EncounterContext;
 import io.github.legendaryforge.legendary.core.api.encounter.EncounterDefinition;
 import io.github.legendaryforge.legendary.core.api.encounter.EncounterInstance;
 import io.github.legendaryforge.legendary.core.api.encounter.EncounterKey;
-import io.github.legendaryforge.legendary.core.api.encounter.EndReason;
 import io.github.legendaryforge.legendary.core.api.encounter.EncounterManager;
 import io.github.legendaryforge.legendary.core.api.encounter.EncounterState;
+import io.github.legendaryforge.legendary.core.api.encounter.EndReason;
 import io.github.legendaryforge.legendary.core.api.encounter.JoinResult;
 import io.github.legendaryforge.legendary.core.api.encounter.ParticipationRole;
 import io.github.legendaryforge.legendary.core.api.encounter.SpectatorPolicy;
@@ -44,8 +44,7 @@ public final class SmokeTest {
                 EncounterAccessPolicy.PUBLIC,
                 SpectatorPolicy.ALLOW_VIEW_ONLY,
                 1,
-                1
-        );
+                1);
 
         EncounterInstance instance = manager.create(def, context);
         assertNotNull(instance);
@@ -87,8 +86,7 @@ public final class SmokeTest {
                 EncounterAccessPolicy.PUBLIC,
                 SpectatorPolicy.DISALLOW,
                 1,
-                1
-        );
+                1);
 
         EncounterInstance instance = manager.create(def, context);
 
@@ -110,12 +108,12 @@ public final class SmokeTest {
                 EncounterAccessPolicy.PARTY_ONLY,
                 SpectatorPolicy.ALLOW_VIEW_ONLY,
                 1,
-                1
-        );
+                1);
 
         EncounterInstance instance = manager.create(def, context);
 
-        assertEquals(JoinResult.DENIED_POLICY, manager.join(UUID.randomUUID(), instance, ParticipationRole.PARTICIPANT));
+        assertEquals(
+                JoinResult.DENIED_POLICY, manager.join(UUID.randomUUID(), instance, ParticipationRole.PARTICIPANT));
         assertEquals(JoinResult.SUCCESS, manager.join(UUID.randomUUID(), instance, ParticipationRole.SPECTATOR));
     }
 
@@ -133,13 +131,13 @@ public final class SmokeTest {
                 EncounterAccessPolicy.INVITE_ONLY,
                 SpectatorPolicy.ALLOW_VIEW_ONLY,
                 1,
-                1
-        );
+                1);
 
         EncounterInstance instance = manager.create(def, context);
 
         // Conservative expectation: without any invite directory/seam, INVITE_ONLY should fail-closed for participants.
-        assertEquals(JoinResult.DENIED_POLICY, manager.join(UUID.randomUUID(), instance, ParticipationRole.PARTICIPANT));
+        assertEquals(
+                JoinResult.DENIED_POLICY, manager.join(UUID.randomUUID(), instance, ParticipationRole.PARTICIPANT));
 
         // Spectator behavior should be governed by spectator policy.
         assertEquals(JoinResult.SUCCESS, manager.join(UUID.randomUUID(), instance, ParticipationRole.SPECTATOR));
@@ -150,7 +148,8 @@ public final class SmokeTest {
         DefaultCoreRuntime runtime = new DefaultCoreRuntime();
         EncounterManager manager = runtime.encounters();
 
-        EncounterAnchor anchor = EncounterAnchor.of(ResourceId.of("legendarydogfood", "world"), ResourceId.of("legendarydogfood", "anchor-leave"));
+        EncounterAnchor anchor = EncounterAnchor.of(
+                ResourceId.of("legendarydogfood", "world"), ResourceId.of("legendarydogfood", "anchor-leave"));
         EncounterContext context = new TestContext(anchor, Map.of());
 
         EncounterDefinition def = new TestDefinition(
@@ -159,8 +158,7 @@ public final class SmokeTest {
                 EncounterAccessPolicy.PUBLIC,
                 SpectatorPolicy.ALLOW_VIEW_ONLY,
                 2,
-                2
-        );
+                2);
 
         EncounterInstance instance = manager.create(def, context);
 
@@ -186,7 +184,8 @@ public final class SmokeTest {
         DefaultCoreRuntime runtime = new DefaultCoreRuntime();
         EncounterManager manager = runtime.encounters();
 
-        EncounterAnchor anchor = EncounterAnchor.of(ResourceId.of("legendarydogfood", "world"), ResourceId.of("legendarydogfood", "anchor-end"));
+        EncounterAnchor anchor = EncounterAnchor.of(
+                ResourceId.of("legendarydogfood", "world"), ResourceId.of("legendarydogfood", "anchor-end"));
         EncounterContext context = new TestContext(anchor, Map.of());
 
         EncounterDefinition def = new TestDefinition(
@@ -195,8 +194,7 @@ public final class SmokeTest {
                 EncounterAccessPolicy.PUBLIC,
                 SpectatorPolicy.ALLOW_VIEW_ONLY,
                 1,
-                1
-        );
+                1);
 
         EncounterInstance instance = manager.create(def, context);
         assertEquals(EncounterState.CREATED, instance.state());
@@ -216,7 +214,8 @@ public final class SmokeTest {
         TestEventCounter counter = new TestEventCounter(runtime.events());
         EncounterManager manager = runtime.encounters();
 
-        EncounterAnchor anchor = EncounterAnchor.of(ResourceId.of("legendarydogfood", "world"), ResourceId.of("legendarydogfood", "anchor-start"));
+        EncounterAnchor anchor = EncounterAnchor.of(
+                ResourceId.of("legendarydogfood", "world"), ResourceId.of("legendarydogfood", "anchor-start"));
         EncounterContext context = new TestContext(anchor, Map.of());
 
         EncounterDefinition def = new TestDefinition(
@@ -225,8 +224,7 @@ public final class SmokeTest {
                 EncounterAccessPolicy.PUBLIC,
                 SpectatorPolicy.ALLOW_VIEW_ONLY,
                 2,
-                2
-        );
+                2);
 
         EncounterInstance instance = manager.create(def, context);
 
@@ -246,7 +244,8 @@ public final class SmokeTest {
         TestEventCounter counter = new TestEventCounter(runtime.events());
         EncounterManager manager = runtime.encounters();
 
-        EncounterAnchor anchor = EncounterAnchor.of(ResourceId.of("legendarydogfood", "world"), ResourceId.of("legendarydogfood", "anchor-ended"));
+        EncounterAnchor anchor = EncounterAnchor.of(
+                ResourceId.of("legendarydogfood", "world"), ResourceId.of("legendarydogfood", "anchor-ended"));
         EncounterContext context = new TestContext(anchor, Map.of());
 
         EncounterDefinition def = new TestDefinition(
@@ -255,8 +254,7 @@ public final class SmokeTest {
                 EncounterAccessPolicy.PUBLIC,
                 SpectatorPolicy.ALLOW_VIEW_ONLY,
                 1,
-                1
-        );
+                1);
 
         EncounterInstance instance = manager.create(def, context);
 

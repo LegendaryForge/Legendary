@@ -10,8 +10,8 @@ import io.github.legendaryforge.legendary.core.api.encounter.EncounterContext;
 import io.github.legendaryforge.legendary.core.api.encounter.EncounterDefinition;
 import io.github.legendaryforge.legendary.core.api.encounter.EncounterInstance;
 import io.github.legendaryforge.legendary.core.api.encounter.EncounterKey;
-import io.github.legendaryforge.legendary.core.api.encounter.EndReason;
 import io.github.legendaryforge.legendary.core.api.encounter.EncounterManager;
+import io.github.legendaryforge.legendary.core.api.encounter.EndReason;
 import io.github.legendaryforge.legendary.core.api.encounter.JoinResult;
 import io.github.legendaryforge.legendary.core.api.encounter.ParticipationRole;
 import io.github.legendaryforge.legendary.core.api.encounter.SpectatorPolicy;
@@ -50,8 +50,7 @@ public final class ScenarioTest {
                 EncounterAccessPolicy.PUBLIC,
                 SpectatorPolicy.ALLOW_VIEW_ONLY,
                 3,
-                3
-        );
+                3);
 
         EncounterInstance instance = encounters.create(def, context);
         EncounterKey key = EncounterKey.of(def, context);

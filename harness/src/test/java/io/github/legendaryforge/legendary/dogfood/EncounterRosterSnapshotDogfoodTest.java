@@ -21,8 +21,7 @@ import org.junit.jupiter.api.Test;
 
 public final class EncounterRosterSnapshotDogfoodTest {
 
-    private record SimpleContext(EncounterAnchor anchor, Map<String, Object> metadata)
-            implements EncounterContext {}
+    private record SimpleContext(EncounterAnchor anchor, Map<String, Object> metadata) implements EncounterContext {}
 
     private static final class TestDefinition implements EncounterDefinition {
 
@@ -70,9 +69,7 @@ public final class EncounterRosterSnapshotDogfoodTest {
 
         EncounterDefinition def = new TestDefinition(ResourceId.of("legendarydogfood", "encounter_roster_snapshot"));
         EncounterAnchor anchor = EncounterAnchor.of(
-                ResourceId.of("legendarydogfood", "world"),
-                ResourceId.of("legendarydogfood", "arena_roster")
-        );
+                ResourceId.of("legendarydogfood", "world"), ResourceId.of("legendarydogfood", "arena_roster"));
         EncounterContext ctx = new SimpleContext(anchor, Map.of());
 
         EncounterInstance instance = encounters.create(def, ctx);

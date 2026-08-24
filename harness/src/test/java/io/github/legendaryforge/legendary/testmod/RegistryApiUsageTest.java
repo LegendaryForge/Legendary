@@ -1,13 +1,13 @@
 package io.github.legendaryforge.legendary.testmod;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import io.github.legendaryforge.legendary.core.api.id.ResourceId;
+import io.github.legendaryforge.legendary.core.api.registry.Registrar;
 import io.github.legendaryforge.legendary.core.api.registry.Registry;
 import io.github.legendaryforge.legendary.core.api.registry.RegistryAccess;
 import io.github.legendaryforge.legendary.core.api.registry.RegistryKey;
-import io.github.legendaryforge.legendary.core.api.registry.Registrar;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Compile-time validation of the LegendaryCore registry API from a consumer module.

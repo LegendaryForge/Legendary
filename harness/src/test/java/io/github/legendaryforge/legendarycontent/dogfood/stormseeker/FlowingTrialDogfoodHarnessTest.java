@@ -15,13 +15,7 @@ final class FlowingTrialDogfoodHarnessTest {
     @Test
     void phaseC_canBeDrivenEndToEnd_andGrantsFlowingSigilOnce() {
         // Fast deterministic tuning for dogfood.
-        FlowingTrialTuning t =
-                new FlowingTrialTuning(
-                        1.0, 2.0, 1,
-                        0.60, 0.20,
-                        5.0, 1.0,
-                        10.0,
-                        0.25);
+        FlowingTrialTuning t = new FlowingTrialTuning(1.0, 2.0, 1, 0.60, 0.20, 5.0, 1.0, 10.0, 0.25);
 
         StormseekerProgress progress = new StormseekerProgress();
         FlowingTrialSession session = new FlowingTrialSession(progress, t);
@@ -57,13 +51,9 @@ final class FlowingTrialDogfoodHarnessTest {
 
     @Test
     void missteps_doNotHardFail_andRecoveryStillCompletes() {
-        FlowingTrialTuning t =
-                new FlowingTrialTuning(
-                        1.0, 2.0, 1,
-                        0.60, 0.20,
-                        5.0, 2.0,  // decay strong enough that missteps matter, but never hard-fail
-                        10.0,
-                        0.25);
+        FlowingTrialTuning t = new FlowingTrialTuning(
+                1.0, 2.0, 1, 0.60, 0.20, 5.0, 2.0, // decay strong enough that missteps matter, but never hard-fail
+                10.0, 0.25);
 
         StormseekerProgress progress = new StormseekerProgress();
         FlowingTrialSession session = new FlowingTrialSession(progress, t);

@@ -20,8 +20,7 @@ import org.junit.jupiter.api.Test;
 
 public final class EncounterRoleSwitchDogfoodTest {
 
-    private record SimpleContext(EncounterAnchor anchor, Map<String, Object> metadata)
-            implements EncounterContext {}
+    private record SimpleContext(EncounterAnchor anchor, Map<String, Object> metadata) implements EncounterContext {}
 
     private static final class TestDefinition implements EncounterDefinition {
 
@@ -68,10 +67,8 @@ public final class EncounterRoleSwitchDogfoodTest {
         EncounterManager encounters = runtime.encounters();
 
         EncounterDefinition def = new TestDefinition(ResourceId.of("dogfood", "role_switch"));
-        EncounterAnchor anchor = EncounterAnchor.of(
-                ResourceId.of("dogfood", "world"),
-                ResourceId.of("dogfood", "arena_role_switch")
-        );
+        EncounterAnchor anchor =
+                EncounterAnchor.of(ResourceId.of("dogfood", "world"), ResourceId.of("dogfood", "arena_role_switch"));
         EncounterContext ctx = new SimpleContext(anchor, Map.of());
 
         EncounterInstance instance = encounters.create(def, ctx);
@@ -81,14 +78,19 @@ public final class EncounterRoleSwitchDogfoodTest {
         assertTrue(encounters.join(player, instance, ParticipationRole.SPECTATOR) == JoinResult.SUCCESS);
         assertTrue(instance.spectators().contains(player));
         assertFalse(instance.participants().contains(player));
-        assertFalse(instance.participants().contains(player) && instance.spectators().contains(player));
+        assertFalse(instance.participants().contains(player)
+                && instance.spectators().contains(player));
 
         // Attempt to switch role to participant.
         JoinResult second = encounters.join(player, instance, ParticipationRole.PARTICIPANT);
-        assertTrue(second == JoinResult.SUCCESS || second == JoinResult.DENIED_POLICY || second == JoinResult.DENIED_STATE || second == JoinResult.DENIED_FULL);
+        assertTrue(second == JoinResult.SUCCESS
+                || second == JoinResult.DENIED_POLICY
+                || second == JoinResult.DENIED_STATE
+                || second == JoinResult.DENIED_FULL);
 
         // Hard invariant: never in both sets.
-        assertFalse(instance.participants().contains(player) && instance.spectators().contains(player));
+        assertFalse(instance.participants().contains(player)
+                && instance.spectators().contains(player));
 
         // If switch is permitted, enforce exclusivity (exactly one set contains player).
         if (second == JoinResult.SUCCESS) {

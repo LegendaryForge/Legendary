@@ -9,7 +9,6 @@ import com.hypixel.hytale.server.core.command.system.basecommands.AbstractPlayer
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-
 import io.github.legendaryforge.hytale.stormseeker.HytaleStormseekerHost;
 import io.github.legendaryforge.legendary.mod.stormseeker.quest.StormseekerProgress;
 
@@ -29,8 +28,8 @@ public class StormseekerAdvanceCommand extends AbstractPlayerCommand {
     }
 
     @Override
-    protected void execute(CommandContext context, Store<EntityStore> store,
-                           Ref<EntityStore> ref, PlayerRef playerRef, World world) {
+    protected void execute(
+            CommandContext context, Store<EntityStore> store, Ref<EntityStore> ref, PlayerRef playerRef, World world) {
         String playerId = playerRef.getUuid().toString();
         StormseekerProgress progress = host.progress(playerId);
 
@@ -39,8 +38,10 @@ public class StormseekerAdvanceCommand extends AbstractPlayerCommand {
         var after = progress.phase();
 
         if (before == after) {
-            sendText(context, "[Stormseeker] Cannot advance from " + before
-                    + " — exit conditions not met (need both sigils for Phase 2 exit).");
+            sendText(
+                    context,
+                    "[Stormseeker] Cannot advance from " + before
+                            + " — exit conditions not met (need both sigils for Phase 2 exit).");
         } else {
             sendText(context, "[Stormseeker] Advanced: " + before + " -> " + after);
         }
