@@ -54,13 +54,22 @@ abstract class ModuleCoverageCheck : DefaultTask() {
         val reason = exemptionReason.orNull
         val exempt = exemptionHolds.get()
 
-        // Truth table carried over verbatim from the approved spec. Note EMPTY is tested
-        // FIRST and requires no declaration, so a module whose src/main/java disappears
-        // reports 0/0 EMPTY and counts green. That is a known open question, deliberately
-        // left alone here: this change is a mechanical conversion, and altering the table
-        // would contradict the spec under cover of a configuration-cache fix.
+        // EMPTY requires a declaration, exactly as a zero-compile does (operator decision,
+        // 2026-08-24). Both describe the same outcome — this module contributes nothing to
+        // the build — and differ only in why: sources excluded, or sources absent. Letting
+        // the absent case pass free meant the check could be defeated by deleting the
+        // evidence, so an ordinary refactor that moved every file out of a module turned a
+        // FAIL-worthy condition into a green 0/0 EMPTY. Demonstrated by deleting
+        // mod/hytale/src/main/java: guard green, census GREEN, build SUCCESSFUL, nothing
+        // saying a module had vanished.
+        //
+        // This restores decision D1 of the design spec — "it must be impossible for a NEW
+        // module to go dark unnoticed" — which the original table undercut by exempting the
+        // one state a brand-new module is actually in.
         val state =
             when {
+                onDiskCount == 0 && reason == null -> "FAIL"
+                onDiskCount == 0 && !exempt -> "FAIL"
                 onDiskCount == 0 -> "EMPTY"
                 compiledCount == 0 && reason == null -> "FAIL"
                 compiledCount == 0 && !exempt -> "FAIL"
@@ -84,14 +93,31 @@ abstract class ModuleCoverageCheck : DefaultTask() {
         if (state == "FAIL") {
             throw GradleException(
                 buildString {
-                    appendLine("$path has $onDiskCount Java source file(s) but compiled 0 of them.")
-                    if (reason == null) {
-                        appendLine("No moduleCoverage exemption is declared for this module.")
-                        appendLine("Either fix the build so sources compile, or declare:")
-                        appendLine("  moduleCoverage { zeroCompileAllowedWhen(\"why\") { condition } }")
+                    // The two FAIL causes need different remedies, so they get different
+                    // messages. "has 0 source files but compiled 0 of them" would be true
+                    // and useless.
+                    if (onDiskCount == 0) {
+                        appendLine("$path has no Java sources at all, so it contributes nothing.")
+                        if (reason == null) {
+                            appendLine("If the module is newly scaffolded and its sources are not written yet,")
+                            appendLine("declare that:")
+                            appendLine("  moduleCoverage { zeroCompileAllowedWhen(\"sources not written yet\") { true } }")
+                            appendLine("If it previously had sources, they have been moved or deleted — the")
+                            appendLine("module is now dead weight in settings.gradle.kts.")
+                        } else {
+                            appendLine("An exemption is declared (\"$reason\") but its predicate is FALSE,")
+                            appendLine("so the exemption does not apply.")
+                        }
                     } else {
-                        appendLine("An exemption is declared (\"$reason\") but its predicate is FALSE,")
-                        appendLine("so the exemption does not apply. This is a real breakage.")
+                        appendLine("$path has $onDiskCount Java source file(s) but compiled 0 of them.")
+                        if (reason == null) {
+                            appendLine("No moduleCoverage exemption is declared for this module.")
+                            appendLine("Either fix the build so sources compile, or declare:")
+                            appendLine("  moduleCoverage { zeroCompileAllowedWhen(\"why\") { condition } }")
+                        } else {
+                            appendLine("An exemption is declared (\"$reason\") but its predicate is FALSE,")
+                            appendLine("so the exemption does not apply. This is a real breakage.")
+                        }
                     }
                 },
             )
