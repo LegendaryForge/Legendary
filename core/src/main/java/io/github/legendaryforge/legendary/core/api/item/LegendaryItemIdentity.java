@@ -1,4 +1,4 @@
-package io.github.legendaryforge.legendary.mod.item;
+package io.github.legendaryforge.legendary.core.api.item;
 
 import java.util.Objects;
 import java.util.UUID;

@@ -1,6 +1,6 @@
 package io.github.legendaryforge.legendary.mod.stormseeker.quest;
 
-import io.github.legendaryforge.legendary.mod.questline.objective.ObjectiveStatus;
+import io.github.legendaryforge.legendary.core.api.questline.objective.ObjectiveStatus;
 import io.github.legendaryforge.legendary.mod.runtime.StormseekerHostRuntime;
 import java.util.ArrayList;
 import java.util.HashSet;

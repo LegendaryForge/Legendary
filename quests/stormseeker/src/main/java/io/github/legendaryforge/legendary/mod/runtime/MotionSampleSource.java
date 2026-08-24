@@ -1,5 +1,6 @@
 package io.github.legendaryforge.legendary.mod.runtime;
 
+import io.github.legendaryforge.legendary.core.api.questline.runtime.PlayerRef;
 import io.github.legendaryforge.legendary.mod.stormseeker.trial.flowing.MotionSample;
 
 /** Provides a per-player movement sample for the current tick. */

@@ -1,4 +1,4 @@
-package io.github.legendaryforge.legendary.mod.item;
+package io.github.legendaryforge.legendary.core.api.item;
 
 /**
  * High-level roles for owner-bound legendary/quest-critical items.

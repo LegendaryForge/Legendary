@@ -5,7 +5,7 @@ import io.github.legendaryforge.legendary.core.api.event.EventBus;
 import io.github.legendaryforge.legendary.core.api.gate.GateDecision;
 import io.github.legendaryforge.legendary.core.api.gate.GateService;
 import io.github.legendaryforge.legendary.core.api.id.ResourceId;
-import io.github.legendaryforge.legendary.mod.runtime.LegendarySystemRegistrar;
+import io.github.legendaryforge.legendary.core.api.questline.runtime.LegendarySystemRegistrar;
 import io.github.legendaryforge.legendary.mod.runtime.StormseekerHostRuntime;
 import io.github.legendaryforge.legendary.mod.stormseeker.client.PerceptionToggleHandler;
 import io.github.legendaryforge.legendary.mod.stormseeker.integration.StormseekerLifecycleBridge;

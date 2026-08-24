@@ -1,8 +1,8 @@
-package io.github.legendaryforge.legendary.mod.questline;
+package io.github.legendaryforge.legendary.core.api.questline;
 
 import io.github.legendaryforge.legendary.core.api.event.EventBus;
 import io.github.legendaryforge.legendary.core.api.gate.GateService;
-import io.github.legendaryforge.legendary.mod.runtime.LegendarySystemRegistrar;
+import io.github.legendaryforge.legendary.core.api.questline.runtime.LegendarySystemRegistrar;
 
 /**
  * A questline module hosted inside the Legendary mod.

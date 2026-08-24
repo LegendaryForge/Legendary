@@ -1,4 +1,4 @@
-package io.github.legendaryforge.legendary.mod.runtime;
+package io.github.legendaryforge.legendary.core.api.questline.runtime;
 
 /**
  * Minimal per-tick context supplied by the host runtime.

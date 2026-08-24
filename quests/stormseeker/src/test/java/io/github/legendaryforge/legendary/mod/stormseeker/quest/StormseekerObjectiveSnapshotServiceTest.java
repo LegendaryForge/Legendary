@@ -2,7 +2,7 @@ package io.github.legendaryforge.legendary.mod.stormseeker.quest;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import io.github.legendaryforge.legendary.mod.questline.objective.ObjectiveStatus;
+import io.github.legendaryforge.legendary.core.api.questline.objective.ObjectiveStatus;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 

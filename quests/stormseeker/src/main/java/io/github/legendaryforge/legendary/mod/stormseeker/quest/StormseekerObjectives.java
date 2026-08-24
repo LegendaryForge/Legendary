@@ -1,7 +1,7 @@
 package io.github.legendaryforge.legendary.mod.stormseeker.quest;
 
 import io.github.legendaryforge.legendary.core.api.id.ResourceId;
-import io.github.legendaryforge.legendary.mod.questline.objective.QuestObjective;
+import io.github.legendaryforge.legendary.core.api.questline.objective.QuestObjective;
 import java.util.List;
 
 /**

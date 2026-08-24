@@ -2,7 +2,8 @@ package io.github.legendaryforge.legendary.mod.questline;
 
 import io.github.legendaryforge.legendary.core.api.event.EventBus;
 import io.github.legendaryforge.legendary.core.api.gate.GateService;
-import io.github.legendaryforge.legendary.mod.runtime.LegendarySystemRegistrar;
+import io.github.legendaryforge.legendary.core.api.questline.QuestlineModule;
+import io.github.legendaryforge.legendary.core.api.questline.runtime.LegendarySystemRegistrar;
 import io.github.legendaryforge.legendary.mod.stormseeker.StormseekerWiring;
 
 /** Stormseeker questline module wrapper. */

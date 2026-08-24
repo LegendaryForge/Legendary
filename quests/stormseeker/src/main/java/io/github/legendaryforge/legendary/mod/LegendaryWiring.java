@@ -2,8 +2,8 @@ package io.github.legendaryforge.legendary.mod;
 
 import io.github.legendaryforge.legendary.core.api.event.EventBus;
 import io.github.legendaryforge.legendary.core.api.gate.GateService;
+import io.github.legendaryforge.legendary.core.api.questline.runtime.LegendarySystemRegistrar;
 import io.github.legendaryforge.legendary.mod.questline.Questlines;
-import io.github.legendaryforge.legendary.mod.runtime.LegendarySystemRegistrar;
 
 /**
  * Mod-level wiring entrypoint for Legendary.

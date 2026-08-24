@@ -1,5 +1,6 @@
 package io.github.legendaryforge.legendary.mod.questline;
 
+import io.github.legendaryforge.legendary.core.api.questline.QuestlineModule;
 import java.util.List;
 
 /** Central registry of questlines shipped in Legendary. */

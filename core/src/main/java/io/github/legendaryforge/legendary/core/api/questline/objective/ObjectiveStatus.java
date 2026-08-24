@@ -1,4 +1,4 @@
-package io.github.legendaryforge.legendary.mod.questline.objective;
+package io.github.legendaryforge.legendary.core.api.questline.objective;
 
 import java.util.Objects;
 
