@@ -50,8 +50,8 @@ fun hytaleJarJavaVersion(jar: File): Int? {
                         "Hytale jar contains no com/hypixel classes — cannot determine its Java version",
                     )
             zip.getInputStream(entry).use { input ->
-                val header = ByteArray(8)
-                if (input.read(header) < 8) return null
+                val header = input.readNBytes(8)
+                if (header.size < 8) return null
                 (((header[6].toInt() and 0xFF) shl 8) or (header[7].toInt() and 0xFF)) - 44
             }
         }
