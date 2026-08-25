@@ -3,6 +3,7 @@
   "TitleId": "server.objectivelines.ObjectiveLine_Stormseeker_TheSixthCircle.title",
   "DescriptionId": "server.objectivelines.ObjectiveLine_Stormseeker_TheSixthCircle.desc",
   "ObjectiveIds": [
-    "Objective_Stormseeker_TheChamber"
+    "Objective_Stormseeker_TheChamber",
+    "Objective_Stormseeker_TheTrace"
   ]
 }

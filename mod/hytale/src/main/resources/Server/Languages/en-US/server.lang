@@ -35,3 +35,15 @@ stormseeker.inscription.five = We raised five. The sixth would not stand.
 stormseeker.inscription.housed = The others gather where we set the stones. This one would not be housed.
 stormseeker.inscription.asked = It answered once. We asked again.
 stormseeker.inscription.silent = We carved it listening. It has not spoken since.
+
+# === Act II, objective 2 — the record ===
+#
+# In-fiction, never instructional — the delivery rule from
+# stormseeker-canonical.md "Lore Delivery". These are the player's own
+# attention, not a quest-giver's voice.
+
+objectives.Objective_Stormseeker_TheTrace.title = What They Wrote Down
+objectives.Objective_Stormseeker_TheTrace.desc = They left a record. It is not an apology.
+objectives.Objective_Stormseeker_TheTrace.taskSet.0.task.0 = Read the wall beside the stones
+objectives.Objective_Stormseeker_TheTrace.taskSet.0.task.1 = Read the wall they came back to
+objectives.Objective_Stormseeker_TheTrace.taskSet.0.task.2 = Read the statue's plinth
