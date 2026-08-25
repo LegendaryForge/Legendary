@@ -1,695 +1,526 @@
 # Stormseeker — Canonical Questline Document
 
-> **Version:** 3.1 (phases renumbered)
-> **Last Updated:** 2026-08-24
-> **Status:** Narrative locked. Materials locked. Implementation partial. The phase *bodies* below
-> still describe the pre-revision design and are pending a pass against
-> `canon-alignment-recommendations.md`.
-> **Inspiration:** Thunderfury, Blessed Blade of the Windseeker (World of Warcraft)
+> **Version:** 4.0 (narrative rewritten from canon)
+> **Last Updated:** 2026-08-25
+> **Status:** Premise, acts, materials and lore delivery agreed. Implementation partial and largely
+> unstarted against this structure — see *Implementation Status*.
+> **Lineage:** Thunderfury, Blessed Blade of the Windseeker (World of Warcraft) — see *Lineage*.
 
-This document is the **single source of truth** for the Stormseeker questline. It replaces all
-previous narrative.md, design.md, and quest-phases.md documents. Any contradiction between this
-document and the codebase should be resolved in favor of this document.
+This document is the **single source of truth** for the Stormseeker questline. Any contradiction
+between this document and the codebase resolves in favour of this document.
+
+Design record: `docs/superpowers/specs/2026-08-25-stormseeker-narrative-redesign-design.md`.
 
 ---
 
-## Phase numbering (renumbered 2026-08-24)
+## What v4.0 changed, and why
 
-The old scheme ran Phase 0 → 5 with a fractional **Phase 1.5** left over from the v3.0 redesign,
-and had no way to say "has not started" — a new player was already in Phase 0. It is now six
-numbered phases bracketed by two states.
+Three problems, found by reading the documentation against the game as it ships today.
 
-| Was | Now | `StormseekerPhase` constant | Section below |
-|---|---|---|---|
-| — | — | `UNTOUCHED` | *(new — the questline has not begun)* |
-| Phase 0 | **Phase 1** | `PHASE_1_THE_MARK` | Phase 1 — The Watching Elemental |
-| Phase 1 | **Phase 2** | `PHASE_2_THE_TREK` | Phase 2 — The Trek |
-| Phase 1.5 | **Phase 3** | `PHASE_3_THE_WAKING` | Phase 3 — Attunement |
-| Phase 2 | **Phase 4** | `PHASE_4_THE_TRIALS` | Phase 4 — Dual Sigil Trials |
-| Phase 3 | **Phase 5** | `PHASE_5_THE_FRAME` | Phase 5 — Craft Frame |
-| Phase 4 | **Phase 6** | `PHASE_6_THE_FORGING` | Phase 6 — Final Encounter |
-| Phase 5 | **Complete** | `COMPLETE` | Complete — Epilogue |
+**Two documents described two different questlines.** `archive/narrative.md` (v1.2) made the
+revelation that the world has hidden geometry a **third-act payoff**; this document made it a
+**first-act reward**. Both claimed authority; neither was reconciled.
 
-**Why the constant names and the section names differ.** The constants anticipate the revised
-design in `canon-alignment-recommendations.md` (a mark, a waking, a forging); the section headings
-still name what the bodies below actually describe. They converge when the bodies are revised.
-The *numbering* is authoritative in both.
+**Narrative coverage was inverted.** Only 4 of 7 phases carried a `### Narrative` section. The
+entire opening act had none, described purely mechanically, while the Epilogue — which almost nobody
+reaches — was the most fully realised writing in the document.
 
-Entries in Document History are deliberately left under their original numbering — they record what
-was decided at the time, and renumbering them would falsify the record.
+**Nothing delivered the story.** No dialogue, inscriptions, journals, tooltips or description keys
+appeared anywhere in the Stormseeker documents. The prose in `archive/narrative.md` was
+**unreachable by the player**. The Core Principle *"No quest UI required"* is right in spirit and had
+been applied as a ban on all text — stricter than the tradition it imitates. Hytale's own
+"archaeology" method is not text-free; it is **text placed in objects instead of quest logs**.
 
-No save migration was kept: progress persisted under the old constant names is unreadable by
-design, a clean break taken while nothing in flight depended on it.
+The vocabulary was invented rather than canon-native. `leyline`, `resonator`, `sigil` and `attune`
+have **zero occurrences in `server.lang`**; `storm` has 45, `essence` 17, `spirit` 5.
+
+### Phases → Acts
+
+Six phases became five acts. **This is not a renumbering** — the structure changed.
+
+| v3.1 phase | v4.0 |
+|---|---|
+| `PHASE_1_THE_MARK` — The Watching Elemental | **Act I — The Mark** (survives nearly intact) |
+| `PHASE_2_THE_TREK` — The Trek | **Act II — The Trace** |
+| `PHASE_3_THE_WAKING` — Attunement | **Act III — The Listening** (repurposed: literacy, not a granted sight) |
+| `PHASE_4_THE_TRIALS` — Dual Sigil Trials | **Act V, beat 1** |
+| `PHASE_5_THE_FRAME` — Craft Frame | **Act IV — The Raising** |
+| `PHASE_6_THE_FORGING` — Final Encounter | **Act V, beats 2–3** |
+| `COMPLETE` — Epilogue | **Epilogue** |
+
+`StormseekerPhase` still carries the v3.1 constant names. **Renaming the enum to acts is outstanding
+work**, deliberately not bundled with this documentation change.
 
 ---
 
 ## Design Philosophy
 
-Stormseeker is a legendary weapon questline inspired by World of Warcraft's Thunderfury.
-
-### Thunderfury Parallel Map
-
-| Thunderfury | Stormseeker | Notes |
-|---|---|---|
-| Left Binding of the Windseeker | Sigil A (Flowing Trial) | Deterministic trial, not RNG drop |
-| Right Binding of the Windseeker | Sigil B (Anchored Trial) | Deterministic trial, not RNG drop |
-| Elementium Ore (MC trash mobs) | Storm-bound elemental ore | Visible/harvestable during storms only |
-| Arcane Crystals + Arcanite Bars | Leyline-bound crystals | Spawn within leyline influence radius |
-| Fiery Core / Lava Core (MC bosses) | Generic legendary materials | Vanilla-plus rare, shared across mods |
-| Enchanted Elementium Bars | Stormseeker Frame (Phase 5) | Crafted composite of all material classes |
-| Summoning + defeating Thunderaan | Final Encounter (Phase 6) | Temper/energize frame into finished sword |
-| Thunderfury | Stormseeker | The finished weapon |
-
 ### Core Principles
 
-- **No quest UI required.** The world teaches the player through feel, not markers.
-- **ECS systems are the ONLY place authoritative gameplay logic lives.** (per ecs-principles.md)
+- **No neutral verbs.** Every action the player repeats should ask a question the story cares about.
+  If a verb asks nothing, it is a chore — condition it on the world, or cut it. **But not every verb
+  at full intensity:** ask a real question, then give the player somewhere to put their hands down.
+- **No quest UI required.** The world teaches the player through feel, not markers. This does *not*
+  mean no text — see *Lore Delivery*.
+- **The storm is not an enemy — it is a gate.** Literally true in v4.0: there is a gate.
+- **ECS systems are the ONLY place authoritative gameplay logic lives** (per `ecs-principles.md`).
 - **NPC Meta must NEVER decide progression, rewards, or entitlement.**
-- **Deterministic and testable.** All quest logic must be validatable in dogfood harnesses.
-- **Single-player compatible; multiplayer encouraged.** Late joiners may spectate but not affect outcomes.
-- **The storm is not an enemy — it is a gate.**
-- **No RNG-only legendary progression.** Sigils are earned, never dropped.
+- **Deterministic and testable.** All quest logic must be validatable in harnesses.
+- **Single-player compatible; multiplayer encouraged.**
+- **No RNG-only legendary progression.** Proofs are earned, never dropped.
 
----
+**On "No neutral verbs".** This is the *mechanism* behind "the world teaches through feel" — a goal
+that previously had no method attached. The test for any mechanic: *what question does this ask, and
+what does the answer teach about the world?* The principle is reusable and should govern questline
+#2 as much as this one.
 
-## Phase Overview
-
-| Phase | Name | Purpose | Player Knows? |
+| Verb | Normally | Here | The question |
 |---|---|---|---|
-| 1 | The Watching Elemental | Elemental appears, watches, bolts toward Resonator leaving a trail | No — feels like a strange storm event |
-| 2 | The Trek | Follow scorched earth trail to the Resonator | Partially — player follows visible trail |
-| 3 | Attunement | Step on Resonator plate; leyline sight granted | Yes — world visibly changes |
-| 4 | Dual Sigil Trials | Prove competence; earn Sigil A and Sigil B | Yes — explicit trials |
-| 5 | Craft Frame | Construct the Stormseeker frame | Yes — gathering and crafting |
-| 6 | Final Encounter | Boss fight + temper/energize into finished sword | Yes — climactic encounter |
-| Complete | Epilogue | Aftermath and world acknowledgement | Yes — closure |
+| Gathering | Click rocks | Storm-timed, perishable, cultivable | *Will you take this place's future?* |
+| Travel | Follow the marker | No markers; read residue, terrain, sky | *Can you read where you are?* |
+| Waiting | Watch a cooldown | Storms are rare; prepare, observe, position | *Are you ready when it comes?* |
+| Exploring | Reveal the map | Crystal density **is** the map | *Can you find what isn't marked?* |
+| Building | Place blocks | Raise the Circle where you chose, permanently | *Where will you commit?* |
+| Fighting | Kill for drops | The unhoused have nowhere to go | *Will you kill what can't leave?* |
+| Crafting | Open menu, click | At your Circle, in a storm, at the gate | *Have you earned the conditions?* |
+
+### Lineage
+
+Stormseeker takes its *shape* from Thunderfury — a long, deterministic, non-RNG legendary weapon
+questline whose parts are earned rather than dropped. It takes its *substance* from Orbis.
+
+v3.1 carried a table mapping Thunderfury's components onto Stormseeker's one-for-one. That table is
+retired. It quietly steered the design toward "Thunderfury, but Hytale," and its material rows are
+now wrong. What is worth keeping from the parallel is the standard: **a legendary questline should
+be long, visible to others, impossible to buy, and remembered.**
 
 ---
 
-## Phase 1 — The Watching Elemental
+## The Premise
 
-### Resonator Structure (Independent Behavior)
+> **The storm has no Circle because the people who built one used it to open a door, and the door
+> cost them everything — including the thing that used to answer.**
 
-The Resonator (Ancient Air Leyline Calibration Station) exists in the world as a permanent
-structure. **Regardless of any player's quest state**, it exhibits the following behavior:
+This reconciles three pieces of shipped canon that otherwise sit unconnected:
 
-- **During thunder storms:** The Resonator activates — emits strong DynamicLight, visually glows, becomes alive
-- **Outside storms:** Dormant, unremarkable
+- *"The true source of such magic is nowhere to be found"* (`Ingredient_Lightning_Essence`) — it is
+  not hidden. It stopped answering.
+- *"The elementals born from its lingering traces still wander the lands"* — they wander because
+  there is nowhere to gather. They are not free spirits; they are **unhoused**.
+- **Storm alone has an essence and a spirit and no Elemental Circle.** Earth, Fire, Frost, Poison and
+  Sand all have one. Not an oversight in the world: a wound in it.
 
-This is not quest-gated. Any player exploring during a storm can see a glowing structure in the
-distance. This is intentional.
+It places Orbis's central theme — advanced civilisations, hubris, self-caused downfall — at the
+centre rather than in the set dressing.
 
-**Skip path:** Any player who enters the Resonator's radius and steps on a plate during a thunder
-storm triggers Phase 3 (Attunement), regardless of whether they've encountered the elemental or
-followed a trail. Right place, right time — rewarded. Phases 1 and 2 are skipped.
+**The player arc:** get noticed by the residue → learn what was lost → raise a new Circle → make the
+storm answer to it → stand where the builders stood, in front of the same door.
 
-### Trigger
+**The thematic tension:** the player does exactly what the builders did — same site, same materials,
+same ambition. The final question is not "can you win" but "do you understand why they lost."
+Stormseeker is proof you were **answered**, not proof you conquered.
 
-- Player is Phase 1 (new to the questline)
-- A thunder storm is active
-- **Pre-validation passes:** A viable Resonator exists within range (~500 blocks) with no ocean
-  crossing required. If no valid path exists, the elemental does not appear. The player never
-  knows about a failed check.
-
-### Behavior
-
-1. An **air/electrical elemental** spawns near the player (~25 blocks away)
-2. The elemental **does not approach, does not attack, does not interact** — it hovers and watches
-3. It persists for the duration of the storm, drifting subtly to stay visible (e.g., repositioning
-   if the player turns away)
-4. **First approach:** When the player comes within ~10 blocks, the elemental reacts immediately:
-   - It **streaks away** at high speed toward the Resonator
-   - As it flies, it leaves **scorched earth / electrified ground patches** on the natural terrain below
-   - After traveling a visible distance, it moves beyond the player's sight and **despawns**
-   - The trail remains until the storm ends
-
-### If the Player Ignores the Elemental
-
-- The elemental fades when the storm ends
-- Next thunder storm: the elemental appears again, same behavior
-- No punishment, no lost progress, no conditioning to ignore it
-
-### Key Design Decisions
-
-- The elemental appears on the **first storm** of a Phase 1 player's experience (pending path validation)
-- The elemental **bolts on the first approach** — no multi-storm watching phase, no training the player to ignore it
-- Within a single storm, the watching period is brief (~1-2 minutes of hovering before the player approaches)
-- The entire Phase 1 → 2 → 3 sequence is **completable within a single storm**
-
-### Transition to Phase 2
-
-When the player approaches the elemental (~10 blocks), the elemental bolts toward the Resonator,
-leaving a trail of scorched earth. The trail marks the beginning of Phase 2.
-
-### Systems Required
-
-- Storm weather detection (when is a storm active?)
-- Pre-flight validation (Resonator within ~500 blocks, no ocean crossing; ~50 block water cap)
-- Elemental entity registration + spawn logic (proximity to player during storm)
-- Elemental hover/drift behavior (stay visible, reposition subtly)
-- Player proximity detection (~10 block approach trigger)
-- Elemental bolt behavior (streak toward Resonator at high speed)
-- Scorched earth trail placement (along bolt path, ground-snapped to highest natural block)
-- Elemental despawn after traveling beyond player sight
+**Windrider Valley** is what lies behind the door. The game ships a portal key for *"Fragment: Orbis
+— Windrider Valley"*, a place named and unreachable. The fallen civilisation is who reached it.
 
 ---
 
-## Phase 2 — The Trek
+## Act Overview
 
-### Trigger
+| Act | Name | Duration | Player knows | First words? |
+|---|---|---|---|---|
+| I | The Mark | One storm | Nothing — feels noticed | **None** |
+| II | The Trace | A session | Someone was here; they failed | Inscriptions |
+| III | The Listening | Several sessions | What the materials are | Item flavour |
+| IV | The Raising | The long middle | They are rebuilding | Objective text |
+| V | The Answer | Climax | Everything | All four channels |
+| — | Epilogue | Closure | — | — |
 
-The elemental has bolted, leaving a trail of scorched earth toward the Resonator.
-
-### Behavior
-
-1. The player follows the trail of scorched/electrified ground patches toward the Resonator
-2. The trail is **self-directed** — no escort, no guide, no timer pressure beyond the storm's duration
-3. The Resonator is already **glowing in the distance** (independent storm behavior), serving as a
-   long-range visual beacon
-4. Distant lightning VFX may appear at the Resonator's location for additional atmospheric guidance
-
-### Trail Characteristics
-
-**Placement:**
-- Scorched earth patches placed every ~20 blocks (15-25 range) along the elemental's flight path
-- Placed on the **highest natural block** at each position (ground-snapped)
-- Only placed on **natural blocks** (grass, dirt, sand, stone, snow, etc.)
-- **Not placed on artificial/player-built blocks** — trail naturally skips over structures
-
-**Obstacle Handling:**
-- **Natural terrain (cliffs, ravines, rivers, small bodies of water):** The trail goes straight
-  through. These are fair game — the player climbs, swims, bridges across. This is part of the adventure.
-- **Artificial structures (player builds, walls, castles):** The elemental's flight path curves
-  around these. The elemental is a sentient, natural entity — it wouldn't fly through a building.
-  The trail reflects this intelligence.
-- **Large gaps:** Where structures create a gap in the trail, the Resonator's storm glow and distant
-  lightning serve as long-range direction confirmation.
-
-**Trail Intelligence:**
-The elemental knows the player can't fly. While it moves through the air, the trail it leaves is
-designed to be followable on foot. It doesn't pathfind a perfectly walkable route (natural obstacles
-are fair game), but it avoids leading the player into artificial dead ends.
-
-Implementation approach: scan ahead along the flight vector, detect artificial blocks, nudge the
-path laterally to go around them. Not full A* pathfinding — more like "smart straight line with
-structure avoidance."
-
-**Leave No Trace:**
-- All scorched earth patches store the original block state before modification
-- When the storm ends, **all patches are restored** to their original state
-- The world returns to normal — no permanent modification
-
-### If the Player Doesn't Reach the Resonator Before the Storm Ends
-
-- Trail dissipates (blocks restored via Leave No Trace)
-- No punishment, no lost progress
-- Next thunder storm: Phase 1 resets — elemental appears again, same sequence
-- Player gets unlimited attempts
-
-### Transition to Phase 3
-
-Phase 2 ends when the player reaches the Resonator during an active thunder storm.
-
-### Worldgen Consideration
-
-Resonator structures must be placed at a density that ensures:
-- At least one Resonator is likely within ~500 blocks of any given player position
-- The Resonator is reachable within the duration of a single thunder storm (accounting for terrain
-  traversal, not straight-line distance)
-- Storm duration and Resonator density are balanced so the Phase 1→2→3 sequence is completable
-  in one storm without rushing
-
-### Systems Required
-
-- Scorched earth trail placement along elemental bolt path
-- Natural vs. artificial block detection (trail skips player-built blocks)
-- Structure avoidance (lateral nudge around artificial structures)
-- Block state read/write (store original, place scorched, restore on cleanup)
-- Leave No Trace cleanup (restore all patches when storm ends)
-- Resonator DynamicLight activation during thunder storms (independent behavior)
-- Player proximity detection (arrived at Resonator)
+Paced as **hook → mystery → competence → labour → payoff**.
 
 ---
 
-## Phase 3 — Attunement
-
-### Trigger
-
-- Player reaches the Resonator during a thunder storm
-- Player **steps on one of the structure's plates**
-
-### Behavior
-
-The 30-second Attunement Ritual begins (per `StormseekerAttunementService.java`):
-
-- **Spool Up (5s):** Plate activates, visuals and audio intensify
-- **Active Lock (15s):** Player is rooted, full intensity, uninterruptible
-- **Spool Down (5s):** Energy dissipates, ritual completes
-
-On completion: `AttunementCompleteEvent` fires, Leyline Sight unlocks.
-
-- Up to 6 plates can handle independent rituals simultaneously
-- Stepping off during Spool Up interrupts the ritual (player can retry)
-
-### What the Player Gains
-
-- **Leyline Sight toggle** (`PerceptionToggleHandler`): Persistent ability (survives logout). Toggleable on/off.
-- Leylines always existed in the world. Now the player can see them on demand.
-- Leylines are NOT quest arrows. They are world geometry — influence flows, energy paths beneath
-  the terrain.
-
-### Post-Attunement
-
-- Player advances to Phase 4 (Dual Sigil Trials)
-- The Flowing and Anchored Trials become available
-- Leyline Sight is unlocked but keybind not yet wired
-
-### Transition to Phase 4
-
-Attunement is the pivot. Phase 4 becomes available immediately after.
-
-### Systems Required
-
-- Attunement ritual state machine (Spool Up → Active Lock → Spool Down)
-- Plate interaction detection (player steps on/off plate)
-- Player rooting during Active Lock phase
-- `AttunementCompleteEvent` emission
-- Multi-plate support (up to 6 simultaneous rituals)
-- Player capability component: "can perceive leylines"
-- Leyline Sight toggle ability (persistent across sessions)
-- Attunement milestone emission (durable edge, at most once per player)
-
----
-
-## Phase 4 — Dual Sigil Trials
+## Act I — The Mark
 
 ### Narrative
 
-Awareness isn't enough. The player must prove restraint and competence under storm pressure.
-Two trials test opposing aspects of storm mastery.
+A storm behaves wrongly. Something watches from the edge of it and does not approach. The world
+reaches out and touches the player first, before they know there is anything to be part of.
 
-### Thunderfury Parallel
+### Behaviour
 
-In WoW, Thunderfury requires both the Left Binding and the Right Binding of the Windseeker —
-two halves of a whole, each dropped from a different boss. Stormseeker's two sigils serve the
-same role: complementary proofs that together authorize the next phase. The critical difference:
-sigils are earned through deterministic trials, not random drops.
+- During a thunderstorm, an elemental spawns near the player and **hovers**. It does not approach,
+  does not attack, does not interact. It drifts to stay visible.
+- On first approach (~10 blocks) it **leaves at speed**, scorching the ground beneath its path.
+- It travels beyond sight and despawns. The trail persists until the storm ends.
+- If ignored: it fades with the storm and returns next storm. No punishment, no lost progress.
 
-### Trial I: Flowing Trial → Sigil A (`stormseeker:sigil_flowing`)
+### Player Experience
 
-**Core invariant:** Storm mastery is proven by continuous alignment while in motion.
+- **Zero words.** No text, no marker, no NPC, no objective entry.
+- The player does not know a questline exists. They know they were noticed.
+- The absence here is what makes Act II's first inscription land.
 
-The storm defines an implicit directional flow field. The player is not finding a path — they
-are staying aligned with a moving, shifting force. Mastery is demonstrated through ongoing
-correctness, not arrival speed.
-
-**Mechanical structure:**
-- **No anchor.** No persistent world-fixed structure. The trial is purely player-centric.
-- **Continuous evaluation:** ECS systems evaluate player movement vector against storm gradient
-  each tick. Evaluation is host-authoritative.
-- **Diegetic feedback (not UI):** Correct alignment causes storm effects to cohere and intensify
-  (audio, visual density, motion feel). Misalignment causes effects to weaken and destabilize.
-  Feedback is gradient-based, not binary.
-
-**Failure semantics:**
-- Failure is directional, not temporal — there is no timer and no accumulated progress.
-- The storm simply rejects sustained misalignment.
-- On failure: trial effects dissipate, attempt ends cleanly, no permanent penalty.
-
-**Completion condition:**
-- Player maintains sufficient alignment and reaches a valid convergence point.
-- On success: Flowing Sigil granted, deterministic milestone emitted.
-
-**Implementation:** Full pipeline exists — detection, evaluation, alignment scoring, hint
-emission, sigil grant, completion.
-
-### Trial II: Anchored Trial → Sigil B (`stormseeker:sigil_anchored`)
-
-**Core invariant:** Storm mastery is proven by sustained stabilization of a fixed locus.
-
-Where the Flowing Trial asks "Can you move with the storm?", the Anchored Trial asks "Can you
-keep the storm contained?" This is not reflex-based and not a DPS check. It is a test of
-control, awareness, and persistence under pressure.
-
-**Mechanical structure:**
-- **Persistent anchor entity.** A fixed world entity acts as the anchor. Trial state is
-  world-centric, not player-centric. The anchor exists independently of the player.
-- **Host-authoritative runtime loop:** ECS systems evaluate each tick — anchor stability, player
-  interaction validity, environmental constraints (e.g., storm presence).
-- **Player interaction:** The player must repeatedly reinforce or stabilize the anchor.
-  Interactions are discrete but evaluated over time.
-
-**Failure semantics:**
-- Failure is progressive, not binary.
-- Missed or incorrect interaction → instability increases.
-- Continued neglect → anchor destabilizes. Full instability → anchor collapses.
-- One mistake does NOT immediately fail the trial. Failure is readable and recoverable until
-  collapse.
-- On collapse: trial attempt ends, world resets only what is necessary, player is not
-  permanently blocked.
-
-**Completion condition:**
-- Anchor remains stable for the full required duration with all host-side invariants holding.
-- On success: Anchored Sigil granted, deterministic milestone emitted.
-
-**Implementation:** Full pipeline exists — session tracking, stationary streak evaluation,
-sigil grant, leave/cleanup.
-
-### Design Rules
-
-- Trials are **independent** — can be completed in any order (A then B, or B then A).
-- Trials grant **binary proofs** (sigils) — you have it or you don't.
-- Trials are **deterministic and testable** — no RNG in pass/fail.
-- Trials are **spectator-safe** — late joiners can watch but not affect outcome.
-- Failure resets local trial state but does NOT delete global progress.
-- When both sigils are obtained: emit **DUAL_SIGILS_GRANTED** milestone edge.
-
-### Trial Sites
-
-- Two distinct trial sites in the world (separate from convergence structures).
-- Trial logic is authoritative and server-side.
-
-### Transition to Phase 5
-
-Phase 4 ends once both sigils are obtained. This is the first truly "gated" step — but the gate
-is enforced by systems, not NPC entitlement.
-
-### Phase 4 Completion (Precise Statement)
-
-Phase 4 is complete only when Flowing Sigil is granted AND Anchored Sigil is granted. Nothing
-else. No NPC logic, no narrative authority, no implied attunement milestone. Downstream
-unlocking is handled entirely by ECS systems based on sigil presence.
+### Delivery
+None, deliberately.
 
 ### Systems Required
-
-- Flowing trial orchestration ✅ (implemented)
-- Anchored trial orchestration ✅ (implemented)
-- Sigil A / Sigil B grant logic ✅ (implemented)
-- DUAL_SIGILS_GRANTED milestone emission ✅ (implemented)
-- Trial participation management ✅ (implemented)
-- Spectator support for late joiners (TBD)
+Storm detection; elemental spawn near player during storm; hover/drift behaviour; approach
+detection; bolt behaviour; scorched-earth trail placement, ground-snapped to natural blocks;
+despawn beyond sight; trail cleanup on storm end.
 
 ---
 
-## Phase 5 — Craft Frame
+## Act II — The Trace
 
 ### Narrative
 
-The player is now trusted enough to construct the Stormseeker frame — the vessel that can survive
-what comes next. This is construction, not tempering. The frame is inert until Phase 6.
+The trail leads somewhere. A hall built for something that never arrived, and at its centre a statue
+of a deity with no name, carved by people who were listening to something.
 
-### Materials Required
+### Behaviour
 
-Phase 5 crafting draws from three of the four material classes:
+- Following the trail leads to a ruin — **the first use of the `Temple_Wind` palette anywhere in the
+  game**. The set ships complete (animated doors, chandeliers, candles) and is placed nowhere.
+- At its centre, the Statue of a Silent Deity (`Furniture_Temple_Wind_Statue_Gaia`, which likewise
+  appears in no shipped structure).
+- The ruin is **not** quest-gated. Any player may find and explore it. What it *says* is what
+  changes with progress.
 
-#### A. Generic Legendary Materials
-- Shared backbone across all Legendary mods.
-- Vanilla-plus rare, world-generated, broadly obtainable.
-- Not tied to storms, leylines, or Stormseeker specifically.
-- Purpose: prevents every Legendary line from reinventing the same base materials.
+### Player Experience
 
-#### B. Storm-Bound Elemental Materials
-- Stormseeker's elemental identity (storm / air / lightning).
-- Storm-charged ores and elemental crafting reagents.
-- **Only visible or harvestable during storms.**
-- Location-based: peaks, exposed terrain, high elevations.
-- NOT created by leylines. Leylines may amplify yield but never create them.
-- **Hard rule: storms gate access, not progress state.**
+- The story speaks for the first time, and only through **inscriptions** — the builders' own record,
+  never a quest-giver.
+- What the player learns: there was going to be a Circle here, and something happened.
 
-#### C. Leyline-Bound Crystals
-- Spatial discovery + progression texture.
-- Always exist in the world. Always collectible.
-- Spawn exclusively within leyline influence radius.
-- Density scales with proximity to the leyline core.
-- **Visible even before attunement** (leylines themselves are not visible until unlocked).
+### Delivery
+Structure inscriptions. Register:
 
-### Crafting Process
+> *"We raised five. The sixth would not stand."*
+>
+> *"The others gather where we set the stones. This one would not be housed."*
+>
+> *"It answered once. We asked again."*
+>
+> *"We carved it listening. It has not spoken since."* — at the statue
 
-- Takes place at a dedicated crafting locus (the Ancient Forge in broader vision).
-- May be multi-step, storm-timed, and/or location-relevant.
-- The output is explicitly **the frame** (`stormseeker:frame_incomplete`) — not the finished sword.
-- Validation gates: must have both sigils + material requirements.
-
-### Item Loss Recovery
-
-If the player loses the frame (death, destruction, etc.):
-- Recraft is allowed if the player does not currently possess a valid owner-bound frame.
-- Recraft requires full materials again.
-- Uniqueness enforced: one active frame per owner.
-- Logic: `StormseekerRecraftRules.canRecraftFrame()`
-
-### Transition to Phase 6
-
-Phase 5 ends when the player possesses the Stormseeker frame.
-
-### Open Design Questions
-
-- **Where is the crafting locus?** (Fixed world location? Player-discovered?)
-- **How many crafting steps?** (Single assembly? Multi-stage?)
-- **Storm timing requirement?** (Must craft during storm? Storm enhances but not required?)
-- **Material quantities?** (TBD — intentionally deferred)
-- **Exact naming of storm ores?** (TBD — intentionally deferred)
+The first is literally true in the shipped game: Earth, Fire, Frost, Poison, Sand.
 
 ### Systems Required
-
-- Frame assembly state machine (authoritative) — not yet implemented
-- Material validation — not yet implemented
-- Sigil requirement check — gate exists (`StormseekerQuestSteps.PHASE_3_INCOMPLETE_FORM`)
-- Storm state check (if storm-timed) — not yet implemented
-- Frame item creation — item ID exists (`stormseeker:frame_incomplete`)
+Trail following; ruin placement in worldgen; readable inscriptions; discovery state.
 
 ---
 
-## Phase 6 — Final Encounter
+## Act III — The Listening
 
 ### Narrative
 
-The storm's final refusal: "Prove this frame deserves to carry the charge." This is the
-climactic encounter — a boss fight where the sword is tempered and energized. The energizing is
-not a separate crafting action; it is bound to the encounter's progression.
+You cannot rebuild what you do not understand. The storm has been saying the same thing all along.
 
-### Thunderfury Parallel
+### Behaviour
 
-In WoW, after gathering all materials and the Bindings, the player summons Thunderaan, Prince
-of Air, and must defeat him to claim Thunderfury. Stormseeker's final encounter serves the same
-narrative role — the storm itself (or its embodiment) tests the wielder one last time.
+- The player learns to read **where residue gathers** — density, currents, the signs that presage a
+  storm.
+- The storm materials they have been carrying all along acquire meaning. Stormsilk, Storm Hide,
+  Essence of Lightning and Storm Thistle all ship **ungated**, so most players will have handled
+  them before ever meeting this questline.
+- `Spirit_Thunder` matters here: it is the **only source of Essence of Lightning in the game**. The
+  builders *harvested* the unhoused. The player needs another way to be given what they took.
 
-### Encounter Design
+**This act gates residue cores** (see *Materials*, Class C). Learning to read residue is what makes
+a core visible, so the one irreversible act in the questline becomes available only to a player who
+has already read the builders' record in Act II. Capability and cautionary tale arrive in that order
+deliberately.
 
-- Authoritative encounter orchestration with phases/waves/mechanics.
-- Deterministic hooks consistent with overall determinism preference.
-- Energizing/tempering progression tied to encounter milestones.
-- The frame transforms into Stormseeker (`stormseeker:stormseeker`) upon encounter completion.
+### Player Experience
 
-### Item Loss Recovery
+- **Nothing is granted.** There is no sight toggle, no unlocked ability, no UI.
+- The signs were always present; the player learns to see them. A veteran calls a storm from the way
+  the thistle leans while a newcomer beside them sees weather.
+- This replaces v3.1's "leyline sight." A granted toggle makes the *character* more perceptive. This
+  makes the *player* more perceptive, which is the only version that survives being played twice.
 
-If the player loses the finished Stormseeker:
-- Recraft is allowed if the player does not currently possess a valid owner-bound Stormseeker.
-- Recraft requires full frame materials + final ritual materials.
-- Uniqueness enforced: one active Stormseeker per owner.
-- Logic: `StormseekerRecraftRules.canRecraftStormseeker()`
-
-### Transition to Complete
-
-Phase 6 ends when the energizing completes and the weapon becomes Stormseeker (finished state).
-
-### Open Design Questions
-
-- **What is the encounter?** (Storm elemental boss? Environmental trial? Multi-phase?)
-- **Solo or group?** (Soloable with group option? Mandatory group?)
-- **Failure semantics?** (Full reset? Checkpoint?)
-- **Energizing pacing?** (Tied to encounter phases? Gradual throughout?)
+### Delivery
+Item flavour text, on our items only — see the never-override rule in *Lore Delivery*.
 
 ### Systems Required
-
-- Encounter orchestration system — not yet implemented
-- Energizing progression state machine — not yet implemented
-- Frame → Stormseeker transformation — item IDs exist
-- Encounter milestone emission — not yet implemented
-- Failure/retry handling — not yet implemented
+Residue current representation; crystal density as a readable signal; pre-storm signs (crystal
+luminance, thistle lean, elemental drift); core visibility gated on act progress.
 
 ---
 
-## Complete — Epilogue
+## Act IV — The Raising
 
 ### Narrative
 
-Stormseeker doesn't end the storm — it changes the relationship. The world returns to its usual
-rhythms, but it never becomes fully ordinary again. The wielder feels the difference in subtle
-ways: the edge of wind before rainfall, the distant roll of thunder beyond the horizon, the
-sense that calm is an agreement rather than a guarantee.
+Five circles stand because someone built them and they endured. The sixth has to be made.
+
+### Behaviour
+
+- The player finds a site **the sky can see** — high, exposed, storm-prone — and far enough from any
+  other Circle (see *Siting and Multiplayer*).
+- The Circle is raised **tier by tier**, following the 01→07 convention the game already ships for
+  Earth (7 tiers) and Frost (5).
+- Some tiers may only be raised **during a storm**. This turns storm rarity from a problem into the
+  pacing governor: there is work to do between storms, and storms become anticipated events rather
+  than weather. **Not every tier should require one**, or it becomes a wait.
+- Each **Keystone** earned is a tier. The token does not represent progress; it becomes the monument.
+
+### Player Experience
+
+- The signature visual: a monument assembling across sessions.
+- Accomplishment accrues visibly, permanently, and in public. Other players walk past it.
+- Site choice is permanent, which is what makes it a decision.
+
+### Delivery
+Objective titles and descriptions, in-fiction:
+
+| Instead of | Write |
+|---|---|
+| Reach the location | *Follow what the storm burned* |
+| Gather 3 Storm Thistle | *Take only what the storm has already given* |
+| Craft the frame | *Shape something worth answering* |
+
+### Systems Required
+Site qualification (terrain: elevation, exposure, storm frequency); minimum-spacing check; tiered
+prefab placement; storm-gated construction steps; Keystone → tier binding; persistence of Circle
+state and ownership.
+
+---
+
+## Act V — The Answer
+
+### Narrative
+
+The Circle stands, and stays silent. Something has to call it.
+
+### Beat 1 — The proving
+
+Whatever the trials become, their **dramatic job is fixed**: demonstrate that the player can be
+*answered* without being *consumed* — the exact thing the builders failed at. Each proving grants a
+Keystone.
+
+> The trials' mechanics are under active development and are **deliberately unconstrained by this
+> document** beyond that function. The current implementations are scaffolding; see *Implementation
+> Status*.
+
+### Beat 2 — The answer
+
+The storm responds. Elementals gather at the beacon for the first time in the world's history, and
+the Circle joins the family. **Essence of Thunder** is given here, once — by a `Spirit_Thunder` that
+came because there was finally somewhere to gather.
+
+Residue begins collecting at the Circle. That is not a farming convenience: it is proof the Circle is
+working, delivered with no UI, no number and no text.
+
+### Beat 3 — The door
+
+An answered Circle can finally read what the builders did — the way they opened, still there.
+Stormseeker is forged in that moment, at the gate, during a storm. **The forging is the
+confrontation**, not a crafting step that follows one.
+
+### Player Experience
+
+The player has done what the builders did, with the difference that everything asked of them along
+the way was about restraint. The weapon is the proof they were answered.
+
+### Delivery
+All four channels converge. The single permitted NPC reaction lands here — someone who has seen the
+sky do something it has not done in living memory. One reaction, late, expression only.
+
+### Systems Required
+Proving orchestration; spawn beacon activation; Essence of Thunder grant (once per player, durable
+edge); gate reveal; forging encounter; storm-gated finale.
+
+---
+
+## Epilogue
+
+### Narrative
+
+Stormseeker does not end the storm — it changes the relationship. The world returns to its rhythms
+but never becomes fully ordinary again: the edge of wind before rainfall, the distant roll of
+thunder, the sense that calm is an agreement rather than a guarantee.
 
 **Stormseeker is not the end of the story. It is the key that makes other stories possible.**
+
+*(Register preserved from `archive/narrative.md`, which was right about this.)*
 
 ### Player Experience
 
 - No objectives. This is closure.
-- Discoverable lore beats.
-- Environmental quieting or "aftershock" tone shift.
-- Optional NPC commentary as expression only (never entitlement/progression authority).
-- The player may perceive storms differently, but storms remain storms — no permanent "godmode."
+- The Circle remains, produces, and is walked past by others.
+- Storms remain storms. No permanent godmode.
 
 ### Systems Required
-
-- Post-completion flags for Stormseeker ownership — not yet implemented
-- Optional ambient modifiers / cosmetic recognitions (must not trivialize gameplay)
+Post-completion ownership flags; ambient recognition that does not trivialise gameplay.
 
 ---
 
-## Material Taxonomy
+## Materials
 
-### One-Line Mental Model
-
-> Generic materials build legendaries.
-> Storm materials define Stormseeker.
-> Crystals reveal space.
-> Sigils prove progress.
+> Generic materials build legendaries. Storm materials define Stormseeker. Crystals reveal space.
+> Keystones become the monument.
 
 ### Class A — Generic Legendary Materials
+Shared backbone across Legendary lines. World-generated, vanilla-plus rare, no storm or questline
+dependency. Prevents every Legendary line reinventing base materials. Scope is `:core`.
 
-- **Scope:** Shared across all Legendary mods (LegendaryCore)
-- **Generation:** World-generated, vanilla-plus rare, broadly obtainable
-- **Dependencies:** None (no storm, no leyline, no questline)
-- **Purpose:** Shared backbone — prevents every Legendary line from reinventing base materials
-- **Examples:** Generic frames, reinforcement components, non-elemental upgrades
+### Class B — Skyglass
+Fulgurite. Lightning striking exposed stone fuses it to glass. It exists **because** the storm
+happened, on peaks and ridges, and **it does not keep** — harvest it in the storm that made it or
+lose it.
 
-### Class B — Storm-Bound Elemental Materials
+*Asks: how much risk will you take?* Gathering means standing on an exposed peak in a thunderstorm
+while lightning is still striking. `DamageCause` is an authorable asset type, so a real Lightning
+cause is available to a pack, with camera shake, particles and sound behind it.
 
-- **Scope:** Stormseeker-only
-- **Generation:** Location-based (peaks, exposed terrain); visible/harvestable during storms only
-- **Dependencies:** Active storm required for access
-- **Leyline relationship:** Leylines may amplify yield but NEVER create them
-- **Hard rule:** Storms gate access, not progress state
-- **Examples:** Storm-charged ores, elemental crafting reagents
-- **Naming:** TBD (intentionally deferred)
+### Class C — Residue Crystal
+Forms where residue gathers, density scaling with proximity to a current. Its purpose — *crystals
+reveal space* — is literal: **crystal density is how the player finds a Circle site.** The material
+is the map.
 
-### Class C — Leyline-Bound Crystals
+**Harvesting model — depletion, regrowth, and one irreversible choice.**
 
-- **Scope:** System-level material class (potentially shared)
-- **Generation:** Spawn within leyline influence radius; density scales with proximity
-- **Dependencies:** Leyline proximity (always collectible; leyline visibility requires attunement)
-- **Visibility:** Crystals visible before attunement; leylines are not
-- **Purpose:** Spatial discovery + progression texture
-- **Used for:** Attunement steps, forge interactions, multi-phase gating
+- **Clusters are finite and regrow.** Anyone may harvest; a stripped site recovers slowly from the
+  current feeding it. A stripped shared site is a delay, never a blocked questline.
+- **Each site also has a core.** Taking it **permanently ends that site**, and lets the player
+  transplant production to their own Circle, where crystals then form renewably.
+- **Cores are visible only from Act III onward.** A casual player cannot see one and therefore
+  cannot destroy a site, deliberately or otherwise.
 
-### Class D — Sigils
+That gate is what makes this safe on a shared server and what gives it teeth: the irreversible option
+is offered only to someone who has already read *"It answered once. We asked again."*
 
-- **Scope:** Stormseeker milestone tokens
-- **Generation:** Granted by ECS systems only — never random drops, never NPC-decided
-- **Purpose:** Deterministic progression tokens; proof of completion; gate keys
-- **Items:** `stormseeker:sigil_flowing` (Sigil A), `stormseeker:sigil_anchored` (Sigil B)
-- **Rule:** Sigils represent state truth, not loot.
+### Class D — Keystones
+Deterministic proof tokens. Granted by systems only — never dropped, never NPC-decided, never RNG.
+**Each Keystone is a tier of the Circle.** State truth, not loot.
 
-### What We Explicitly Avoid
+### Class E — Essence of Thunder
+Cannot be mined, killed for, or crafted. **Given**, once, when the Circle answers.
 
-- ❌ NPC-gated materials
-- ❌ Quest-state-dependent world spawning
-- ❌ Leylines creating matter
-- ❌ RNG-only legendary progression
-- ❌ Stormseeker materials leaking into unrelated mods
+Lightning is the strike; thunder is the answer. The two essences carry the theme with no exposition:
+**one is taken, one is given, and both go in the sword.**
 
-### Intentionally Deferred
+### Stormseeker is forged from
 
-- Exact naming of storm ores
-- Final material counts per phase
-- Whether some storm materials later become shared
-- Post-Stormseeker cross-element hybrids
+| Class | Material | How obtained |
+|---|---|---|
+| A | Generic legendary backbone | Ordinary rare world materials |
+| B | **Skyglass** | Peaks, during storms, perishable |
+| C | **Residue Crystal** | Where currents settle — also how the site was found |
+| — | **Essence of Lightning** | Taken. The shipped material; the builders' way |
+| E | **Essence of Thunder** | Given. Only at an answered Circle |
+
+Forged at the player's own Circle, in a storm, at the gate.
+
+**Nothing here duplicates the shipped chain.** Storm Hide, Stormsilk and Storm Thistle remain the
+mundane harvest anyone can do. Ours sit above them, and the fact that ordinary players already handle
+storm materials is what makes the escalation legible.
+
+Names are first-pass, deliberately plain-compound to match Hytale's convention (`Storm_Hide`,
+`Ingredient_Bolt_Stormsilk`).
+
+### Hard rules
+
+- **Storms gate access, not progress state.**
+- **No quest-state-dependent world spawning.** The world is the same world whether or not the player
+  is on the questline — which is what makes finding it feel like discovery.
+- No NPC-gated materials.
+- No RNG-only legendary progression.
+- No Stormseeker materials leaking into unrelated mods.
+
+### Item loss recovery
+If the frame is lost, recraft is permitted when the player holds no valid owner-bound frame.
+Recraft requires full materials. One active frame per owner. Logic: `StormseekerRecraftRules`.
 
 ---
 
-## Implementation Status (Code Audit: 2026-02-10)
+## Lore Delivery
 
-### What Exists and Works
+Four channels, each with a distinct job. This replaces the previous atmosphere-only model, which
+delivered nothing.
 
-**LegendaryCore:**
-- Gate system (`GateService`, `GateDecision`) for activation gating
-- Resource ID system for stable identifiers
-- Activation lifecycle (session management, attempt results)
+### Governing rule — never override shipped item text
 
-**Legendary — Phase 4 (Dual Sigil Trials):**
-- `FlowingTrialSession` / `FlowingTrialEvaluator` / `FlowAlignmentEvaluationSystem` — full Flowing Trial pipeline
-- `FlowingSigilGrantSystem` / `FlowingSigilIssuer` — Sigil A grant logic
-- `FlowHintEmissionSystem` / `FlowHintIntent` — presentation hints during Flowing Trial
-- `FlowingTrialDetectionSystem` / `FlowTrialCompletionSystem` — trial lifecycle
-- `FlowingTrialRuntimeOrchestrator` — runtime coordination
-- `AnchoredTrialSession` / `AnchoredTrialParticipation` — Anchored Trial pipeline
-- `AnchoredSigilGrantSystem` / `AnchoredSigilIssuer` — Sigil B grant logic
-- `AnchoredTrialRuntimeOrchestrator` — runtime coordination
-- `StormseekerAnchoredTrialService` — entry/leave/cleanup control surface
-- Extensive test coverage: abandonment, cleanup, dual sigil symmetry, step callbacks, etc.
+Overriding base-game item descriptions is technically possible (proven 2026-08-25, see
+`docs/integration/hytale-asset-packs.md`) and is **prohibited here.** It changes the game for every
+player on a server including those not on the questline, and here it would destroy the effect,
+because the shipped text is already load-bearing:
 
-**Legendary — Quest Infrastructure:**
-- `StormseekerProgress` — phase tracking + sigil state
-- `StormseekerPhase` enum — phase definitions
-- `StormseekerCapabilities` — capability queries per phase
-- `StormseekerQuestSteps` — gate step identifiers for Phase 5+
-- `StormseekerQuestStepMapper` — maps progress to quest steps
-- `StormseekerObjectives` / `StormseekerObjectiveSnapshotService` — objective tracking
-- `StormseekerMilestoneOutcome` / `StormseekerPhaseMilestone` — milestone emission
+> *"Raging storms have proved attractive to many creatures over the centuries. Though the true source
+> of such magic is nowhere to be found, the elementals born from its lingering traces still wander
+> the lands."* — `Ingredient_Lightning_Essence`
 
-**Legendary — Item System:**
-- `StormseekerItemIds` — stable item IDs (sigils, frame, weapon)
-- `StormseekerRecraftRules` — item loss recovery logic
-- `LegendaryItemIdentity` / `LegendaryItemPolicy` / `LegendaryItemRole` — item framework
+That is **already Act III's revelation.** Every player who has picked one up has been carrying the
+answer unread. **Recontextualise, never rewrite.** New text goes only on our own items.
 
-**Legendary — Wiring:**
-- `StormseekerWiring.tick(host)` — canonical tick entry point
-- `StormseekerWiring.enterAnchoredTrial()` / `leaveAnchoredTrial()` — trial participation
-- Gate registration for activation gating
-- `resetForTesting()` — test isolation seam
+### The four channels
 
-**LegendaryHytale:**
-- Plugin loads and runs in live Hytale server
-- `HytaleStormseekerHost` implements `StormseekerHostRuntime`
-- `StormseekerTickSystem` registered in Hytale's ECS — calls `StormseekerWiring.tick(host)` each tick
-- Player connect/disconnect tracking via `PlayerRef`
-- Real-time position tracking via Hytale `TransformComponent`
+| Channel | Job | Opens |
+|---|---|---|
+| Structure inscriptions | The builders speak, in their own voice | Act II |
+| Item flavour text | Materials acquire meaning (our items only) | Act III |
+| Objective titles/descriptions | In-fiction, never instructional | Act IV |
+| NPC dialogue | Expression only, never entitlement — one reaction | Act V |
 
-### What Does NOT Exist Yet
+**Every channel opens later than expected.** Act I has no words. The world speaks only after it has
+the player's attention. That inversion is what "no quest UI" was reaching for and could not achieve,
+having no channels at all.
 
-- Phase 1: Pre-flight validation (ocean check), elemental entity registration + spawn, hover/drift behavior, approach detection, bolt behavior, scorched earth trail placement
-- Phase 2: Natural vs. artificial block detection, structure avoidance (lateral nudge), block state read/write, Leave No Trace cleanup, Resonator DynamicLight storm activation
-- Phase 3: Attunement ritual state machine (spool up/active lock/spool down), plate interaction detection, player rooting, `AttunementCompleteEvent`, multi-plate support, leyline-vision toggle, capability component wiring
-- Phase 5: Frame crafting system, material gathering, assembly state machine
-- Phase 6: Final encounter orchestration, energizing progression
-- Complete: Post-completion systems, epilogue flags
-- Persistence: `StormseekerProgress` is in-memory only (no save/load across sessions)
-- Storm weather integration: reading Hytale's weather system for storm detection
+The questline's objective line is **"The Sixth Circle."**
 
-### Known Code/Doc Misalignments
+---
 
-These are naming issues in the codebase that reflect the old (incorrect) phase structure.
-The code logic itself is generally correct — the names are wrong.
+## Siting and Multiplayer
 
-| Code | Current Name | Should Be | Reason |
-|---|---|---|---|
-| `StormseekerAttunementService` | "Phase 2 Attunement control surface" | Phase 3 Attunement ritual service | Now correctly refers to attunement (Phase 3 redesign); name is accurate but phase label needs updating |
+**The player raises their own Circle.** There is no Storm Circle in the world — that is canon — so
+the player does not claim a scarce landmark. They build one at a site qualifying on **terrain**
+(high, exposed, storm-prone), subject to minimum spacing from other Circles.
 
-Resolved in v3.0:
-- ~~`StormseekerPhase1Loop`~~ → Fixed: now `StormseekerFlowingTrialLoop` (Phase 4 Flowing Trial coordinator)
-- ~~`StormseekerPhase1Outcome`~~ → Fixed: now `StormseekerFlowingTrialOutcome`
-- ~~`StormseekerPhase1TickView`~~ → Fixed: now `StormseekerFlowingTrialTickView`
-- ~~`emitPhase1TickView()` / `emitPhase1Outcome()`~~ → Fixed: now `emitFlowingTrialTickView()` / `emitFlowingTrialOutcome()`
-- ~~`phase1Attunement()`~~ → Fixed: now `phase2FlowingTrial()`
-- ~~`StormseekerObjectiveSnapshotService` Flowing Trial mapped to Phase 2~~ → Fixed: now mapped to Phase 4
-- ~~`StormseekerPhase.PHASE_1_ATTUNEMENT`~~ → Fixed: now `PHASE_1_STORM_TREK`
-- ~~`StormseekerPhase.PHASE_1_5_AFTERSHOCK`~~ → Fixed: now `PHASE_1_5_ATTUNEMENT`
-- ~~`StormseekerPhase.PHASE_5_FINAL_TEMPERING`~~ → Fixed: now `PHASE_5_EPILOGUE`
-- ~~`StormseekerCapabilities.canForgeFinalizeStormseeker()` checks PHASE_5~~ → Fixed: now checks `PHASE_4_STORMS_ANSWER`
-- ~~`StormseekerPhase.PHASE_0_UNEASE`~~ → Fixed: now `PHASE_0_WATCHING_ELEMENTAL`
-- ~~`StormseekerQuestSteps.PHASE_5_EPILOGUE` string value "final_tempering"~~ → Fixed: now `"stormseeker.phase5.epilogue"`
+Rejected alternatives, recorded so they are not re-proposed:
 
-### Hytale Weather System (Future Integration)
+- **Instanced Circle** — available (Hytale ships `Server/Instances/` with `Dungeons`, `Portals`,
+  `Persistent`, `ShortLived`, `Regions`). Rejected: nobody else would ever see the monument, which
+  discards the entire payoff.
+- **One shared Circle per server** — no contention, strong one-time event, but every player after the
+  first gets a materially lesser questline.
+- **Rare fixed sites** — better art control, reintroduces contention at scale.
 
-Hytale has a weather system with classes for `Weather`, `WeatherForecast`, `WeatherParticle`,
-`UpdateWeather` packets, fog, clouds, and time-of-day colors. This will be critical for:
+Terrain-qualified siting **scales the right way**: a bigger world has more sites automatically, and on
+a large server storm circles appear across the landscape over months, reading as the element
+returning rather than as a queue. The failure mode of scale becomes a feature.
 
-- Phase 1: Storm detection for elemental spawn + pre-flight validation
-- Phase 2: Storm duration tracking (trail lifetime, Leave No Trace cleanup trigger)
-- Phase 3: Storm state check for attunement trigger at Resonator
-- Phase 5: Storm-timed crafting (if storm timing is required)
+---
 
-Weather integration has not been explored yet but the server-side classes exist.
+## Implementation Status
+
+> **Dated 2026-08-25. This section rots faster than the rest of the document.** The previous version
+> was dated 2026-02-10 and was wrong in at least two ways by the time it was read: it claimed the
+> trials were a "full pipeline" and that progress was in-memory only.
+
+**Exists and is live:** the plugin loads in a real Hytale server; `StormseekerTickSystem` calls
+`StormseekerWiring.tick(host)` each tick; player connect/disconnect and position tracking work;
+`PropertiesProgressStore` persists progress to disk, with unreadable saves quarantined rather than
+destroyed; gate registration; item identity framework; extensive trial test coverage.
+
+**Exists but is scaffolding, not the designed mechanic:**
+- `FlowingTrialEvaluator` scores movement against **its own previous direction** — self-coherence.
+  There is no storm gradient and no convergence point; its own comment reads
+  `// --- Completion: consistency-based, no location ---`.
+- `AnchoredTrialSession` is `REQUIRED_STATIONARY_TICKS = 40` — hold still. Its own comment calls it
+  *"intentionally simple scaffolding that can be replaced by richer mechanics later."*
+
+**Exists but is dormant:** `StormseekerAttunementService` implements the 5s/15s/5s ritual correctly,
+but `StormseekerWiring.registerListeners` has no non-test callers, so it is never constructed at
+runtime. Same for `StormseekerTrekSystem`.
+
+**Does not exist:** everything in Acts I–IV as described here. Elemental spawn and behaviour, trail
+placement, the ruin, inscriptions, residue currents and crystals, Skyglass, site qualification,
+tiered Circle raising, Keystones, Essence of Thunder, the gate, the forging encounter.
+
+**Outstanding rename:** `StormseekerPhase` still carries v3.1 constant names, which no longer match
+this structure.
 
 ---
 
@@ -701,7 +532,7 @@ All engine integration occurs via:
 StormseekerWiring.tick(host)
 ```
 
-- Phase loops must NOT be invoked directly by engine code.
+- Act loops must NOT be invoked directly by engine code.
 - Trial participation is host-controlled.
 - `resetForTesting()` exists for JVM test isolation only.
 - Durable milestones are emitted on edges (at most once per player + milestone).
@@ -709,20 +540,47 @@ StormseekerWiring.tick(host)
 
 ---
 
+## Open Questions
+
+- **Zone anchoring.** Thunder weather exists **only in Zone 2** of 87 shipped weather definitions,
+  which would anchor the ruin and probably the Circle there. A real constraint, worth deciding
+  deliberately rather than inheriting.
+- **Tier count** for the Storm Circle. Earth ships 7, Frost 5.
+- **Minimum spacing** between player Circles.
+- **Regrowth rate** for wild crystal clusters — fast enough that a stripped shared site is a delay,
+  slow enough that cultivating at a Circle is worth doing.
+- **Class A materials** — named, not specified; should be designed for the elemental family rather
+  than for Stormseeker alone.
+- **The single NPC reaction** — who, and where.
+- **Trial mechanics** — under active development, unconstrained here beyond their dramatic function.
+
+---
+
 ## Document History
+
+- **v4.0 (2026-08-25):** Narrative rewritten from Orbis canon. New premise — the storm has no Circle
+  because the builders opened a door with it. Six phases became five acts (not a renumbering; the
+  structure changed). Materials keep February's taxonomy with leyline crystals re-founded on residue,
+  sigils becoming Keystones that are tiers of the monument, and a new class the premise requires,
+  Essence of Thunder. Four lore-delivery channels adopted, replacing an atmosphere-only model that
+  delivered nothing. `No neutral verbs` added to Core Principles. The Thunderfury mapping table
+  retired to a lineage note. Invented vocabulary (`leyline`, `resonator`, `sigil`, `attune` — all 0
+  occurrences in `server.lang`) dropped. Design record:
+  `docs/superpowers/specs/2026-08-25-stormseeker-narrative-redesign-design.md`.
 
 - **v3.1 (2026-08-24):** Phases renumbered — six numbered phases bracketed by `UNTOUCHED` and
   `COMPLETE`, removing the fractional Phase 1.5 and separating "has not started" from "is in the
-  first phase". Mapping table at the head of this document. The code was renumbered in the same
-  change. No design content was altered; the phase bodies still describe v3.0.
+  first phase". The code was renumbered in the same change. No design content was altered.
 
 - **v1.0 (2026-02-04):** Original narrative, design, and quest-phases documents (now superseded).
 - **v2.0 (2026-02-10):** Complete rewrite. Corrected phase structure, clarified sigil placement
-  (Phase 2 only), added Thunderfury parallels, materials taxonomy, full code audit, documented
-  open questions, consolidated into single source of truth.
-- **v3.0 (2026-02-16):** Phase 0/1/1.5 redesign. Removed movement restriction mechanic (not
-  exposed in Hytale API). Phase 0 is now a watching elemental that bolts on approach, leaving a
-  scorched earth trail. Phase 1 is self-directed trail following to the Resonator. Phase 1.5 is
-  a 30-second attunement ritual at the Resonator's plates. Added Resonator independent storm
-  behavior, skip path, pre-flight ocean validation, Leave No Trace cleanup, structure avoidance.
-  See `phase-0-1-redesign-final.md` for full rationale.
+  (Phase 2 only), added Thunderfury parallels, materials taxonomy, full code audit, documented open
+  questions, consolidated into single source of truth.
+- **v3.0 (2026-02-16):** Phase 0/1/1.5 redesign. Removed movement restriction mechanic (not exposed
+  in Hytale API). Phase 0 is now a watching elemental that bolts on approach, leaving a scorched
+  earth trail. Phase 1 is self-directed trail following to the Resonator. Phase 1.5 is a 30-second
+  attunement ritual at the Resonator's plates. Added Resonator independent storm behavior, skip path,
+  pre-flight ocean validation, Leave No Trace cleanup, structure avoidance.
+
+Entries above v4.0 are deliberately left under their original numbering — they record what was
+decided at the time, and renumbering them would falsify the record.
