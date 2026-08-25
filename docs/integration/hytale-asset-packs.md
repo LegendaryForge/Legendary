@@ -244,17 +244,62 @@ So the division of labour for a questline is:
 
 ---
 
-## 8. What this does *not* establish
+## 8. Gameplay, also verified by running
 
-Stated plainly, because the gap is easy to overlook given how much above is confirmed:
+**Updated 2026-08-25.** This section previously said no gameplay had been exercised — the original
+probe ran `--bare` with no world. That gap is now closed. A questline authored as four JSON files,
+shipped from a mod asset pack with a logging-only plugin, was played end to end on a dedicated
+server by a connected player:
 
-- **No gameplay was exercised.** The probe ran `--bare` with no world. Asset *loading*,
-  attribution, override and validation are proven. Starting an objective for a player, task
-  progression, reward delivery, and `WeatherTriggerCondition` actually firing are **not** — they
-  need a world and a connected player.
+| Behaviour | Result |
+|---|---|
+| `Gather` tracks real inventory events | ✅ |
+| Objective auto-completes when its tasks are satisfied | ✅ no command needed |
+| Line chains to the next objective automatically | ✅ |
+| `Craft` tracks a real crafting action | ✅ |
+| Completion delivers rewards | ✅ the `GiveItems` drop list we named |
+| Line-level completion recorded | ✅ |
+| State persists to disk | ✅ `universe/players/<uuid>.json`, plus a `.bak` |
+
+The persisted `ObjectiveHistoryComponent` keys history by **our** line id, nests both objectives
+under it with completion counts and timestamps, records the reward per objective, and round-trips
+the `"Category": "Stormseeker"` field we wrote in our own JSON.
+
+**So a questline needs no Java gameplay code.** Chaining, task tracking, completion, rewards, and
+persistence are all native.
+
+### `Gather` and `Craft` are different in kind — this matters
+
+Found by the probe failing, which is what it was for. `GatherObjectiveTask implements
+InventoryChangeAware`; `CraftObjectiveTask` does **not**.
+
+- **`Gather` is possession** — "have N of X". Recounted on every `InventoryChangeEvent` via
+  `countObjectiveItemInInventories(...)`, so it is satisfied by acquiring the items *by any means*,
+  including `/give`.
+- **`Craft` is an action** — "perform the crafting of X". Being handed the item does nothing; the
+  crafting must actually happen.
+
+That pairing is worth designing with rather than around: a gather-then-craft phase gate cannot be
+bypassed by trade or drop, because only the crafting half counts.
+
+### Admin completion is not equivalent to play
+
+`/objective complete objective <id>` completes the objective but does **not** roll up to line
+completion — the line's `TimesCompleted` stayed `0`. A genuine play-through set it to `1`.
+Line-level bookkeeping only happens on the real advance path, so admin commands are a shortcut for
+*reaching* a state, not a substitute for exercising one.
+
+---
+
+## 8b. What this still does *not* establish
+
+- **`WeatherTriggerCondition` firing.** The marker asset carrying it parses, validates and loads;
+  nothing has yet stood in a storm and watched it trigger. This is the Stormseeker-specific mechanic,
+  so it remains the most load-bearing untested thing here.
 - **Assets-only packs (no `Main`) were not established** — see the callout in §3.
-- **Nothing here says we should adopt the native framework.** It says adoption is *possible* and
-  cheap to author. The design decision is separate and belongs with
+- **Nothing here says we should adopt the native framework.** It says adoption is *possible*,
+  cheap to author, and now demonstrably works at runtime. The design decision is separate and belongs
+  with `docs/architecture/native-objectives-migration-cost.md`,
   `docs/architecture/questline-framework-adoption.md` and
   `docs/stormseeker/canon-alignment-recommendations.md`.
 

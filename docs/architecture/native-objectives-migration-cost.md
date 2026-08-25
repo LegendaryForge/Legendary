@@ -1,7 +1,7 @@
 # What adopting Hytale's native objectives would cost
 
-**Status:** decision input, **not a decision**. Written 2026-08-25, before the gameplay play test.
-Read §5 before relying on any number here.
+**Status:** decision input, **not a decision**. Written 2026-08-25; updated the same day after the
+gameplay play test, which closed weakness 1 of §5. Read §5 before relying on any number here.
 
 Companion to `docs/integration/hytale-asset-packs.md` (the mechanism, verified by running) and
 `docs/architecture/questline-framework-adoption.md` (which is blocked on this decision).
@@ -111,15 +111,23 @@ Stated fairly, because §2 and §3 read as advocacy:
 
 Two named weaknesses. Do not treat the count as settled until both are closed:
 
-1. **Gameplay is unproven.** Everything above assumes the objective system works as documented at
-   runtime. `hytale-asset-packs.md` §8 is explicit that only loading, attribution, override and
-   validation have been demonstrated — the probe ran `--bare` with no world. The spike harness
-   exists for exactly this; run it before trusting the mapping.
-2. **The verbs were read from the design doc, not the implementations.** The Flowing and Anchored
-   trials are marked ✅ implemented, but if `quests/stormseeker` diverges from how
+1. ~~**Gameplay is unproven.**~~ **Closed 2026-08-25.** A questline authored as four JSON files was
+   played end to end: gather tracked, objective auto-completed, the line chained to the next
+   objective on its own, crafting completed it, the reward was delivered, and all of it persisted.
+   See `hytale-asset-packs.md` §8. The mapping below rests on demonstrated behaviour now, not on
+   documentation.
+2. **The verbs were read from the design doc, not the implementations.** *(Still open.)* The Flowing
+   and Anchored trials are marked ✅ implemented, but if `quests/stormseeker` diverges from how
    `stormseeker-canonical.md` describes them, the gap count moves. Reading those two
-   implementations would firm it up, and is best done *after* the play test confirms the exercise is
-   real.
+   implementations is the remaining work before the count can be called settled.
 
 Also unverified: whether Phase 5's "must hold both sigils" gate fits `SoloInventory` (the only task
 condition). The sigils are items, so it plausibly does — but that is an assumption, not a finding.
+And `WeatherTriggerCondition` has been shown to parse and load, not to fire.
+
+**One correction the play test forced on the table above.** `Gather` and `Craft` are different in
+kind — `Gather` is a possession census (satisfied by holding the items, however obtained), `Craft`
+requires the crafting action itself. Phase 5 was mapped to "`Gather` + `Craft`" on the assumption
+they behaved alike; they do not, and the difference happens to favour the design — a gather-then-craft
+gate cannot be bypassed by trade or drop. The Phase 5 row stands, for a better reason than it was
+written with. Details in `hytale-asset-packs.md` §8.
