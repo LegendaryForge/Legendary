@@ -1,0 +1,32 @@
+{
+  "Category": "Stormseeker",
+  "TitleId": "server.objectives.Objective_Stormseeker_TheTrace.title",
+  "DescriptionId": "server.objectives.Objective_Stormseeker_TheTrace.desc",
+  "TaskSets": [
+    {
+      "Tasks": [
+        {
+          "Type": "UseBlock",
+          "BlockTagOrItemId": {
+            "ItemId": "Furniture_Stormseeker_Inscription_Housed"
+          },
+          "Count": 1
+        },
+        {
+          "Type": "UseBlock",
+          "BlockTagOrItemId": {
+            "ItemId": "Furniture_Stormseeker_Inscription_Asked"
+          },
+          "Count": 1
+        },
+        {
+          "Type": "UseBlock",
+          "BlockTagOrItemId": {
+            "ItemId": "Furniture_Stormseeker_Statue_Silent"
+          },
+          "Count": 1
+        }
+      ]
+    }
+  ]
+}

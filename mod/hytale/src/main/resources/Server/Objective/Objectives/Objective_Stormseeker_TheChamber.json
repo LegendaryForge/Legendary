@@ -1,0 +1,15 @@
+{
+  "Category": "Stormseeker",
+  "TitleId": "server.objectives.Objective_Stormseeker_TheChamber.title",
+  "DescriptionId": "server.objectives.Objective_Stormseeker_TheChamber.desc",
+  "TaskSets": [
+    {
+      "Tasks": [
+        {
+          "Type": "ReachLocation",
+          "TargetLocation": "ReachLocationMarker_Stormseeker_RuinChamber"
+        }
+      ]
+    }
+  ]
+}

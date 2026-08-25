@@ -3,7 +3,8 @@
 > **Version:** 4.0 (narrative rewritten from canon)
 > **Last Updated:** 2026-08-25
 > **Status:** Premise, acts, materials and lore delivery agreed. Implementation partial and largely
-> unstarted against this structure — see *Implementation Status*.
+> unstarted against this structure — **except Act II, which ships and has been played** — see
+> *Implementation Status*.
 > **Lineage:** Thunderfury, Blessed Blade of the Windseeker (World of Warcraft) — see *Lineage*.
 
 This document is the **single source of truth** for the Stormseeker questline. Any contradiction
@@ -504,6 +505,40 @@ returning rather than as a queue. The failure mode of scale becomes a feature.
 `PropertiesProgressStore` persists progress to disk, with unreadable saves quarantined rather than
 destroyed; gate registration; item identity framework; extensive trial test coverage.
 
+**Act II ships as native assets, and was verified by playing it.** `mod/hytale` is an asset pack
+(`"IncludesAssetPack": true`) carrying `ObjectiveLine_Stormseeker_TheSixthCircle`, two objectives
+(`Objective_Stormseeker_TheChamber`, `Objective_Stormseeker_TheTrace`), one reach-location marker,
+four inscription blocks plus a shared base asset, and one `server.lang`. Reading the first
+inscription starts the line; reading the builders' record completes the act. Confirmed on
+2026-08-25 on a dedicated server with a connected client: each of the four inscriptions printed
+**its own** message; three of the four (`Housed`, `Asked`, `Statue_Silent`) are also `UseBlock`
+tasks tracked by `Objective_Stormseeker_TheTrace` and each ticked **its own** task — the fourth
+(`Five`) starts the objective line rather than ticking a task of its own — and every title and
+task line rendered as prose rather than as a raw localisation key.
+
+One piece of Java was unavoidable. `StartObjective` is item-only — fired from a block it NPEs on
+the absent held item and **disconnects the player** — so starting the line from an inscription
+needed a custom `StormseekerStartLine` interaction registered through `Interaction.CODEC`. It is
+about forty lines, written once, and every later questline that starts from a block reuses it.
+Mechanism and evidence: `docs/integration/hytale-asset-packs.md` §7c.
+
+**Line-level completion does not currently record.** After an honest play-through and a clean
+disconnect, both objectives persist `TimesCompleted: 1` but the **line** persists
+`TimesCompleted: 0`. Unresolved — traced to a caller-side gate, cause not found. Until it is,
+nothing here may gate "this player finished the act" on the line's counter; use the per-objective
+counts inside `ObjectiveLineHistory.Objectives[]`, which are recorded correctly. Detail in
+`docs/integration/hytale-asset-packs.md` §8.
+
+**The ruin is not generated.** The blocks are placed by hand and the chamber marker is sited in
+game with `/objective reachLocationMarker add ReachLocationMarker_Stormseeker_RuinChamber`. A
+`Temple_Wind` prefab in worldgen is separate work, still blocked on the open Zone-2 anchoring
+question — and on whether a mod pack can contribute worldgen structures at all, which **remains
+unproven**. Act II deliberately does not depend on the answer.
+
+**Act I's trail is still the specced route in, and still does not exist.** Act II is reachable
+without it because the ruin is deliberately not quest-gated; when Act I lands, its trail becomes a
+second route to the same place rather than a prerequisite for it.
+
 **Exists but is scaffolding, not the designed mechanic:**
 - `FlowingTrialEvaluator` scores movement against **its own previous direction** — self-coherence.
   There is no storm gradient and no convergence point; its own comment reads
@@ -515,16 +550,21 @@ destroyed; gate registration; item identity framework; extensive trial test cove
 but `StormseekerWiring.registerListeners` has no non-test callers, so it is never constructed at
 runtime. Same for `StormseekerTrekSystem`.
 
-**Does not exist:** everything in Acts I–IV as described here. Elemental spawn and behaviour, trail
-placement, the ruin, inscriptions, residue currents and crystals, Skyglass, site qualification,
-tiered Circle raising, Keystones, Essence of Thunder, the gate, the forging encounter.
+**Does not exist:** everything in Acts I, III and IV as described here. Elemental spawn and
+behaviour, trail placement, residue currents and crystals, Skyglass, site qualification, tiered
+Circle raising, Keystones, Essence of Thunder, the gate, the forging encounter. *(This list read
+"Acts I–IV" and included the ruin and inscriptions until 2026-08-25; Act II now ships — see above.
+What is still missing from Act II is the **generated** ruin, not the content in it.)*
 
 **Outstanding rename:** `StormseekerPhase` still carries v3.1 constant names, which no longer match
 this structure — and following the 2026-08-25 native-objectives decision, whether the enum survives
 at all is open, since objective and line history now own progress.
 
-**Not yet done for the native spine:** `mod/hytale`'s `manifest.json` still reads
-`"IncludesAssetPack": false`, and the module has no `Server/Objective/...` asset tree.
+**Done for the native spine.** This section previously read *"`mod/hytale`'s `manifest.json` still
+reads `"IncludesAssetPack": false`, and the module has no `Server/Objective/...` asset tree."*
+**Both halves are now false** — the flag is `true` and the tree exists, shipped with Act II. What
+remains open on the native spine is the line-completion defect above and worldgen, not the pack
+itself.
 
 ---
 

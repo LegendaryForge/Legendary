@@ -1,0 +1,18 @@
+{
+  "Parent": "Furniture_Stormseeker_Inscription_Base",
+  "TranslationProperties": {
+    "Name": "server.items.Furniture_Stormseeker_Inscription_Housed.name"
+  },
+  "BlockType": {
+    "Interactions": {
+      "Use": {
+        "Interactions": [
+          {
+            "Type": "SendMessage",
+            "Key": "server.stormseeker.inscription.housed"
+          }
+        ]
+      }
+    }
+  }
+}

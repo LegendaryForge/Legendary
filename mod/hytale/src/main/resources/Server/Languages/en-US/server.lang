@@ -1,0 +1,50 @@
+# Stormseeker — Act II: The Trace
+#
+# The filename supplies the 'server.' prefix: a key written here as
+# 'objectives.X.title' resolves as 'server.objectives.X.title'.
+#
+# Every key in this file MUST stay inside a Stormseeker-scoped prefix. A key that
+# collides with a base-game key replaces that text for every player on the server,
+# including players who never touch this questline. checkAssetPackIntegrity enforces this.
+
+# === the line ===
+
+objectivelines.ObjectiveLine_Stormseeker_TheSixthCircle.title = The Sixth Circle
+objectivelines.ObjectiveLine_Stormseeker_TheSixthCircle.desc = Someone built here, and stopped.
+
+# === Act II, objective 1 — the chamber ===
+
+objectives.Objective_Stormseeker_TheChamber.title = Deeper In
+objectives.Objective_Stormseeker_TheChamber.desc = The hall was built to hold something. Find where it was meant to stand.
+objectives.Objective_Stormseeker_TheChamber.taskSet.0.task.0 = Reach the centre of the hall
+
+# === Act II block names ===
+
+items.Furniture_Stormseeker_Inscription_Base.name = Inscription
+items.Furniture_Stormseeker_Inscription_Five.name = Inscription
+items.Furniture_Stormseeker_Inscription_Housed.name = Inscription
+items.Furniture_Stormseeker_Inscription_Asked.name = Inscription
+items.Furniture_Stormseeker_Statue_Silent.name = Statue of a Silent Deity
+
+# === Act II inscriptions — the builders' own record ===
+#
+# From stormseeker-canonical.md v4.0, Act II "Delivery". The first line is
+# literally true in the shipped game: Earth, Fire, Frost, Poison and Sand all
+# have an Elemental Circle. Storm does not.
+
+stormseeker.inscription.five = We raised five. The sixth would not stand.
+stormseeker.inscription.housed = The others gather where we set the stones. This one would not be housed.
+stormseeker.inscription.asked = It answered once. We asked again.
+stormseeker.inscription.silent = We carved it listening. It has not spoken since.
+
+# === Act II, objective 2 — the record ===
+#
+# In-fiction, never instructional — the delivery rule from
+# stormseeker-canonical.md "Lore Delivery". These are the player's own
+# attention, not a quest-giver's voice.
+
+objectives.Objective_Stormseeker_TheTrace.title = What They Wrote Down
+objectives.Objective_Stormseeker_TheTrace.desc = They left a record. It is not an apology.
+objectives.Objective_Stormseeker_TheTrace.taskSet.0.task.0 = Read the wall beside the stones
+objectives.Objective_Stormseeker_TheTrace.taskSet.0.task.1 = Read the wall they came back to
+objectives.Objective_Stormseeker_TheTrace.taskSet.0.task.2 = Read the statue's plinth

@@ -2,6 +2,7 @@ package io.github.legendaryforge.legendary.mod.hytale;
 
 import com.hypixel.hytale.server.core.event.events.player.PlayerConnectEvent;
 import com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent;
+import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Interaction;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
@@ -9,6 +10,7 @@ import io.github.legendaryforge.legendary.mod.hytale.command.StormseekerAdvanceC
 import io.github.legendaryforge.legendary.mod.hytale.command.StormseekerStatusCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.StormseekerTrialCommand;
 import io.github.legendaryforge.legendary.mod.hytale.stormseeker.HytaleStormseekerHost;
+import io.github.legendaryforge.legendary.mod.hytale.stormseeker.StormseekerStartLineInteraction;
 import io.github.legendaryforge.legendary.mod.hytale.stormseeker.StormseekerTickSystem;
 import io.github.legendaryforge.legendary.quests.stormseeker.persistence.PropertiesProgressStore;
 import java.nio.file.Path;
@@ -21,6 +23,20 @@ public class LegendaryHytalePlugin extends JavaPlugin {
     public LegendaryHytalePlugin(@Nonnull JavaPluginInit init) {
         super(init);
         getLogger().atInfo().log("LegendaryHytale plugin initializing...");
+    }
+
+    @Override
+    protected void setup() {
+        super.setup();
+
+        // Must happen here, not in start(): setup() runs before assets are parsed, and the
+        // Furniture_Stormseeker_Inscription_Five block asset references "StormseekerStartLine"
+        // by Type. Registering it any later would leave the asset with an unresolvable
+        // interaction type. Confirmed against the first-party ObjectiveReputationPlugin,
+        // which registers its codecs in setup() for the same reason.
+        Interaction.CODEC.register(
+                "StormseekerStartLine", StormseekerStartLineInteraction.class, StormseekerStartLineInteraction.CODEC);
+        getLogger().atInfo().log("Registered interaction type: StormseekerStartLine");
     }
 
     @Override
