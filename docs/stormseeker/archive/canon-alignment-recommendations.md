@@ -1,5 +1,21 @@
 # Stormseeker × Orbis — Alignment Recommendations
 
+> **ARCHIVED 2026-08-25 — superseded, not withdrawn.** This document was explicitly
+> *recommends, not decides*. It has now been decided, and its conclusions are absorbed into
+> `../stormseeker-canonical.md` v4.0 and the design record at
+> `../../superpowers/specs/2026-08-25-stormseeker-narrative-redesign-design.md`.
+>
+> What it got right and what carried forward: residue replacing leylines as a **rename** rather than
+> a replacement; the Elemental Circles as the load-bearing canon hook; the storm-rarity problem;
+> canon-native costing less than assumed.
+>
+> Where the decision went further than this document proposed: the Circle is **raised by the
+> player**, not found or claimed; the questline was rewritten from canon rather than realigned; and
+> the invented vocabulary was dropped entirely rather than renamed.
+>
+> Kept for provenance. Do not treat it as current.
+
+
 > Depends on `../integration/hytale-capability-audit.md` (what the engine can do, build 0.5.9) and
 > `../setting/hytale-orbis-setting-brief.md` (what the world contains). Read either of those for
 > evidence; this document only draws conclusions from them.

@@ -201,6 +201,13 @@ elements with both an essence and a spirit, has no circle.
 — *"Statue of a Silent Deity"* — and a `Block_Spawner_Wind` ("Wind Spawner"). There is a portal
 key for **"Fragment: Orbis — Windrider Valley"**. [asset]
 
+**And none of it is placed.** [asset, verified 2026-08-25] The 84 `Temple_Wind` assets are a build
+palette with **no shipped structure using them** — no prefab, no worldgen entry. `Statue_Gaia` exists
+in exactly two variants, `Temple_Dark` and `Temple_Wind`, both under `Unique/`; the Dark one has dark
+temples to appear in, the Wind one has nowhere. This matters for more than availability: an asset
+that already dresses every ruin in the game cannot carry weight in a story, and these carry none yet.
+A mod is free to be their first user.
+
 ---
 
 ## 7. Systems a story can hook into
