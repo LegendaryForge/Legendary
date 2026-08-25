@@ -301,7 +301,7 @@ Line-level bookkeeping only happens on the real advance path, so admin commands 
   cheap to author, and now demonstrably works at runtime. The design decision is separate and belongs
   with `docs/architecture/native-objectives-migration-cost.md`,
   `docs/architecture/questline-framework-adoption.md` and
-  `docs/stormseeker/canon-alignment-recommendations.md`.
+  `docs/stormseeker/stormseeker-canonical.md`.
 
 ---
 

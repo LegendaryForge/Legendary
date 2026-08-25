@@ -2,6 +2,18 @@
 
 > **Source:** Stormseeker Quest Narrative v1.2
 > **Last Updated:** 2026-02-04
+>
+> **ARCHIVED — harvested, not discarded (noted 2026-08-25).** The questline was rewritten from
+> Orbis canon in `../stormseeker-canonical.md` v4.0. Three things were taken from this document and
+> survive there: the **covenant framing** (the storm withdraws satisfied rather than defeated), the
+> line **"the storm is not an enemy, but a gate"** — now literally true, since there is a gate — and
+> the **Epilogue's register**, which is preserved almost verbatim because it was the best writing in
+> either document.
+>
+> Note for anyone comparing the two: this is a **structurally different questline**, not an earlier
+> numbering of the current one. Here the revelation that the world has hidden geometry is a
+> third-act payoff (Phase 4 of 5); in v3.1 it had become a first-act reward. That divergence went
+> unreconciled for six months and is what prompted the rewrite.
 
 This document presents the Stormseeker questline as a **player-facing narrative**. It is story-first, describing discoveries, trials, atmosphere, and emotional beats. Gameplay triggers, implementation details, and hard commitments to specific world objects are intentionally omitted or expressed only through in-world framing.
 
