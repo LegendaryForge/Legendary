@@ -5,6 +5,11 @@
 > evidence; this document only draws conclusions from them.
 >
 > Written 2026-08-24, before any code or lore changes. Nothing here has been implemented.
+>
+> **Revised 2026-08-24** — phase numbers updated to the renumbered scheme (`UNTOUCHED`,
+> Phases 1–6, `COMPLETE`); the leyline recommendation corrected from *replace* to *rename*;
+> the "reward that rewards nothing" claim retracted; weather-prediction and shader limits
+> recorded. Corrections are marked in place rather than silently edited.
 
 ---
 
@@ -37,7 +42,7 @@ Every row on the right is shipped content in build 0.5.9.
 | — (no equivalent proposed) | **Storm Hide → Storm Leather → armour**, **Stormsilk**, **Storm Thistle** | An entire storm material chain already exists and is currently ungated by any story. |
 | "Resonator (Ancient Air Leyline Calibration Station)" | **an Air/Storm `Elemental_Circle`** | The monument family exists for Earth, Fire, Frost, Poison, Sand. **Storm is missing.** |
 | Resonator architecture | **`Temple_Wind` block set** + **"Statue of a Silent Deity"** (Gaia) | A complete wind-temple kit, already art-finished. |
-| "leylines", "leyline sight" | *nothing* — the word does not exist in Orbis | Needs replacing, not translating. See §4. |
+| "leylines", "leyline sight" | **residue currents**, derived from shipped Lightning Essence text | Rename the substance; keep the currents and their intersections. See §4. |
 | "sigil" | *nothing* — no sigils, no runes | The *concept* (a binary earned proof) is fine; the word is foreign. |
 | "attunement" | *nothing* | Same. |
 | "Ancient Forge" crafting locus | **Arcanist's Workbench** (`Bench_Arcane`) | Already crafts Ancient Gateways and Portal Fragments. |
@@ -67,8 +72,8 @@ what the native system does and does not cover:
 
 **What it would replace well** — questline structure and chaining, per-task progress, storm gating
 (`WeatherTriggerCondition` takes `weatherIds[]` directly), reach-a-location objectives, gather and
-craft objectives for Phase 3 materials, kill objectives against `Spirit_Thunder`, reward delivery,
-completion history, and the objective panel UI. All of Phase 3's "materials + validation gates",
+craft objectives for Phase 5 (The Frame) materials, kill objectives against `Spirit_Thunder`, reward delivery,
+completion history, and the objective panel UI. All of Phase 5's "materials + validation gates",
 most of Phases 0–1, and all of the progress bookkeeping.
 
 **What it cannot express** — the two trials. `FlowingTrialEvaluator` scores continuous alignment
@@ -91,7 +96,7 @@ infrastructure before that decision is made is an hour spent on a possible dupli
 
 ## 3. What the February audit blocked that is now open
 
-Four capabilities the v3.0 design was written *around* are available. Phase 0 and Phase 1 were
+Four capabilities the v3.0 design was written *around* are available. Phases 1 and 2 were
 shaped by their absence:
 
 - **Pathfinding.** February planned "not full A\* pathfinding — more like smart straight line with
@@ -119,23 +124,63 @@ storm, do these things" beat needs no plugin code at all.
 
 ## 4. What has to change
 
-**Replace the leyline layer.** It is the only invented concept with no canon anchor and real design
-weight — Phase 1.5's entire reward is "Leyline Sight". Two candidate directions, both canon-native:
+**Rename the leyline layer; keep the architecture.** An earlier revision of this document said the
+leyline concept should be *replaced*, on the grounds that it was a generic fantasy import with no
+canon anchor. That was too narrow a reading of what it is for. The intended architecture — recorded
+here because it is not written down anywhere else — is:
 
-- *Storm-residue sight.* Lightning Essence lore says elementals are "born from [storm magic's]
-  lingering traces". A perception that reveals **residue** — where storm magic has pooled, where
-  elementals will form — is derived directly from shipped text, and it makes Class C's "spatial
-  discovery" role work without leylines.
-- *Arcanist instrumentation.* The Arcanist's Workbench, Ancient Gateways and Portal Fragments
-  establish that mortals built devices to perceive and channel power. A recovered arcane instrument
-  is a canon-shaped reason to see something others cannot.
+> **Every element has its own residue currents flowing through the world. Currents intersect at
+> nexus points. The nexus points are the Elemental Circles.**
 
-The second fits the "hubris of advanced civilisations" theme that runs through Orbis' flavour text
-and gives the Resonator a canon reason to exist as a *ruin*.
+That is a better fit for shipped content than the storm-only version, and it explains something the
+assets otherwise leave unexplained: Hytale has circle prefabs for **five** different elements and
+spawn beacons in three zones hosting **three different spirits** (`Spirit_Root` in Zone 1,
+`Spirit_Thunder` in Zone 2, `Spirit_Frost` in Zone 3). If circles are nexus points, the elemental
+that haunts one is the dominant current there. Nothing in the game says this — but nothing
+contradicts it either, and the circles are the largest piece of unexplained authored content found
+in the audit.
 
-**Fix the reward-that-rewards-nothing.** Whatever replaces Leyline Sight must change something at
-the moment it is granted. The current design grants a perception whose only stated payoff (finding
-Class C crystals) explicitly works without it.
+So the change is **vocabulary, not structure**. "Leyline" has zero occurrences in Orbis; *residue*
+is derived directly from shipped text — `Ingredient_Lightning_Essence` says elementals are "born
+from [storm magic's] **lingering traces**". Rename the substance, keep the currents, keep the
+intersections.
+
+Stormseeker is then the **first** of a per-element family, not a bespoke questline: lightning
+residue, the storm nexus, `Spirit_Thunder`, `Essence of Lightning`. Frost is the next most complete
+(spirit + essence + dedicated tiered circle art + `Zone3_Snow_Storm` + a whole zone).
+
+**Longer-term, and recorded now so the framework is built for it:** an *Ancient Master Forge* at the
+rare nexus where **all** elemental currents intersect — the shared endgame locus for the whole
+legendary family rather than a Stormseeker-specific "Ancient Forge". Canon offers a lineage for it:
+the **Arcanist's Workbench** already crafts Ancient Gateways and Portal Fragments, so mortals
+building an instrument to work at a confluence of power is established behaviour, and the
+"hubris of advanced civilisations" theme gives it a reason to be a ruin. Future work — noted here
+only so that per-element questline #1 does not hard-code assumptions that questline #2 has to undo.
+
+**On "Leyline Sight" being a reward that rewards nothing.** An earlier revision of this document
+made that claim, on the grounds that Class C crystals are "visible even before attunement". **That
+was wrong, or at least far too strong.** Visibility is not the point: the sight tells you *where to
+look*, not *what a crystal looks like*. Currents → intersections → nexus → concentrations. It is a
+search tool in a large world, not a reveal tool, and that is a real power. The reward stands as
+designed; what it needs is a name that exists in Orbis.
+
+**Know what the perception can actually be.** `PerceptionToggleHandler` is a stub — one boolean and
+a `println` — and its comment says *"Logic for post-processing shaders will be implemented in Phase
+D."* Per the capability audit, screen-space shaders are almost certainly not available to a mod: the
+client is a closed native binary. The vision has to be built **in the world**, from particles and
+`DynamicLight`, not as a lens over the camera. That is a constraint on what it can look like, not on
+what it can do — currents, intersections and concentrations are all expressible as world effects.
+
+Two defects in that stub while it is being replaced: it holds a **single** `leylineSightActive`
+field with no player keying (one instance, one flag, every player), and it is not wired to anything.
+
+**Storm timing cannot be sensed, only read.** There is no forecasting API — see the capability
+audit. A perception cannot tell the player a storm is coming. It *can* make a storm far more
+legible while it is happening: residue surges, and an attuned player sees which nexus is live and
+where concentrations are, right now. That does not fix storm rarity, but it changes what rarity
+costs — the unattuned wait out the rain, the attuned can read it. For the finale specifically,
+`setForcedWeather` exists and a climax should probably not be hostage to a ~1.5% roll; the cost is
+that it changes the sky for everyone in that environment.
 
 **Rename sigils and attunement**, or accept them as mod-local jargon. Lower priority than the
 leyline question — they are labels on sound mechanics, not load-bearing world claims.
@@ -153,6 +198,80 @@ leyline question — they are labels on sound mechanics, not load-bearing world 
 complete "within a single storm" is gated on a rare event, and the skip path — walk onto a plate
 during any storm and attune — becomes the *likely* first contact rather than the exception. That
 was already the sharpest open design question; the weights make it sharper.
+
+---
+
+## 4b. Proposal: the nexus is dangerous during a storm
+
+Hytale's storms are **purely ambient** today — sky, clouds, particles, audio. No damage, and no
+lightning entity at all (zero matching classes in the jar). Nothing about weather can hurt you.
+
+That is a problem for the intended finale, which asks the player to expose the frame to the storm
+and let it be struck. Inverting a feared mechanic is the whole trick, and there is no fear to
+invert. But making *storms* dangerous globally is a heavy imposition — every player on the server
+gets a changed base game so that one questline's climax can land.
+
+**Narrower and better: the danger is not the storm, it is a nexus during a storm.** Currents surge
+when a storm passes over; a nexus is where currents intersect; a circle in a storm is therefore a
+charged, hazardous place. This keeps everything the broad version bought:
+
+- **Local.** Weather is unmodified everywhere. A hundred blocks away it is just rain.
+- **Diegetic, and ours.** Residue is a layer this mod owns entirely, so no engine weather behaviour
+  changes and `setForcedWeather` is not needed for the ambient case.
+- **It explains the elementals.** `Spirit_Thunder` spawns at circle beacons and is, per shipped item
+  text, "born from [storm magic's] lingering traces". A storm surging the nexus is *why* they appear.
+- **The inversion works, because we taught the fear.** The questline spends hours establishing that
+  a circle in a storm is somewhere you do not linger. The finale then requires standing there.
+
+### Feasibility — the whole chain exists
+
+| Step | Mechanism | Status |
+|---|---|---|
+| Know a circle is near | `SpawnBeacon extends Entity`, `getSpawnConfigId()` → `"Zone2_Elemental_Circle_Tier2"` | verified |
+| Know a storm is overhead | `WeatherResource.getWeatherIndexForEnvironment(int)` + the weather `Tags` map | verified; `WeatherTriggerCondition` pairs exactly these two |
+| Hurt the player | `new Damage(Damage.Source, DamageCause, float)` | verified, constructible |
+| Make it *felt* | `Damage` meta keys: `IMPACT_PARTICLES`, `IMPACT_SOUND_EFFECT`, `CAMERA_EFFECT`, `KNOCKBACK_COMPONENT`, `HIT_LOCATION` | verified — a strike is one object |
+| Author it without code | `DamageEntityEffect` is a Trigger Volume effect | verified |
+
+**And the damage vocabulary has a storm-shaped hole in it.** `DamageCause` is a registrable asset
+(`JsonAssetWithMap` + `AssetBuilderCodec`). What ships in `Server/Entity/Damage/`:
+
+```jsonc
+// Elemental.json
+{ "$Comment": "This damage type exists to facilitate sub types" }
+
+// Fire.json                    // Ice.json
+{ "Parent": "Elemental",        { "Parent": "Elemental",
+  "Inherits": "Elemental" }       "Inherits": "Elemental" }
+```
+
+Hytale built an `Elemental` damage parent, gave it `Fire` and `Ice`, and stopped. **There is no
+Lightning.** Adding `Lightning.json` is a three-line asset inheriting an existing parent — the third
+instance of the same pattern this audit keeps finding, alongside the missing storm circle and the
+missing air essence.
+
+### Prefer `EntityEffect` over raw damage
+
+`asset/type/entityeffect` is a complete, asset-driven status-effect framework — `EntityEffect`,
+`ApplicationEffects`, `AbilityEffects`, `ModelOverride`, `OverlapBehavior`, `RemovalBehavior`,
+`ActiveEntityEffect`, `LivingEntityEffectSystem`, its own `PacketGenerator` and command. **Exactly
+one asset ships against it (`Test_Apply_EntityEffect`)** — the framework is built and effectively
+unused, and it is mod-registrable.
+
+A *storm-charged* entity effect is a better primitive than repeated raw damage: it stacks properly
+(`OverlapBehavior`), it clears properly (`RemovalBehavior`), it can change the player's appearance
+(`ModelOverride`), and it gives the hazard a readable state rather than a series of unexplained
+hits. Damage becomes one consequence of the effect rather than the whole mechanic.
+
+### Open knobs — the actual design questions
+
+- Continuous drain, or discrete strikes? Discrete is more Onyxia-shaped and more readable.
+- Does it scale with circle tier, storm type, or proximity to the nexus centre?
+- Does it hit everyone, or only the attuned? **Recommend everyone** — a danger only you can perceive
+  is not one the world taught you, and the whole point is a shared, learned fear.
+- Is the real danger the elementals rousing at the nexus, with the effect as atmosphere? That
+  version needs no damage cause at all and uses `SpawnBeacon.manualTrigger(...)`.
+
 
 ---
 
@@ -193,7 +312,7 @@ was already the sharpest open design question; the weights make it sharper.
 
 1. **Decide fidelity** — canon-native or canon-compatible — now that the evidence is in. §1
    suggests canon-native costs less than expected.
-2. **Resolve the leyline question** (§4). It is upstream of Phase 1.5's reward, Class C materials,
+2. **Resolve the residue naming** (§4). It is upstream of Phase 3's reward, Class C materials,
    and the Resonator's identity, and nothing else can be settled around it.
 3. **Settle the skip path and storm rarity** (§4). It determines whether Phases 0–1 are real content.
 4. **Brainstorm the native-objectives adoption separately** (§2). Largest structural call; do not

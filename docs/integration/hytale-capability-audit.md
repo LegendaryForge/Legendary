@@ -163,8 +163,73 @@ things" needs no plugin code at all.
 
 ---
 
+## 4.3 Two frameworks that are built and effectively unused
+
+Both are mod-registrable asset types, and both matter more than their shipped usage suggests.
+
+**`EntityEffect` — the status-effect framework.** `asset/type/entityeffect/config/` has
+`EntityEffect`, `ApplicationEffects`, `AbilityEffects`, `ModelOverride`, `OverlapBehavior`,
+`RemovalBehavior`, plus `entity/effect/ActiveEntityEffect`, `LivingEntityEffectSystem`,
+`EntityEffectPacketGenerator`, an `EntityEffectCommand`, a `TargetEntityEffect` interaction and a
+`ClearEntityEffectInteraction`. **Exactly one asset ships against it: `Test_Apply_EntityEffect`.**
+Buffs, debuffs, stacking rules, removal rules and appearance overrides are all available and almost
+nothing uses them.
+
+**`DamageCause` is an asset, not an enum.** It implements `JsonAssetWithMap` with an
+`AssetBuilderCodec`, an `id` and an `inherits`, so a mod can register its own. Shipped causes live
+in `Server/Entity/Damage/`: Bludgeoning, Command, Drowning, **Elemental**, Environment,
+Environmental, Fall, **Fire**, **Ice**, OutOfWorld, Physical, Poison, Projectile, Slashing,
+Suffocation. `Elemental.json` carries the comment *"This damage type exists to facilitate sub
+types"*, and `Fire.json` / `Ice.json` are three-line files that inherit it. **There is no Lightning
+subtype** — the same shaped gap as the missing storm circle.
+
+`Damage` itself is directly constructible — `new Damage(Damage.Source, DamageCause, float)` — and
+carries its presentation as metadata: `IMPACT_PARTICLES`, `IMPACT_SOUND_EFFECT`,
+`PLAYER_IMPACT_SOUND_EFFECT`, `CAMERA_EFFECT`, `KNOCKBACK_COMPONENT`, `HIT_LOCATION`, `DEATH_ICON`,
+`STAMINA_DRAIN_MULTIPLIER`.
+
+---
+
+## 4.4 Announced but not shipped — do not design around their absence
+
+Hypixel Studios has **no published roadmap**; it has said it is waiting for player feedback before
+producing one. What follows is from studio statements and press, cross-checked against what is
+actually in build 0.5.9. Treat the dates as unknown and the shapes as provisional — but knowing
+these are coming is enough to avoid building something they will obsolete.
+
+| Announced | State in 0.5.9 | What it means for us |
+|---|---|---|
+| **Mana system**, described as in development, with current magic items called deliberate previews | **Zero `Mana` classes in the jar.** Present only as item names — `Prototype - Mana Book`, `Prototype - Mana Guitar`, `Prototype - Mana Staff` — all explicitly `Prototype_` | Do **not** invent a Stormseeker-specific resource meter. If a costed ability is ever wanted, stub the cost and wait. |
+| **Ability rune system** (announced July 2026) | `asset/type/entityeffect/config/AbilityEffects` + `protocol/AbilityEffects` + `AbilityCombatAction` exist; `Rune` appears in 11 asset paths and no lang strings | `AbilityEffects` under `EntityEffect` is the plausible substrate. Build any Stormseeker ability *on `EntityEffect`* rather than on a bespoke system. |
+| **Magic "much bigger than a few spell books"** | Two schools ship as items: `Recipe_Book_Magic_Air` = **"Air Grimoire"**, `Recipe_Book_Magic_Void` = "Void Grimoire". Plus `Weapon_Spellbook_Grimoire_*` and `Grimoire: Rekindle Embers` | **An Air school already exists and is the nearest neighbour to storm/lightning.** If air magic is developed, Stormseeker's identity will sit beside it — worth watching so the two do not contradict each other. |
+| Goblin faction + Goblin Breach world event, hardcore mode, cubic-chunk world tech, party minigames | Not present | No overlap with this project. Cubic chunks could affect worldgen assumptions if we ever place structures. |
+
+**The practical rule:** where a Stormseeker mechanic could plausibly be expressed as an
+`EntityEffect`, express it that way rather than inventing a parallel system — that is the surface
+the announced work appears to be building on. Re-check this table at every re-audit; it is the part
+most likely to change.
+
+
+---
+
 ## 5. Constraints and gotchas
 
+- **There is no weather forecasting API. `WeatherForecast` is not a forecast.** It is one row of a
+  weighted probability table — `weatherId` + `weight`, implementing `IWeightedElement` — i.e. the
+  `{"WeatherId": "Zone1_Storm", "Weight": 1}` entries in `Env_Zone1.json`. Weather is rolled from
+  those weights on an hour boundary (`WeatherResource.compareAndSwapHour(int)`). **Nothing exposes
+  "what weather is coming next."** A design that wants the player to anticipate a storm cannot read
+  it from the engine; it must either derive its own schedule or force the weather. Recorded because
+  the class name reads like a capability it does not have, and was taken for one during this audit.
+- **The server can force weather.** `WeatherResource.setForcedWeather(String)` /
+  `getForcedWeatherIndex()` / `consumeForcedWeatherChange()`. Useful for a scripted one-off; note it
+  changes the sky for every player in that environment, not just the one who triggered it.
+  `getWeatherIndexForEnvironment(int)` reads current weather per environment.
+- **Post-processing shaders are almost certainly unavailable.** February listed them as "Unknown"
+  with the Leyline Sight visual "TBD". The client is a closed native binary and nothing in the
+  server jar or protocol surfaces a shader hook. Treat any screen-space effect as unavailable until
+  proven otherwise: an in-world effect built from particles and `DynamicLight` is the supported
+  shape. This bounds what a "vision mode" can look like.
 - **Storms are rare.** In `Env_Zone1`'s forecast table, `Zone1_Storm` has `Weight: 1` against
   `Zone1_Sunny`'s `52` (~1.5% of rolls). Any design gated on an active storm is gated on an
   uncommon event. Check the forecast weights per zone before assuming availability.
