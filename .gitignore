@@ -15,3 +15,8 @@ build/
 # Python bytecode from scripts/ (gradle_modules.py is imported by the census scripts)
 __pycache__/
 *.py[cod]
+
+# Ad-hoc helper scripts and throwaway probes (workspace-wide convention:
+# scratch helpers live here, not /tmp, so they survive a reboot). Promote to
+# scripts/ with a commit once one is used in a second session.
+.scratch/
