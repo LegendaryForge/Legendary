@@ -95,7 +95,22 @@ val checkManifestEntrypoint =
         outputs.upToDateWhen { false }
     }
 
-tasks.named("check") { dependsOn(checkManifestEntrypoint) }
+// The asset tree is invisible to the compiler in the same way the manifest entrypoint is,
+// and a mis-named file silently OVERRIDES a base-game asset rather than failing. Reads
+// files, not classes, so this is meaningful on CI where the module compiles nothing.
+val checkAssetPackIntegrity =
+    tasks.register<AssetPackIntegrityCheck>("checkAssetPackIntegrity") {
+        group = "verification"
+        description =
+            "Verifies this module's shipped asset pack cannot override base-game assets or " +
+            "text, that objective lines name objectives that exist, and that every " +
+            "translation key an asset references is defined."
+        manifest.set(layout.projectDirectory.file("src/main/resources/manifest.json"))
+        resourceRoot.set(layout.projectDirectory.dir("src/main/resources"))
+        outputs.upToDateWhen { false }
+    }
+
+tasks.named("check") { dependsOn(checkManifestEntrypoint, checkAssetPackIntegrity) }
 
 tasks.named("compileJava") {
     dependsOn(checkHytaleJarVersion)

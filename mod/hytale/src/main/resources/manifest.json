@@ -11,7 +11,7 @@
     ],
     "Website": "https://github.com/LegendaryForge",
     "DisabledByDefault": false,
-    "IncludesAssetPack": false,
+    "IncludesAssetPack": true,
     "Dependencies": {},
     "OptionalDependencies": {},
     "ServerVersion": "*",
