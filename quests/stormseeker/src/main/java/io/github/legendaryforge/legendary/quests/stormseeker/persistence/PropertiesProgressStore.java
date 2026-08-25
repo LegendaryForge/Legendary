@@ -21,7 +21,7 @@ import java.util.Properties;
  *
  * <p>Format:
  * <pre>
- * phase=PHASE_2_DUAL_SIGILS
+ * phase=PHASE_4_THE_TRIALS
  * sigilA=true
  * sigilB=false
  * </pre>
@@ -51,7 +51,7 @@ public final class PropertiesProgressStore {
             StormseekerProgress progress = new StormseekerProgress();
 
             // Advance to saved phase
-            String phaseName = props.getProperty("phase", "PHASE_0_WATCHING_ELEMENTAL");
+            String phaseName = props.getProperty("phase", "UNTOUCHED");
             StormseekerPhase targetPhase = StormseekerPhase.valueOf(phaseName);
             while (progress.phase() != targetPhase && !progress.phase().isFinal()) {
                 progress.advanceToNextOrThrow(progress.phase().next());

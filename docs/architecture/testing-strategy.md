@@ -8,7 +8,7 @@
 ### Core Components
 
 - **StormseekerProgress:** Authoritative binary sigils + phase tracking
-  - `advanceIfEligible` enforces sequencing for Phase 2 → later phases based on sigil proofs
+  - `advanceIfEligible` enforces sequencing for Phase 4 (The Trials) → later phases based on sigil proofs
 
 - **StormseekerAnchoredTrialService:** Enter/leave/tick control surface
   - Denies entry if Sigil B already present

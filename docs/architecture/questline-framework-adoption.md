@@ -38,8 +38,8 @@ is scaffold in three places:
    `StormseekerTrekSystem(bus, null)` — `null` where the comments say a
    host-provided world belongs — and subscribe `StormseekerLifecycleBridge` to
    live `EncounterStartedEvent`s for the first time.
-3. The `AttunementCompleteEvent` handler body is a comment. The Phase 1.5 →
-   Phase 2 handshake is unimplemented.
+3. The `AttunementCompleteEvent` handler body is a comment. The Phase 3 →
+   Phase 4 handshake is unimplemented.
 
 Migrating would have wired a coherent framework to a half-built implementation
 and activated dormant paths in the only module with no test coverage.

@@ -3,24 +3,27 @@ package io.github.legendaryforge.legendary.quests.stormseeker.quest;
 /**
  * Canonical Stormseeker quest step identifiers used in gate attributes.
  *
- * <p>These are intentionally coarse for the scaffold:
+ * <p>These are intentionally coarse:
  * <ul>
- *   <li>They start at Phase 3 because earlier phases should not be gating activations.</li>
+ *   <li>They start at {@code PHASE_5_THE_FRAME} because earlier phases should not gate activations.</li>
  *   <li>They are stable identifiers (treat as public contract).</li>
  * </ul>
  *
- * <p>Later, if we need finer-grained steps, we add new identifiers without renaming existing ones.
+ * <p>Renumbered 2026-08-24 alongside {@link StormseekerPhase}. The old ids
+ * ({@code stormseeker.phase3.incomplete_form}, {@code .phase4.storms_answer},
+ * {@code .phase5.epilogue}) are gone rather than aliased — a deliberate clean break, taken while
+ * nothing persisted depends on them. Once content ships, add new ids instead of renaming these.
  */
 public final class StormseekerQuestSteps {
 
-    /** Player is in Phase 3 (incomplete form / assembly). */
-    public static final String PHASE_3_INCOMPLETE_FORM = "stormseeker.phase3.incomplete_form";
+    /** Player is gathering and crafting the frame. */
+    public static final String PHASE_5_THE_FRAME = "stormseeker.phase5.frame";
 
-    /** Player is in Phase 4 (storm's answer / correction). */
-    public static final String PHASE_4_STORMS_ANSWER = "stormseeker.phase4.storms_answer";
+    /** Player is charging and grounding the frame. */
+    public static final String PHASE_6_THE_FORGING = "stormseeker.phase6.forging";
 
-    /** Player is in Phase 5 (epilogue). */
-    public static final String PHASE_5_EPILOGUE = "stormseeker.phase5.epilogue";
+    /** Player has finished the questline. */
+    public static final String COMPLETE = "stormseeker.complete";
 
     private StormseekerQuestSteps() {}
 }

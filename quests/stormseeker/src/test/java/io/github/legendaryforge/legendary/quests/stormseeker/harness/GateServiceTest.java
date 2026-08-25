@@ -48,7 +48,7 @@ public final class GateServiceTest {
                 Optional.empty(),
                 Optional.empty(),
                 Optional.empty(),
-                Map.of(StormseekerQuestAttributes.QUEST_STEP, StormseekerQuestSteps.PHASE_3_INCOMPLETE_FORM)));
+                Map.of(StormseekerQuestAttributes.QUEST_STEP, StormseekerQuestSteps.PHASE_5_THE_FRAME)));
 
         assertTrue(decision.allowed());
         assertEquals(ResourceId.of("legendarycore", "allowed"), decision.reasonCode());

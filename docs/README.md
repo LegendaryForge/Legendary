@@ -68,14 +68,14 @@ When in doubt about what's "true":
 ## Current Status (2026-02-04)
 
 ### ✅ Locked & Implemented
-- Phase 0, 1, 1.5 design locked
-- Phase 2 design locked
-- Phase 2 Anchored Trial scaffolded and merged
+- Phase 1, 2, 3 design locked
+- Phase 4 design locked
+- Phase 4 Anchored Trial scaffolded and merged
 
 ### 🚧 In Progress
-- Phase 2 full implementation
+- Phase 4 full implementation
 
 ### 📋 Pending Design
-- Phase 3+
+- Phase 5+
 - Flowing Trial mechanics
 - Ancient Forge implementation details

@@ -8,31 +8,30 @@ final class StormseekerQuestStepMapperTest {
 
     @Test
     void phasesBeforeThreeDoNotProduceGateSteps() {
-        assertTrue(StormseekerQuestStepMapper.stepFor(StormseekerPhase.PHASE_0_WATCHING_ELEMENTAL)
+        assertTrue(StormseekerQuestStepMapper.stepFor(StormseekerPhase.PHASE_1_THE_MARK)
                 .isEmpty());
-        assertTrue(StormseekerQuestStepMapper.stepFor(StormseekerPhase.PHASE_1_STORM_TREK)
+        assertTrue(StormseekerQuestStepMapper.stepFor(StormseekerPhase.PHASE_2_THE_TREK)
                 .isEmpty());
-        assertTrue(StormseekerQuestStepMapper.stepFor(StormseekerPhase.PHASE_1_5_ATTUNEMENT)
+        assertTrue(StormseekerQuestStepMapper.stepFor(StormseekerPhase.PHASE_3_THE_WAKING)
                 .isEmpty());
-        assertTrue(StormseekerQuestStepMapper.stepFor(StormseekerPhase.PHASE_2_DUAL_SIGILS)
+        assertTrue(StormseekerQuestStepMapper.stepFor(StormseekerPhase.PHASE_4_THE_TRIALS)
                 .isEmpty());
     }
 
     @Test
     void phaseThreeAndBeyondProduceCanonicalSteps() {
         assertEquals(
-                StormseekerQuestSteps.PHASE_3_INCOMPLETE_FORM,
-                StormseekerQuestStepMapper.stepFor(StormseekerPhase.PHASE_3_INCOMPLETE_FORM)
+                StormseekerQuestSteps.PHASE_5_THE_FRAME,
+                StormseekerQuestStepMapper.stepFor(StormseekerPhase.PHASE_5_THE_FRAME)
                         .orElseThrow());
 
         assertEquals(
-                StormseekerQuestSteps.PHASE_4_STORMS_ANSWER,
-                StormseekerQuestStepMapper.stepFor(StormseekerPhase.PHASE_4_STORMS_ANSWER)
+                StormseekerQuestSteps.PHASE_6_THE_FORGING,
+                StormseekerQuestStepMapper.stepFor(StormseekerPhase.PHASE_6_THE_FORGING)
                         .orElseThrow());
 
         assertEquals(
-                StormseekerQuestSteps.PHASE_5_EPILOGUE,
-                StormseekerQuestStepMapper.stepFor(StormseekerPhase.PHASE_5_EPILOGUE)
-                        .orElseThrow());
+                StormseekerQuestSteps.COMPLETE,
+                StormseekerQuestStepMapper.stepFor(StormseekerPhase.COMPLETE).orElseThrow());
     }
 }
