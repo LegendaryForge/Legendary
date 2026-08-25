@@ -22,6 +22,14 @@
 > will stop generating chunks — so that half is deferred rather than built. §8b's worldgen bullet
 > is corrected in place with the superseded text quoted.
 >
+> **Fourth pass, 2026-08-25 — the weather question, answered NO.** §8d is new, §4b gained the
+> `/weather` and `/objective locationmarker` commands, and §8b's `WeatherTriggerCondition` bullet is
+> retired in place. A human stood in a forced storm and watched the condition not fire — including
+> against a marker listing **all 87 weather ids in the game**, so it is not id-matching. `HourRange`
+> on an otherwise identical marker fires, so conditions are evaluated. The bounded claim is "does not
+> fire **from a mod-pack-shipped marker**"; the base game's own weather-conditioned marker was not
+> tested, and §8d names that as the next test rather than assuming the stronger conclusion.
+>
 > Throughout, **"verified by running"** means observed in a log line or on a screen during that
 > session; **"read from bytecode"** means decompiled and reasoned about but not exercised. The two
 > are labelled separately everywhere they appear.
@@ -241,6 +249,19 @@ form of `/give` is:
 | `/objective reachLocationMarker add <id>` | **place** a `ReachLocationMarker` at your current position |
 | `/objective history` | dump the calling player's `ObjectiveHistoryComponent` |
 | `/gamemode <adventure\|creative\|a\|c>` | switch mode |
+| `/objective locationmarker add <id>` | **place** an `ObjectiveLocationMarker` at your current position |
+| `/objective locationmarker enable\|disable [--world=?]` | arm or disarm **all** objective location markers for a world |
+| `/weather set <weatherId> [--world=?]` | force a world's weather (console-runnable — it is an `AbstractWorldCommand`, not player-scoped) |
+| `/weather get [--world=?]` | read the forced weather back, or `not locked` if none |
+| `/weather reset [--world=?]` | release the force — **returns to *natural* weather, which is not the same as "clear"** |
+
+> **`weather reset` is not a clear-sky command.** It releases the lock and lets natural weather
+> resume, which may itself be a storm. A negative control that wants "definitely not storming" must
+> force an explicit calm id (`Zone1_Sunny`), not reset. Pinning that down before the test is what
+> kept the 2026-08-25 weather spike's control honest.
+>
+> **`objective locationmarker` has an `enable`/`disable` pair, and it is world-scoped.** A disabled
+> marker fails silently and looks exactly like a broken asset. Enable it before concluding anything.
 
 > **`/give` needs the `hytale:Builder` role or Admin, and a fresh server directory starts
 > unprivileged.** The refusal reads like a syntax error, which is how an hour goes missing. Launch
@@ -664,9 +685,14 @@ rediscovering the symptom.
 **Reviewed 2026-08-25 against the Act II play-through.** Items the run closed are gone from this
 list and recorded as findings above; items it opened are new here.
 
-- **`WeatherTriggerCondition` firing.** The marker asset carrying it parses, validates and loads;
-  nothing has yet stood in a storm and watched it trigger. Act II does not exercise it. This is the
-  Stormseeker-specific mechanic, so it remains the most load-bearing untested thing here.
+- **`WeatherTriggerCondition` firing — TESTED 2026-08-25, and it does NOT fire. See §8d.** Someone
+  has now stood in a storm and watched it not trigger. This bullet used to read: *"The marker asset
+  carrying it parses, validates and loads; nothing has yet stood in a storm and watched it trigger.
+  Act II does not exercise it. This is the Stormseeker-specific mechanic, so it remains the most
+  load-bearing untested thing here."* Loading and validating turned out to be no evidence of firing
+  at all. What replaced it as the largest open question is narrower and named in §8d: whether the
+  **base game's own** weather-conditioned marker fires, which would decide "broken from a mod pack"
+  versus "broken for everyone".
 - **Why line-level `TimesCompleted` stays `0`** after a genuine, cleanly-disconnected
   play-through — see §8. Traced to a caller-side gate above
   `ObjectiveLineHistoryData.completed(...)`; the gate itself was not found. The
@@ -850,6 +876,96 @@ bash .scratch/hytale-server/run-server.sh
 # 3. read the census by name, never by position
 grep "Total Loaded Assets" <log> | grep -oE "BiomeAsset: [0-9]+"
 ```
+
+---
+
+## 8d. Objective location markers, and which trigger conditions actually fire
+
+> **Verified by running** on `0.5.9` / `214c57c5`, **2026-08-25**, with a connected client and a
+> human watching the screen. Six markers, one position, one variable at a time.
+
+### What an `ObjectiveLocationMarker` actually does
+
+**It is proximity-gated objective *display*, not an on-entry trigger.** Placing one via
+`/objective locationmarker add <id>` immediately shows a quest tracker (`0/1`); walking beyond the
+`ExitRadius` hides it; returning inside the `EntryRadius` shows it again.
+
+`/objective history` stays **empty** throughout. That is correct behaviour, not a failure — history
+records completions, and nothing was completed. Anyone testing this by watching history will
+conclude a working mechanism is broken.
+
+> **This document predicted the wrong observable.** The spike was designed expecting `Setup` +
+> entering the radius to *start* the line and land it in history. `Setup` names what the marker
+> displays and offers; it does not describe an entry event. That is the same
+> **name-read-as-capability** shape recorded three times already in `Workspace_Observations`, and it
+> was caught only because the operator described what was actually on screen rather than answering
+> the yes/no question that had been asked.
+
+### The result table
+
+All six markers were shipped from `mod/hytale`'s pack, placed at one position, under
+`/weather set Zone1_Storm` with `Weather in default is currently Zone1_Storm` read back:
+
+| Marker | `TriggerConditions` | Tracker |
+|---|---|---|
+| `SpikeNoCond` | none | **shows** |
+| `SpikeNoCond2` | none — *cap control* | **shows** |
+| `SpikeHourGate` | `HourRange` `MinHour: 0`, `MaxHour: 23` | **shows** |
+| `SpikeWeather` | `Weather [Zone1_Storm]` | absent |
+| `SpikeSunnyOnly` | `Weather [Zone1_Sunny]` | absent |
+| `SpikeAnyWeather` | `Weather [`**all 87 weather ids in the game**`]` | absent |
+
+**Proven:** a mod pack can ship a working `ObjectiveLocationMarker`; radius areas work with the
+declared 20/30 hysteresis; and `TriggerConditions` **are** evaluated from a mod pack — `HourRange`
+passes on a marker otherwise identical to the ones that fail.
+
+**Not working:** `WeatherTriggerCondition` never passes. Not for the forced weather, not for its
+opposite, not for every weather id in the game at once. **It is not an id-matching problem**, which
+is what the all-87 row exists to establish.
+
+### The control that nearly did not get run
+
+Every observation above is *also* consistent with "the client shows at most two trackers" — three
+had never been seen at once, and each failing marker was added when two were already displayed. A
+cap of exactly 2 would have explained the entire result set with `WeatherTriggerCondition` working
+perfectly.
+
+`SpikeNoCond2` exists only to kill that. It is a byte-for-byte-equivalent copy of `SpikeNoCond`
+with no conditions, and it produced a **third** simultaneous tracker. No cap; the weather rows mean
+what they appear to mean.
+
+**Keep the shape, not just the result.** The confound was invisible while the hypothesis was
+"weather is broken" and obvious the moment the question became "what else explains every row?" A
+differential test needs a control proving the *positive* case is still reachable in the exact
+configuration where the negative case is being claimed.
+
+### What this does NOT establish — the honest limit
+
+**The base game's own weather-conditioned marker was never tested.**
+`Server/Objective/ObjectiveLocationMarkers/ObjectiveLocationMarker_Trigger.json` ships with a
+`Weather` condition (alongside `HourRange`), and nothing here shows whether *it* fires. So the
+finding is bounded as **"does not fire from a mod-pack-shipped marker"**, and the stronger claim —
+that `Weather` conditions are broken for everyone, first-party included — is **not** supported.
+
+That is the cheapest next test and the one that should be run before any redesign: place the base
+marker, force its weather, see whether its tracker appears.
+
+### Consequence for Stormseeker
+
+Storm-gating via `WeatherTriggerCondition` is **not currently a mechanism to design on**. Act III's
+pre-storm signs and Act IV's storm-gated tiers both assumed it. Three routes remain, in order of
+proven-ness:
+
+1. **`HourRange` is proven** and gates by in-game time. It is not weather, but it is a working
+   pacing lever available today.
+2. **Java-side weather access from our own plugin.** `WeatherTriggerCondition` reads a
+   `WeatherResource` keyed off the player's `TransformComponent`; `mod/hytale` already registers
+   systems and a custom `Interaction`, so reading weather in code and gating there is available
+   without the asset-level condition. **Read from bytecode, not exercised** — it is a candidate, not
+   a proven route.
+3. **Drop storm-gating** and let storms be atmosphere rather than a gate.
+
+Deciding between them is Act III design work and is not settled here.
 
 ---
 
