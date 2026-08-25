@@ -1,7 +1,22 @@
 # Adopting the questline framework in `mod/hytale`
 
-**Status:** specified, not executed. Written 2026-08-24 alongside the module
-boundary realignment.
+**Status:** specified, not executed, and **now blocked on a prior decision.** Written
+2026-08-24 alongside the module boundary realignment.
+
+> **Read this before executing P1–P3.** On 2026-08-25 it was confirmed by running a server that
+> Hytale ships an asset-driven questline system a mod can contribute to as JSON — objectives,
+> chaining, weather/time-gated triggers, rewards, and a persistent per-player
+> `ObjectiveHistoryComponent`. See `docs/integration/hytale-asset-packs.md`.
+>
+> That system does **not** replace what this document describes: `core`'s framework answers "how do
+> N questlines register into our plugin", the native one answers "what a quest is and how progress
+> persists". But the second is the half `quests/stormseeker` currently hand-rolls, and adopting it
+> would materially shrink what the SPI has left to carry — possibly below the point where P1–P3 are
+> worth doing at all.
+>
+> P1–P3 are three real code changes that activate dormant paths in the module with the least test
+> coverage. **Settle the native-objectives question first**, or risk writing them against a spine
+> that is about to be replaced.
 
 ## What exists
 

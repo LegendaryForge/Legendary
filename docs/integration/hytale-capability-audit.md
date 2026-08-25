@@ -110,12 +110,20 @@ covered in depth in `stormseeker-canon-alignment.md`; the capability facts are:
   **`nextObjectiveLineIds[]`**. An objective *line* is a questline, and lines chain.
 - **`ObjectiveAsset`** — `id`, `category`, `taskSets[]`, `completionHandlers[]`, title/description
   keys, `removeOnItemDrop`.
-- **Task types:** `Gather`, `Craft`, `Count`, `ReachLocation`, `UseBlock`, `UseEntity`,
-  `TreasureMap`, `Kill`, `KillNPC`, `KillSpawnBeacon`, `KillSpawnMarker`, `Bounty`.
+- **Task types (10):** `Bounty`, `Craft`, `Gather`, `KillNPC`, `KillSpawnBeacon`,
+  `KillSpawnMarker`, `ReachLocation`, `TreasureMap`, `UseBlock`, `UseEntity`. *(Corrected
+  2026-08-25 from a twelve-entry list that included `Count` and `Kill`. Neither is an accepted
+  `"Type"`: `CountObjectiveTaskAsset` is an abstract base whose `Count` field appears inside
+  `Gather`/`Craft`, and the concrete kill task is spelled `KillNPC`. The original list was derived
+  from class names; this one from the loader's own discriminator — see
+  `hytale-asset-packs.md` §6.)*
 - **Trigger conditions:** **`WeatherTriggerCondition`** (carries `weatherIds[]` *and*
   `weatherIndexes[]`, reads `WeatherResource` + `TransformComponent`),
   `ObjectiveLocationTriggerCondition`, `HourRangeTriggerCondition`.
-- **Completions:** `GiveItems` (by drop list), `ClearObjectiveItems`.
+- **Completions (3):** `GiveItems` (by drop list), `ClearObjectiveItems`, `Reputation`.
+  The third is registered at runtime by `ObjectiveReputationPlugin` via
+  `CodecMapCodec.register("Reputation", ...)` from a *separate* Maven module — a first-party
+  demonstration of the extension path a mod would use. See `hytale-asset-packs.md` §7.
 - **Markers:** `ObjectiveLocationMarker` (Box or Radius areas, with separate entry/exit boxes),
   `ReachLocationMarker`, `ObjectiveTaskMarker`.
 - **Location providers:** `LocationRadiusProvider`, `CheckTagWorldHeightRadiusProvider`,
@@ -128,6 +136,13 @@ covered in depth in `stormseeker-canon-alignment.md`; the capability facts are:
 
 Both asset classes expose `getAssetStore()`, which is exactly what
 `AssetRegistry.register(AssetStore)` takes — so **a mod can ship a questline as JSON.**
+
+> **Confirmed by running, 2026-08-25.** A probe plugin shipped an `ObjectiveLineAsset` from a mod
+> asset pack into a live server; it entered the store attributed to the mod's pack, resolved
+> references to base-game objectives, overrode a base-game asset when given its name, and was
+> rejected by the engine's own validator when made deliberately invalid. The mechanism, the pack
+> layout, the reproduction recipe, and the `--generate-asset-schema` tooling are documented in
+> `hytale-asset-packs.md`.
 
 Shipped examples live at `Server/Objective/` in `Assets.zip`. Verified shape:
 
