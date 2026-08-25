@@ -236,10 +236,20 @@ most likely to change.
   "what weather is coming next."** A design that wants the player to anticipate a storm cannot read
   it from the engine; it must either derive its own schedule or force the weather. Recorded because
   the class name reads like a capability it does not have, and was taken for one during this audit.
-- **The server can force weather.** `WeatherResource.setForcedWeather(String)` /
-  `getForcedWeatherIndex()` / `consumeForcedWeatherChange()`. Useful for a scripted one-off; note it
-  changes the sky for every player in that environment, not just the one who triggered it.
-  `getWeatherIndexForEnvironment(int)` reads current weather per environment.
+- **The server can force weather — but forcing it BLINDS the asset-side weather condition.**
+  `WeatherResource.setForcedWeather(String)` / `getForcedWeatherIndex()` /
+  `consumeForcedWeatherChange()`. Useful for a scripted one-off; note it changes the sky for every
+  player in that environment, not just the one who triggered it.
+
+  `getWeatherIndexForEnvironment(int)` reads current weather per environment — and this is the
+  trap: it reads the `environmentWeather` map, whose **only** writer is a block that
+  `WeatherSystem$TickingSystem` skips outright while a forced weather is set
+  (`getForcedWeatherIndex(); ifne`). So a forced storm never reaches
+  `WeatherTriggerCondition`, and a marker gated on that storm silently fails to fire. Absent keys
+  return `Integer.MIN_VALUE`, so the failure is total — a condition naming *every* weather id in
+  the game still does not match. Verified by running, both directions, 2026-08-25;
+  see `docs/integration/hytale-asset-packs.md` §8d. Anything that needs to *observe* forced
+  weather must go through the player's `WeatherTracker` component instead.
 - **Post-processing shaders are almost certainly unavailable.** February listed them as "Unknown"
   with the Leyline Sight visual "TBD". The client is a closed native binary and nothing in the
   server jar or protocol surfaces a shader hook. Treat any screen-space effect as unavailable until
