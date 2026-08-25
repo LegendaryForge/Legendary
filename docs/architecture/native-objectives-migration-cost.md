@@ -1,21 +1,15 @@
-# What adopting Hytale's native objectives would cost
+# Native objectives — the decision, and what it cost
 
-**Status:** decision input, **not a decision**. Written 2026-08-25; updated the same day after the
-gameplay play test, which closed weakness 1 of §5. Read §5 before relying on any number here.
+**Status: DECIDED 2026-08-25.** Adopt Hytale's native objectives for the Stormseeker **content
+spine**. This document was written the same day as a decision *input* and is now the decision
+*record*; §1 has been remapped against the v4.0 act structure, which did not exist when the original
+estimate was made.
 
-Companion to `docs/integration/hytale-asset-packs.md` (the mechanism, verified by running) and
-`docs/architecture/questline-framework-adoption.md` (which is blocked on this decision).
+Companions: `docs/integration/hytale-asset-packs.md` (the mechanism and the gameplay proof),
+`docs/stormseeker/stormseeker-canonical.md` v4.0 (what is being built),
+`docs/architecture/questline-framework-adoption.md` (superseded by this decision).
 
----
-
-## The question this answers
-
-Hytale ships an asset-driven objective system a mod can contribute to as JSON. Adopting it for
-Stormseeker's content spine is attractive, but the honest cost is **the number of Stormseeker verbs
-with no built-in task type** — each of those is a custom `ObjectiveTaskAsset` we register and
-maintain. That count is below.
-
-The built-in vocabulary, taken from the loader's own discriminator (see `hytale-asset-packs.md` §6):
+The built-in vocabulary, from the loader's own discriminator (see `hytale-asset-packs.md` §6):
 
 - **10 task types** — `Bounty` `Craft` `Gather` `KillNPC` `KillSpawnBeacon` `KillSpawnMarker`
   `ReachLocation` `TreasureMap` `UseBlock` `UseEntity`
@@ -25,109 +19,181 @@ The built-in vocabulary, taken from the loader's own discriminator (see `hytale-
 
 ---
 
-## 1. Phase-by-phase mapping
+## The decision
 
-Phases per `docs/stormseeker/stormseeker-canonical.md`.
+**Native:** questline structure, objective chaining, task tracking, player-facing objective text,
+and per-player progress and history.
 
-| Phase | Verb the objective system would track | Built-in fit | Gap |
-|---|---|---|---|
-| **1** The Mark | approach a hovering elemental (~10 blocks) | `ReachLocation` is a fixed marker; `UseEntity` requires interaction, and the design is explicit that the elemental never interacts | **proximity-to-moving-entity** |
-| **2** The Trek | arrive at the Resonator | `ReachLocation` | — |
-| **3** The Waking | stand on a plate through a 30 s ritual, interruptible on step-off | nothing sustains, times, or interrupts | **timed channel / sustained presence** |
-| **4** Trials I (Flowing) | hold movement alignment against the storm gradient, evaluated per tick | nothing continuous | **continuous-alignment evaluation** |
-| **4** Trials II (Anchored) | repeatedly reinforce an anchor against progressive decay | `UseEntity` covers the discrete interactions, not the decay loop | **sustained stabilization** |
-| **5** The Frame | gather three material classes, then craft the frame | `Gather` + `Craft` | — |
-| **6** The Forging | kill the boss; temper bound to encounter progression | `KillNPC` / `KillSpawnBeacon` / `KillSpawnMarker` | **encounter-bound progression** (may reduce to sequential task sets) |
+**Ours, unchanged:** every participation rule — access levels, spectators, participation roles,
+visibility mode, loot rights. See §4; this is the part most at risk of being misread as replaced.
 
-**Four certain custom task types, a fifth likely.** Each is one
-`ObjectiveTaskAsset.CODEC.register(...)` call plus a subclass — the same shape
-`ObjectiveReputationPlugin` uses to register `Reputation` from a separate module.
+**Ours, registered into Hytale:** the custom mechanics — roughly one task condition, one completion,
+and the trials — through the public `CodecMapCodec.register(...)` seams.
 
-Structural fits worth noting: task **sets** are sequential while tasks **within** a set are not,
-which matches Phase 4's "trials may be completed in either order" exactly. And `Weather` +
-`HourRange` trigger conditions cover storm gating directly — the mechanic the v3.0 design treats as
-central.
+**Discarded:** preconditions P1–P3 in `questline-framework-adoption.md`. They scaffold a hand-rolled
+content spine that will no longer exist, so executing them would mean building the thing being
+replaced.
 
 ---
 
-## 2. The finding that inverts the usual intuition
+## 1. Cost, remapped against v4.0
 
-**The gaps cluster precisely where code already exists. The clean fits are where nothing is built.**
+The original estimate mapped the **v3.1 six-phase** design and found *four certain custom task types,
+a fifth likely*. v4.0 replaced that structure. Remapped, counting only verbs the objective system
+would actually track:
 
-- Phases 4's two trials are marked ✅ implemented in the canonical doc (`FlowingTrialEvaluator`,
-  `AnchoredTrialSession`); Phase 3's ritual state machine exists as
-  `StormseekerAttunementService`. So four of the five custom task types are **wrappers around logic
-  we already wrote** — re-housing, not new mechanics.
-- Phases 2 and 5, the two that map natively with **zero** gaps, are the ones **not yet
-  implemented**. Phase 5's systems are all recorded as "not yet implemented"; Phase 2 is trail
-  placement and proximity.
+| Act | Verb tracked | Fit |
+|---|---|---|
+| **I** The Mark | *none* — zero words, no objective entry; the line has not started | — |
+| **II** The Trace | arrive at the ruin; read inscriptions | `ReachLocation`, `UseBlock` |
+| **III** The Listening | gather storm materials | `Gather` |
+| **IV** The Raising | found the Circle; gather tier materials; raise a tier | `UseBlock`, `Gather` |
+| **V** The Answer | the provings; forge at the gate | *trials* + `Craft` |
 
-So adoption is cheapest exactly where nothing has been spent, and the expensive-looking half is
-mostly moving existing code behind a different interface. The natural assumption is the opposite,
-which is why this is worth writing down.
+**Custom task types required: zero**, plus whatever the trials become.
 
----
+Two things caused the collapse from four-plus:
 
-## 3. What would actually change hands
+**Act I stopped being tracked.** Because it has no words and no objective entry, the questline line
+does not begin until Act II. The elemental's spawn, hover and bolt are custom world code — but they
+are custom under *either* decision, so they are no longer a task-tracking gap. v3.1 had this as
+Phase 1 with a proximity-to-moving-entity task.
 
-The native system would replace **tracking, chaining, markers, UI, and persistence**. It would not
-replace **mechanics**. Storm gradients, anchor decay, ritual timing and elemental behaviour stay
-ours under either decision.
+**v4.0's verbs are ordinary verbs made interesting by conditions.** Gather, reach, use-block, craft
+— all native. v3.1's were continuous-alignment scoring and timed channels, which have no native
+analog. This is the `No neutral verbs` principle paying an unintended dividend: conditioning
+ordinary actions on world state is exactly what `WeatherTriggerCondition` and `HourRange` exist for.
 
-Concretely, what we would stop maintaining:
+### What remains custom
 
-- the phase state machine and `StormseekerPhase` as the progress model
-- `PropertiesProgressStore` / the on-disk progress store — `ObjectiveHistoryComponent` is a
-  persisted per-player ECS component covering both objective and objective-line history. We have
-  already had to fix our store once (the unreadable-save quarantine)
-- objective tracking and any UI we would otherwise build — the game ships an objective panel,
-  markers, and an admin panel
+- **~1 task condition** — "this site qualifies" / "a storm is active" at task level.
+  `TaskConditionAsset` ships only `SoloInventory`, so this is one `CODEC.register(...)`.
+- **~1 completion** — granting Essence of Thunder. Same shape as `Reputation`, which Hypixel
+  registers this way from a separate module.
+- **The trials** — count unknown, under active development, and **custom under either decision**, so
+  they do not differentiate.
 
-Phase 1's elemental spawn / hover / bolt / trail work is custom **either way**: it is world
-behaviour, not objective tracking, so it should not count against either side of the decision.
-
----
-
-## 4. What it would cost us
-
-Stated fairly, because §2 and §3 read as advocacy:
-
-- **Engine-agnosticism.** `core` is deliberately engine-agnostic and `quests/stormseeker` depends
-  only on `core`. Authoring the questline as Hytale assets makes it Hytale-specific. That was the
-  point of the module boundary. Counterweight: there is exactly one target engine, `QuestlineModule`
-  has zero adopters outside its own tests, and this repo's observations already record three
-  designed seams with zero callers.
-- **Coupling to an Early Access asset schema** that ships every 2–6 weeks. Counterweight, and it
-  runs the other way to intuition: a broken asset fails **loudly at boot** with the offending key
-  named — observed directly during the probe — whereas the `Vector3d` package move went unnoticed
-  for roughly six months. Loud beats silent.
-- **A vocabulary we do not control.** If Hypixel changes a task type's fields, our JSON breaks. The
-  `--generate-asset-schema` command makes that detectable in one command, but it is still churn we
-  do not own.
+`SoloInventoryCondition` is more useful than its name suggests: it checks *this player's* inventory
+for N of an item, with `consumeOnCompletion` and `holdInHand` flags. That covers holding Keystones
+and consuming them as they become tiers of the Circle.
 
 ---
 
-## 5. Why these numbers are provisional
+## 2. Why this, beyond the cost
 
-Two named weaknesses. Do not treat the count as settled until both are closed:
+- **v4.0's delivery model depends on it.** Objective titles and descriptions are one of the four
+  channels the story reaches players through. Native gives that surface free; hand-rolled means
+  building an objective UI to put in-fiction text into.
+- **Persistence is the thing already fixed once.** `ObjectiveHistoryComponent` is a persisted
+  per-player component, verified working. `PropertiesProgressStore` needed a save-quarantine fix.
+- **Verified at runtime, not inferred.** Gather tracking, auto-completion, line chaining, craft
+  tracking, reward delivery and persistence were all demonstrated by playing a JSON questline on a
+  real server (`hytale-asset-packs.md` §8).
+- **The family.** If Stormseeker is the template for a per-element family, questline #2 is JSON plus
+  a couple of registrations. Asset `Parent` inheritance makes a shared base practical.
+- **Our questline framework has one non-test implementer and zero adopters.**
 
-1. ~~**Gameplay is unproven.**~~ **Closed 2026-08-25.** A questline authored as four JSON files was
-   played end to end: gather tracked, objective auto-completed, the line chained to the next
-   objective on its own, crafting completed it, the reward was delivered, and all of it persisted.
-   See `hytale-asset-packs.md` §8. The mapping below rests on demonstrated behaviour now, not on
-   documentation.
-2. **The verbs were read from the design doc, not the implementations.** *(Still open.)* The Flowing
-   and Anchored trials are marked ✅ implemented, but if `quests/stormseeker` diverges from how
-   `stormseeker-canonical.md` describes them, the gap count moves. Reading those two
-   implementations is the remaining work before the count can be called settled.
+---
 
-Also unverified: whether Phase 5's "must hold both sigils" gate fits `SoloInventory` (the only task
-condition). The sigils are items, so it plausibly does — but that is an assumption, not a finding.
-And `WeatherTriggerCondition` has been shown to parse and load, not to fire.
+## 3. What changes hands, and what does not
 
-**One correction the play test forced on the table above.** `Gather` and `Craft` are different in
-kind — `Gather` is a possession census (satisfied by holding the items, however obtained), `Craft`
-requires the crafting action itself. Phase 5 was mapped to "`Gather` + `Craft`" on the assumption
-they behaved alike; they do not, and the difference happens to favour the design — a gather-then-craft
-gate cannot be bypassed by trade or drop. The Phase 5 row stands, for a better reason than it was
-written with. Details in `hytale-asset-packs.md` §8.
+The native system replaces **tracking, chaining, markers, UI and persistence**. It does not replace
+**mechanics**. Storm gradients, anchor decay, ritual timing, elemental behaviour, residue currents,
+Circle raising — all remain ours under either decision.
+
+Concretely, what we stop maintaining: the phase state machine as the progress model,
+`PropertiesProgressStore`, objective tracking, and any objective UI we would otherwise build. The
+game ships an objective panel, markers, an admin command suite, and completion history.
+
+---
+
+## 4. The participation rules are a different layer — and they survive
+
+Worth stating plainly, because it is the easiest thing here to get wrong.
+
+**Hytale's objectives system tracks one player's progress.** `ObjectiveHistoryComponent` hangs off a
+player; `ActiveObjectiveUUIDs` is per-player. That is the whole of what it does.
+
+**`core`'s encounter rules decide something else entirely** — who may take part in a shared event,
+who may only watch, who is refused, and who has a claim on the outcome:
+
+| Type | Values |
+|---|---|
+| `LegendaryAccessLevel` | `PARTICIPATE` / `SPECTATE` / `DENY` |
+| `SpectatorPolicy` | `ALLOW_VIEW_ONLY` / `DISALLOW` |
+| `ParticipationRole` | `PARTICIPANT` / `SPECTATOR` |
+| `LegendaryVisibilityMode` | `WORLD_VISIBLE` / `INSTANCE_VISIBLE` |
+
+**Hytale ships nothing at that layer.** Checked 2026-08-25: no party system, no group concept, no
+encounter membership, no spectator model, no loot-rights model. Every `Party` class in the jar
+belongs to BouncyCastle's cryptography library.
+
+So the two stack rather than compete: **the encounter decides who is allowed in; objectives track
+each person who is.** Adopting native objectives touches the anti-griefing and
+anti-trivialisation rules not at all.
+
+### The two frameworks in `core` have opposite fates
+
+- The **questline** framework has a native competitor that is shipped, better and battle-tested.
+  **Superseded.**
+- The **encounter** framework has **no native competitor at all**. That gap is real, and it is
+  arguably what `core` is for.
+
+Caveat worth keeping honest: the encounter framework is also currently unadopted — `mod/hytale`
+references encounters zero times, exactly as it never used the questline SPI. But its design is not
+superseded; it is merely unwired. Different problem, different fix.
+
+---
+
+## 5. What it costs us
+
+Stated fairly, because the rest reads as advocacy.
+
+- **Engine-agnosticism, for questline content.** `core` is deliberately engine-agnostic and
+  `quests/stormseeker` depends only on `core`. Authoring the questline as Hytale assets makes that
+  content Hytale-specific. Counterweight: there is exactly one target engine, `QuestlineModule` has
+  zero adopters outside its own tests, and this repository's observations already record three
+  designed seams with zero callers. Note the encounter framework keeps its engine-agnosticism — this
+  cost applies to content, not to `core` as a whole.
+- **Coupling to an Early Access asset schema** that ships every 2–6 weeks. Counterweight, and it runs
+  against intuition: a broken asset **fails loudly at boot with the offending key named** — observed
+  directly — whereas the `Vector3d` package move went unnoticed for roughly six months. Loud beats
+  silent.
+- **A vocabulary we do not control.** If Hypixel changes a task type's fields, our JSON breaks.
+  `--generate-asset-schema` makes that detectable in one command, but it is still churn we do not own.
+
+---
+
+## 6. Consequences to carry out
+
+- `questline-framework-adoption.md` P1–P3 are **discarded, not pending**.
+- `core`'s questline SPI shrinks to "what Java does a questline register" — custom task types,
+  conditions, completions and ECS systems. Re-specifying it is open work; deleting it outright was
+  considered and not chosen.
+- `StormseekerPhase` as the progress model is superseded by objective and line history. The enum
+  rename already outstanding from v4.0 should be considered alongside whether the enum survives.
+- `mod/hytale`'s `manifest.json` needs `"IncludesAssetPack": true`, and the module needs a
+  `Server/Objective/...` asset tree.
+
+---
+
+## 7. Still open
+
+- **The trials' mechanics**, and therefore their custom task-type count.
+- Whether `core`'s questline SPI is re-specified or retired.
+- Whether `StormseekerPhase` survives in any form.
+
+---
+
+## Superseded by this decision
+
+The original §5 named two weaknesses. Both are now closed, and the record is kept because the second
+one is why the cost estimate moved:
+
+1. *"Gameplay is unproven."* Closed by the play test — see `hytale-asset-packs.md` §8.
+2. *"The verbs were read from the design doc, not the implementations."* Closed, and it mattered.
+   Reading them found `FlowingTrialEvaluator` scores self-coherence with **no storm gradient and no
+   convergence point**, and `AnchoredTrialSession` is `REQUIRED_STATIONARY_TICKS = 40` — both
+   scaffolding, both self-described as such. The original claim that four custom task types would
+   "wrap logic already written" was therefore too generous: there is very little implemented
+   mechanic to preserve. That made the decision easier rather than harder.
