@@ -19,7 +19,7 @@
             "Type": "SendMessage",
             "Key": "server.stormseeker.inscription.five",
             "Next": {
-              "Type": "StartObjective",
+              "Type": "StormseekerStartLine",
               "Setup": {
                 "Type": "ObjectiveLine",
                 "ObjectiveLineId": "ObjectiveLine_Stormseeker_TheSixthCircle"
