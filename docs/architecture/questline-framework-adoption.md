@@ -16,7 +16,8 @@
 >
 > P1–P3 are three real code changes that activate dormant paths in the module with the least test
 > coverage. **Settle the native-objectives question first**, or risk writing them against a spine
-> that is about to be replaced.
+> that is about to be replaced. The cost of that migration is inventoried in
+> `docs/architecture/native-objectives-migration-cost.md`.
 
 ## What exists
 
