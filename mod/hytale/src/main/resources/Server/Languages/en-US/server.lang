@@ -17,3 +17,10 @@ objectivelines.ObjectiveLine_Stormseeker_TheSixthCircle.desc = Someone built her
 objectives.Objective_Stormseeker_TheChamber.title = Deeper In
 objectives.Objective_Stormseeker_TheChamber.desc = The hall was built to hold something. Find where it was meant to stand.
 objectives.Objective_Stormseeker_TheChamber.taskSet.0.task.0 = Reach the centre of the hall
+
+# === Act II block names ===
+
+items.Furniture_Stormseeker_Inscription_Five.name = Inscription
+items.Furniture_Stormseeker_Inscription_Housed.name = Inscription
+items.Furniture_Stormseeker_Inscription_Asked.name = Inscription
+items.Furniture_Stormseeker_Statue_Silent.name = Statue of a Silent Deity
