@@ -21,24 +21,46 @@ permissions:
 # compiling against a real game install, which no runner can do, so it happens
 # only on a machine that has the game -- and nothing in THIS repository
 # schedules that. If you maintain a fork, that gap is yours to cover.
+
+# Third-party actions are pinned to a full commit SHA, not a tag. A tag is a
+# mutable ref: whoever can push to the action's repo can repoint v7 at new code,
+# and that code runs here with this workflow's token. The `# vX.Y.Z` comment is
+# the human-readable half; the SHA is the half that is actually enforced.
+# Bump by resolving the new tag yourself -- `gh api repos/OWNER/REPO/commits/TAG
+# --jq .sha` -- rather than copying a SHA out of a changelog or a search result.
+#
+# gradle/actions is deliberately held at v5, one major behind. v6 extracted the
+# caching functionality into `gradle-actions-caching`, a proprietary component
+# that is NOT under the MIT license and is governed by Gradle's Terms of Use
+# (https://gradle.com/legal/terms-of-use/); the v6 release notes state that
+# upgrading constitutes accepting them. This step takes no arguments, so caching
+# is on by default and that component would be loaded on every run. v6 also
+# removed its configuration-cache support, which this build has a measured
+# position on. Moving to v6 is a licensing decision for the repo owner, not a
+# version bump -- do not let dependabot or a routine sweep make it silently.
 jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
       # Satisfies the committed foojay daemon pin (gradle/gradle-daemon-jvm.properties,
       # toolchainVersion=25 vendor=ADOPTIUM) from the runner cache instead of
       # downloading a JDK on every run.
-      - uses: actions/setup-java@v4
+      # Held one major behind as of 2026-08-24 for timing, not policy: v6.0.0
+      # was published that same day with no patch release yet, and it migrates
+      # JDK metadata from the Zulu Discovery API to the Azul Metadata API --
+      # the mechanism this step depends on to resolve a JDK. Bump once it has
+      # settled; unlike the gradle/actions note above, nothing blocks it.
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           distribution: temurin
           java-version: '25'
 
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5.0.2
 
       - name: Build
         run: ./gradlew build --console=plain
