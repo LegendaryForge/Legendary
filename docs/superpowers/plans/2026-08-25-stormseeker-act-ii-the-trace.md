@@ -1305,15 +1305,46 @@ cat .scratch/act-ii-verify/universe/players/*.json | python3 -m json.tool | grep
 
 Expected: our line id present, both objectives nested under it with completion counts and timestamps.
 
-- [ ] **Step 7: Fix whatever the play-through found**
+- [ ] **Step 7: Settle whether `Parent` inheritance works**
 
-Apply any fallback the previous steps triggered, re-run `./gradlew :mod:hytale:checkAssetPackIntegrity` and `./gradlew build`, rebuild the jar, and repeat Step 6 until the play-through is clean. Do not proceed to Task 6 on a partial pass.
+The server is already running; this is one extra asset and one extra look.
 
-- [ ] **Step 8: Write down what the run actually established**
+Every asset schema carries a `Parent` field — *"this asset will inherit properties from the named asset… in the case of nested structures this will apply to the fields within the structure."* It has never been exercised here. It matters well beyond this branch: Act IV's Circle raises **5–7 tiers** that differ by a tier number, the materials share a backbone, and questline #2 is by design "JSON plus a couple of registrations" — the whole set again, per element. If `Parent` works, near-identical asset files stop being the default shape of every questline. If it does not, that is worth knowing once rather than rediscovering per act.
 
-Create `.scratch/act-ii-verify/README.md` recording, in plain terms: whether pack-shipped `server.lang` loaded; which key form the objective line needed; whether `SendMessage` `Key` resolved for the client; whether `UseBlock` fires on a mod-defined block; and the `TimesCompleted` value from a real play-through. This directory is git-ignored — the durable version goes into `docs/` in Task 6.
+Create a throwaway probe asset `mod/hytale/src/main/resources/Server/Item/Items/Furniture_Stormseeker_Inscription_ParentProbe.json` that inherits everything from an existing inscription and overrides only its name:
 
-- [ ] **Step 9: Commit any fixes**
+```json
+{
+  "Parent": "Furniture_Stormseeker_Inscription_Housed",
+  "TranslationProperties": {
+    "Name": "server.items.Furniture_Stormseeker_Inscription_Five.name"
+  }
+}
+```
+
+It reuses an existing name key on purpose, so no lang entry is needed and the integrity guard stays green.
+
+Rebuild the jar, restart the server, and check three things in order:
+
+1. **It loads.** No `[AssetStore|...] Failed to validate asset: Furniture_Stormseeker_Inscription_ParentProbe` line at boot.
+2. **The inherited half arrived.** `/give Furniture_Stormseeker_Inscription_ParentProbe 1`, place it — it must render as the Temple_Wind sign, not as a missing model.
+3. **The inherited *nested* half arrived.** Right-click it. If the inherited `Interactions` block came through, it prints *"The others gather where we set the stones. This one would not be housed."* **This is the load-bearing observation** — inheriting a flat scalar proves little; inheriting a nested interaction chain is what the tier assets and the elemental family would actually depend on.
+
+Record all three answers. Then delete the probe:
+
+```bash
+rm mod/hytale/src/main/resources/Server/Item/Items/Furniture_Stormseeker_Inscription_ParentProbe.json
+```
+
+- [ ] **Step 8: Fix whatever the play-through found**
+
+Apply any fallback the previous steps triggered, re-run `./gradlew :mod:hytale:checkAssetPackIntegrity` and `./gradlew build`, rebuild the jar, and repeat Step 6 until the play-through is clean. Do not proceed on a partial pass.
+
+- [ ] **Step 9: Write down what the run actually established**
+
+Create `.scratch/act-ii-verify/README.md` recording, in plain terms: whether pack-shipped `server.lang` loaded; which key form the objective line needed; whether `SendMessage` `Key` resolved for the client; whether `UseBlock` fires on a mod-defined block; the `TimesCompleted` value from a real play-through; and **the three `Parent` answers from Step 7**. This directory is git-ignored — the durable version goes into `docs/` in Task 7.
+
+- [ ] **Step 10: Commit any fixes**
 
 ```bash
 git add mod/hytale/src/main/resources/Server
@@ -1328,14 +1359,220 @@ If the play-through required no changes, skip this step — there is nothing to 
 
 ---
 
-### Task 6: Record what this proved, and ship it
+### Task 6: Retire the duplication — CONDITIONAL on Task 5 Step 7
+
+**Run this task only if all three `Parent` checks in Task 5 Step 7 passed, including the nested `Interactions` one.** If any failed, skip the task entirely and say so in Task 7 Step 4 — the copies stand, with a recorded reason.
+
+**Files:**
+- Create: `mod/hytale/src/main/resources/Server/Item/Items/Furniture_Stormseeker_Inscription_Base.json`
+- Modify: `mod/hytale/src/main/resources/Server/Item/Items/Furniture_Stormseeker_Inscription_Five.json`
+- Modify: `mod/hytale/src/main/resources/Server/Item/Items/Furniture_Stormseeker_Inscription_Housed.json`
+- Modify: `mod/hytale/src/main/resources/Server/Item/Items/Furniture_Stormseeker_Inscription_Asked.json`
+
+**Interfaces:**
+- Consumes: the three `Parent` answers from Task 5 Step 7.
+- Produces: `Furniture_Stormseeker_Inscription_Base`, the shared definition Act III onward inherits from. No asset id changes, so nothing else in the branch is affected.
+
+**Why this task exists.** Tasks 2–4 shipped three near-identical block files because `Parent` was unverified and this branch is built on verified mechanisms. Task 5 verifies it. Duplication that is cheap to undo is fine; duplication that becomes the house style is not — and the volume ahead makes that a real risk, not a hypothetical one: 5–7 Circle tier assets, the Class A–E materials, and a full repeat of the set for every element in the family.
+
+The statue is deliberately **not** converted. It is a genuinely different block — different model, hitbox, gathering and scale — and folding it under a sign's base would be inheritance for its own sake.
+
+- [ ] **Step 1: Extract the base**
+
+Create `Furniture_Stormseeker_Inscription_Base.json` holding everything the three inscriptions share — which is everything except `TranslationProperties` and `Interactions`:
+
+```json
+{
+  "PlayerAnimationsId": "Block",
+  "Categories": [
+    "Furniture.Signs"
+  ],
+  "Set": "Furniture_Temple_Wind",
+  "BlockType": {
+    "BlockParticleSetId": "Stone",
+    "BlockSoundSetId": "Stone",
+    "PhysicalMaterialId": "Stone",
+    "CustomModel": "Blocks/Decorative_Sets/Temple_Wind/Sign.blockymodel",
+    "CustomModelTexture": [
+      {
+        "Texture": "Blocks/Decorative_Sets/Temple_Wind/Sign_Texture.png",
+        "Weight": 1
+      }
+    ],
+    "DrawType": "Model",
+    "Gathering": {
+      "Soft": {
+        "IsWeaponBreakable": false
+      }
+    },
+    "HitboxType": "Sign_Wall",
+    "Material": "Solid",
+    "Opacity": "Transparent",
+    "ParticleColor": "#cca159",
+    "Support": {
+      "East": [
+        {
+          "FaceType": "Full"
+        }
+      ],
+      "West": [
+        {
+          "FaceType": "Full"
+        }
+      ]
+    },
+    "VariantRotation": "NESW",
+    "TextureComputedColor": "#B38440"
+  },
+  "IconProperties": {
+    "Scale": 0.58823,
+    "Rotation": [
+      22.5,
+      45,
+      22.5
+    ],
+    "Translation": [
+      8.39,
+      -19.21
+    ]
+  },
+  "Icon": "Icons/ItemsGenerated/Furniture_Temple_Wind_Sign.png",
+  "Tags": {
+    "Type": [
+      "Furniture"
+    ],
+    "Family": [
+      "Temple"
+    ]
+  },
+  "ItemSoundSetId": "ISS_Blocks_Stone"
+}
+```
+
+- [ ] **Step 2: Reduce the three inscriptions to what differs**
+
+Replace the entire contents of `Furniture_Stormseeker_Inscription_Five.json` with:
+
+```json
+{
+  "Parent": "Furniture_Stormseeker_Inscription_Base",
+  "TranslationProperties": {
+    "Name": "server.items.Furniture_Stormseeker_Inscription_Five.name"
+  },
+  "Interactions": {
+    "Secondary": {
+      "Interactions": [
+        {
+          "Type": "SendMessage",
+          "Key": "server.stormseeker.inscription.five",
+          "Next": {
+            "Type": "StartObjective",
+            "Setup": {
+              "Type": "ObjectiveLine",
+              "ObjectiveLineId": "ObjectiveLine_Stormseeker_TheSixthCircle"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+```
+
+Replace the entire contents of `Furniture_Stormseeker_Inscription_Housed.json` with:
+
+```json
+{
+  "Parent": "Furniture_Stormseeker_Inscription_Base",
+  "TranslationProperties": {
+    "Name": "server.items.Furniture_Stormseeker_Inscription_Housed.name"
+  },
+  "Interactions": {
+    "Secondary": {
+      "Interactions": [
+        {
+          "Type": "SendMessage",
+          "Key": "server.stormseeker.inscription.housed"
+        }
+      ]
+    }
+  }
+}
+```
+
+Replace the entire contents of `Furniture_Stormseeker_Inscription_Asked.json` with:
+
+```json
+{
+  "Parent": "Furniture_Stormseeker_Inscription_Base",
+  "TranslationProperties": {
+    "Name": "server.items.Furniture_Stormseeker_Inscription_Asked.name"
+  },
+  "Interactions": {
+    "Secondary": {
+      "Interactions": [
+        {
+          "Type": "SendMessage",
+          "Key": "server.stormseeker.inscription.asked"
+        }
+      ]
+    }
+  }
+}
+```
+
+- [ ] **Step 3: Run the guard**
+
+Run: `./gradlew :mod:hytale:checkAssetPackIntegrity`
+
+Expected: `BUILD SUCCESSFUL`. The base asset carries no translation key of its own, and the three children keep the keys they already had, so nothing about the guard's expectations changes.
+
+- [ ] **Step 4: Run the full build**
+
+Run: `./gradlew build`
+
+Expected: `BUILD SUCCESSFUL`.
+
+- [ ] **Step 5: Re-play the three inscriptions on the server**
+
+The guard checks files, not the engine's inheritance. Rebuild the jar, restart the server, and confirm all three inscriptions still render as signs and still print their own line of prose when right-clicked:
+
+```bash
+./gradlew :mod:hytale:shadowJar
+cp mod/hytale/build/libs/*-all.jar .scratch/act-ii-verify/mods/
+```
+
+Expected: identical behaviour to Task 5 Step 6. If any inscription loses its model or its message, `Parent` did not carry what Step 7 suggested — revert this task with `git checkout -- mod/hytale/src/main/resources/Server/Item/Items/` and record the discrepancy for Task 7.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add mod/hytale/src/main/resources/Server/Item/Items
+git commit -m "refactor(mod): the inscriptions inherit from a shared base
+
+Task 5 verified Parent inheritance on a real server, including the nested
+Interactions case, so the three near-identical inscription files collapse to a
+base plus what actually differs.
+
+Done now rather than later because the volume ahead makes duplication the
+default shape otherwise: Act IV's Circle is 5-7 tier assets differing by a
+number, the Class A-E materials share a backbone, and questline #2 is the whole
+set again per element.
+
+The statue is deliberately not converted — different model, hitbox, gathering
+and scale. Inheriting it from a sign would be inheritance for its own sake."
+```
+
+---
+
+### Task 7: Record what this proved, and ship it
 
 **Files:**
 - Modify: `docs/integration/hytale-asset-packs.md`
 - Modify: `docs/stormseeker/stormseeker-canonical.md`
 
 **Interfaces:**
-- Consumes: the findings recorded in Task 5, Step 8.
+- Consumes: the findings recorded in Task 5, Step 9, and whether Task 6 ran.
 - Produces: the durable record. Nothing depends on this task in code.
 
 `hytale-asset-packs.md` describes itself as the durable mechanism document, more durable than the capability audit. Two mechanisms this plan uses are absent from it, and both are load-bearing for the delivery model.
@@ -1404,7 +1641,28 @@ new block is visually identical to the palette around it.
 
 - [ ] **Step 3: Fold in what Task 5 actually established**
 
-Read `.scratch/act-ii-verify/README.md` from Task 5 Step 8 and correct the two sections above wherever the run disagrees with them. In particular, if pack translations did **not** load, say so plainly and rewrite §7b as a negative finding rather than deleting it — a mechanism that was checked and does not work is worth more than silence.
+Read `.scratch/act-ii-verify/README.md` from Task 5 Step 9 and correct the two sections above wherever the run disagrees with them. In particular, if pack translations did **not** load, say so plainly and rewrite §7b as a negative finding rather than deleting it — a mechanism that was checked and does not work is worth more than silence.
+
+Then add a short section recording the `Parent` result, whichever way it went:
+
+```markdown
+## 7d. `Parent` inheritance — what it actually carries
+
+Every asset schema has a `Parent` field, documented as inheriting the parent's
+properties with the child's values replacing them field by field, "in the case of
+nested structures … within the structure".
+
+Tested 2026-08-25 against server `0.5.9` by giving one inscription block a `Parent`
+and nothing else but a name: <RECORD THE THREE ANSWERS — did it load, did the model
+come through, did the nested `Interactions` chain come through>.
+
+This matters past one questline. Act IV's Circle is raised in 5–7 tiers that differ by
+a number, the Class A–E materials share a backbone, and a per-element questline family
+repeats the whole asset set per element. Whether near-identical asset files are the
+default shape of that work turns on this field.
+```
+
+Replace the angle-bracket span with the observed answers before committing. **Do not leave it as written** — an unfilled placeholder in the durable mechanism document is worse than no section.
 
 Then update §8b ("What this still does *not* establish"). Remove any bullet the play-through closed and add anything it opened. `WeatherTriggerCondition` remains untested — Act II does not exercise it.
 
