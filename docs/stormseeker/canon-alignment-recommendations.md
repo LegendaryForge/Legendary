@@ -201,6 +201,80 @@ was already the sharpest open design question; the weights make it sharper.
 
 ---
 
+## 4b. Proposal: the nexus is dangerous during a storm
+
+Hytale's storms are **purely ambient** today — sky, clouds, particles, audio. No damage, and no
+lightning entity at all (zero matching classes in the jar). Nothing about weather can hurt you.
+
+That is a problem for the intended finale, which asks the player to expose the frame to the storm
+and let it be struck. Inverting a feared mechanic is the whole trick, and there is no fear to
+invert. But making *storms* dangerous globally is a heavy imposition — every player on the server
+gets a changed base game so that one questline's climax can land.
+
+**Narrower and better: the danger is not the storm, it is a nexus during a storm.** Currents surge
+when a storm passes over; a nexus is where currents intersect; a circle in a storm is therefore a
+charged, hazardous place. This keeps everything the broad version bought:
+
+- **Local.** Weather is unmodified everywhere. A hundred blocks away it is just rain.
+- **Diegetic, and ours.** Residue is a layer this mod owns entirely, so no engine weather behaviour
+  changes and `setForcedWeather` is not needed for the ambient case.
+- **It explains the elementals.** `Spirit_Thunder` spawns at circle beacons and is, per shipped item
+  text, "born from [storm magic's] lingering traces". A storm surging the nexus is *why* they appear.
+- **The inversion works, because we taught the fear.** The questline spends hours establishing that
+  a circle in a storm is somewhere you do not linger. The finale then requires standing there.
+
+### Feasibility — the whole chain exists
+
+| Step | Mechanism | Status |
+|---|---|---|
+| Know a circle is near | `SpawnBeacon extends Entity`, `getSpawnConfigId()` → `"Zone2_Elemental_Circle_Tier2"` | verified |
+| Know a storm is overhead | `WeatherResource.getWeatherIndexForEnvironment(int)` + the weather `Tags` map | verified; `WeatherTriggerCondition` pairs exactly these two |
+| Hurt the player | `new Damage(Damage.Source, DamageCause, float)` | verified, constructible |
+| Make it *felt* | `Damage` meta keys: `IMPACT_PARTICLES`, `IMPACT_SOUND_EFFECT`, `CAMERA_EFFECT`, `KNOCKBACK_COMPONENT`, `HIT_LOCATION` | verified — a strike is one object |
+| Author it without code | `DamageEntityEffect` is a Trigger Volume effect | verified |
+
+**And the damage vocabulary has a storm-shaped hole in it.** `DamageCause` is a registrable asset
+(`JsonAssetWithMap` + `AssetBuilderCodec`). What ships in `Server/Entity/Damage/`:
+
+```jsonc
+// Elemental.json
+{ "$Comment": "This damage type exists to facilitate sub types" }
+
+// Fire.json                    // Ice.json
+{ "Parent": "Elemental",        { "Parent": "Elemental",
+  "Inherits": "Elemental" }       "Inherits": "Elemental" }
+```
+
+Hytale built an `Elemental` damage parent, gave it `Fire` and `Ice`, and stopped. **There is no
+Lightning.** Adding `Lightning.json` is a three-line asset inheriting an existing parent — the third
+instance of the same pattern this audit keeps finding, alongside the missing storm circle and the
+missing air essence.
+
+### Prefer `EntityEffect` over raw damage
+
+`asset/type/entityeffect` is a complete, asset-driven status-effect framework — `EntityEffect`,
+`ApplicationEffects`, `AbilityEffects`, `ModelOverride`, `OverlapBehavior`, `RemovalBehavior`,
+`ActiveEntityEffect`, `LivingEntityEffectSystem`, its own `PacketGenerator` and command. **Exactly
+one asset ships against it (`Test_Apply_EntityEffect`)** — the framework is built and effectively
+unused, and it is mod-registrable.
+
+A *storm-charged* entity effect is a better primitive than repeated raw damage: it stacks properly
+(`OverlapBehavior`), it clears properly (`RemovalBehavior`), it can change the player's appearance
+(`ModelOverride`), and it gives the hazard a readable state rather than a series of unexplained
+hits. Damage becomes one consequence of the effect rather than the whole mechanic.
+
+### Open knobs — the actual design questions
+
+- Continuous drain, or discrete strikes? Discrete is more Onyxia-shaped and more readable.
+- Does it scale with circle tier, storm type, or proximity to the nexus centre?
+- Does it hit everyone, or only the attuned? **Recommend everyone** — a danger only you can perceive
+  is not one the world taught you, and the whole point is a shared, learned fear.
+- Is the real danger the elementals rousing at the nexus, with the effect as atmosphere? That
+  version needs no damage cause at all and uses `SpawnBeacon.manualTrigger(...)`.
+
+
+---
+
 ## 5. What should not change
 
 - **The Thunderfury parallel survives contact with canon, and improves.** Thunderfury's bindings
