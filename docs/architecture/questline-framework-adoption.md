@@ -1,23 +1,29 @@
 # Adopting the questline framework in `mod/hytale`
 
-**Status:** specified, not executed, and **now blocked on a prior decision.** Written
-2026-08-24 alongside the module boundary realignment.
+**Status: SUPERSEDED 2026-08-25. Do not execute P1–P3.**
 
-> **Read this before executing P1–P3.** On 2026-08-25 it was confirmed by running a server that
-> Hytale ships an asset-driven questline system a mod can contribute to as JSON — objectives,
-> chaining, weather/time-gated triggers, rewards, and a persistent per-player
-> `ObjectiveHistoryComponent`. See `docs/integration/hytale-asset-packs.md`.
->
-> That system does **not** replace what this document describes: `core`'s framework answers "how do
-> N questlines register into our plugin", the native one answers "what a quest is and how progress
-> persists". But the second is the half `quests/stormseeker` currently hand-rolls, and adopting it
-> would materially shrink what the SPI has left to carry — possibly below the point where P1–P3 are
-> worth doing at all.
->
-> P1–P3 are three real code changes that activate dormant paths in the module with the least test
-> coverage. **Settle the native-objectives question first**, or risk writing them against a spine
-> that is about to be replaced. The cost of that migration is inventoried in
+> The native-objectives question this document was blocked on has been **decided**: Hytale's
+> objectives system is adopted for the Stormseeker content spine. See
 > `docs/architecture/native-objectives-migration-cost.md`.
+>
+> **P1–P3 below are discarded, not pending.** They are preconditions for migrating a *hand-rolled
+> content spine* — a tick system driving phase state, a dormant listener path, an
+> `AttunementCompleteEvent` handshake — and that spine will no longer exist. Executing them would
+> mean building the thing being replaced. They are left in place unedited as a record of a path not
+> taken, because the *reasons* they were not executed (§"Why it was not migrated") turned out to be
+> early evidence for the decision that superseded them.
+>
+> **What survives from this document:** the description of what `core`'s questline framework *is*
+> (§"What exists"), the observation that `mod/hytale` never adopted it, and the success test in
+> §"How to tell it worked" — which still holds, with a different mechanism. Adding questline #2
+> should require one registration, not a plugin rewrite; it is now JSON assets plus a couple of
+> codec registrations rather than one `.register(new <Name>Questline())` line.
+>
+> **What `core`'s questline SPI becomes:** "what Java does a questline register" — custom task
+> types, conditions, completions and ECS systems. Re-specifying it is open work. Deleting it
+> outright was considered and not chosen.
+
+Written 2026-08-24 alongside the module boundary realignment.
 
 ## What exists
 
@@ -75,6 +81,8 @@ change, not a review:
   handshake belongs elsewhere.
 
 P1–P3 are Project D (roadmap re-scope) work, not refactoring.
+
+> **Discarded 2026-08-25** — see the status banner at the head of this document. Retained as record.
 
 ## The migration, once preconditions hold
 

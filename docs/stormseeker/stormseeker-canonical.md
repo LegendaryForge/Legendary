@@ -520,13 +520,29 @@ placement, the ruin, inscriptions, residue currents and crystals, Skyglass, site
 tiered Circle raising, Keystones, Essence of Thunder, the gate, the forging encounter.
 
 **Outstanding rename:** `StormseekerPhase` still carries v3.1 constant names, which no longer match
-this structure.
+this structure — and following the 2026-08-25 native-objectives decision, whether the enum survives
+at all is open, since objective and line history now own progress.
+
+**Not yet done for the native spine:** `mod/hytale`'s `manifest.json` still reads
+`"IncludesAssetPack": false`, and the module has no `Server/Objective/...` asset tree.
 
 ---
 
 ## Canonical Integration Pattern
 
-All engine integration occurs via:
+**The content spine is native.** Decided 2026-08-25: questline structure, objective chaining, task
+tracking, the player-facing objective text of the delivery model, and per-player progress and
+history are **Hytale asset-driven objectives**, shipped as JSON from `mod/hytale`'s own asset pack.
+Custom mechanics register into Hytale through the public codec seams. Record and reasoning:
+`docs/architecture/native-objectives-migration-cost.md`.
+
+Two consequences for this document. `StormseekerPhase` is **no longer the progress model** —
+objective and line history are — so the enum's future is open, not merely its naming. And
+`core`'s participation rules (access levels, spectators, roles, visibility) are **unaffected**:
+Hytale's objectives track one player's progress and ship nothing that decides who may join a shared
+event. The two layers stack.
+
+Engine integration for everything that is *not* the objective spine occurs via:
 
 ```java
 StormseekerWiring.tick(host)
