@@ -15,6 +15,13 @@
 > superseded claim quoted rather than deleted, so a reader cannot pick up the old claim and miss
 > the retraction two sections later.
 >
+> **Third pass, 2026-08-25 — the worldgen question, opened and half-closed.** §8c is new. A mod
+> pack was shown to contribute **WorldGen V2** generator assets on a running server, with a
+> negative control that halts the boot. The same pass established that placing mod content into the
+> *already-shipped* world is a **V1-only** capability, on the generator Hypixel Studios have said
+> will stop generating chunks — so that half is deferred rather than built. §8b's worldgen bullet
+> is corrected in place with the superseded text quoted.
+>
 > Throughout, **"verified by running"** means observed in a log line or on a screen during that
 > session; **"read from bytecode"** means decompiled and reasoned about but not exercised. The two
 > are labelled separately everywhere they appear.
@@ -665,9 +672,14 @@ list and recorded as findings above; items it opened are new here.
   `ObjectiveLineHistoryData.completed(...)`; the gate itself was not found. The
   `NextObjectiveLineIds` hypothesis is untested. **This is the largest open question the run
   produced**, because it invalidates the obvious "is this player done" check.
-- **Worldgen from a mod pack.** `WorldStructureAsset` and `BiomeAsset` are authorable types (§5),
-  but nothing has confirmed a *mod* pack can contribute a structure that the generator then places.
-  Act II sidesteps it entirely — its ruin is hand-placed. Unproven, not disproven.
+- **Worldgen from a mod pack — half-resolved 2026-08-25, see §8c.** A mod pack *can* ship WorldGen
+  **V2** generator assets, proven by running. What remains unestablished is narrower and was not
+  what this bullet asked: nothing places mod content into the **already-shipped** world, because
+  the hook for that is V1-only. This bullet used to read: *"`WorldStructureAsset` and `BiomeAsset`
+  are authorable types (§5), but nothing has confirmed a mod pack can contribute a structure that
+  the generator then places. Act II sidesteps it entirely — its ruin is hand-placed. Unproven, not
+  disproven."* The first half is now proven; the second half is blocked on which generator is
+  running, not on whether packs are allowed to contribute.
 - **Assets-only packs (no `Main`) were not established** — see the callout in §3.
 - **The native-objectives question this section used to leave open is now decided.** As of
   2026-08-25, `docs/architecture/native-objectives-migration-cost.md` records **Status: DECIDED** —
@@ -676,6 +688,168 @@ list and recorded as findings above; items it opened are new here.
   is what the decision was made on. See the migration-cost doc for the decision record,
   `docs/architecture/questline-framework-adoption.md` (superseded by the decision) and
   `docs/stormseeker/stormseeker-canonical.md` (what is being built on it).
+
+---
+
+## 8c. World generation — packs contribute to V2; the shipped world is still V1
+
+> **Verified by running, same build** — server `0.5.9`, revision `214c57c5a63e6e5d51ed8be4c8a508dfcc177d16`.
+> **Probed:** 2026-08-25 (third pass). Claims below are labelled **observed** (seen in a log line
+> this session) or **read from bytecode** (static analysis, not exercised) — the distinction matters
+> more here than anywhere else in this document, because the decisive conclusion rests on the
+> second kind.
+
+### There are two generators, and only one of them is the future
+
+| | V1 | V2 |
+|---|---|---|
+| Package | `com.hypixel.hytale.server.worldgen` | `com.hypixel.hytale.builtin.hytalegenerator` |
+| Shape | bespoke JSON loaders (`ZoneJsonLoader`, `ZonesJsonLoader`) | asset-driven; `HytaleGenerator extends JavaPlugin` with an `AssetManager` |
+| Authoring | zone/biome JSON under `/Server/World/` | `*Asset` JSON under `/Server/HytaleGenerator/`, plus a visual node editor |
+| Status | generates the shipped world today | enabled, loads assets, generates nothing yet |
+
+Hypixel Studios have stated V1 "will eventually stop generating new chunks" and that V2 "is the one
+we plan to support going forward"; once Hytale leaves Early Access, V1 worlds can no longer be
+created. **Treat V1 as a terminal branch when choosing where to build.**
+
+### A mod pack can ship V2 generator assets — proven
+
+The base game ships its generator content at `Server/HytaleGenerator/{Biomes,WorldStructures,Assignments,Density,Props,PropDistributions,Positions,BlockMasks,Graphs,Settings}/`
+— the **same `/Server/` root a mod pack already ships into**, loaded by the same `AssetModule`. So
+the mechanism proven in §1 for objectives applies unchanged to generator assets.
+
+**Observed.** One hand-authored biome at `Server/HytaleGenerator/Biomes/Biome_Stormseeker_Probe.json`
+in `mod/hytale`'s pack, read off the boot census line (`AssetModule|P Total Loaded Assets: …`):
+
+| Run | `BiomeAsset` |
+|---|---|
+| vanilla, no mod staged | 70 |
+| our pack, valid biome | **71** |
+| our pack, deliberately malformed biome | **server refuses to boot** |
+| malformed removed | 71 |
+
+The census line is the cheapest observable in this whole document: it is one grep, it is machine
+readable, and it distinguishes "our asset loaded" from "our asset was ignored" without a client.
+
+### A malformed generator asset fails LOUD — unlike the override hazard
+
+**Observed.** Shipping a biome with `"Type": "ThisTypeDoesNotExist"` stops the server during boot
+with `Sending server stop telemetry (reason: validation_error)`, after printing the file, the line
+number and the cause:
+
+```
+SEVERE [AssetStore|BiomeAsset] Failed to decode asset: Biome_Stormseeker_Broken,
+  /Server/HytaleGenerator/Biomes/Biome_Stormseeker_Broken.json:
+L  2|    "Type": "ThisTypeDoesNotExist",
+Caused by: ACodecMapCodec$UnknownIdException: No codec registered with for 'Type': ThisTypeDoesNotExist
+```
+
+This is worth stating explicitly because it is the **opposite** of the hazard
+`AssetPackIntegrityCheck` exists to catch. A filename that shadows a base asset fails *green* — the
+build passes and the game is quietly different. A malformed generator asset fails *red and early*,
+and names itself. No guard is needed for this class.
+
+### Authoring: `$`-prefixed keys are node-editor metadata, not content
+
+**Observed.** Base assets carry `$Title`, `$Position`, `$NodeId`, `$WorkspaceID`,
+`$NodeEditorMetadata`, `$Comments`. The loader reports them as unused
+(`WARN [AssetStore|AssignmentsAsset] Unused key(s) in '…': $Comments`). The functional content is
+`Type` plus typed fields, where `Type` selects a codec — the same `Type`-dispatch shape used
+everywhere else in this document.
+
+**So generator assets are hand-authorable without the node editor.** `Server/HytaleGenerator/`
+also ships `ExampleProp.json`, `ExamplePositions.json` and `ExamplePropDistribution.json`, which
+read as deliberate templates. A minimal working biome needs `Name`, `Terrain.Density`,
+`MaterialProvider` (marked `REQUIRED` in the base `Void.json`), and optionally
+`EnvironmentProvider` / `TintProvider`.
+
+### Why this still does not place the Stormseeker ruin
+
+Two facts close the gap, and they point in opposite directions:
+
+1. **V2's model is "define your own world", not "amend the existing one."** **Observed:**
+   `WorldStructureAsset` is not a building — it is a whole world definition. The 15 shipped
+   instances are `Default`, `Default_Flat`, `Default_Void`, `Zone1_Plains1`, `Zone2_Desert1`,
+   `Zone4_Volcanic1` and similar. Changing how the *existing* Zone-1 world generates would mean
+   overriding a base asset, which is exactly what this project's scoping rule and
+   `AssetPackIntegrityCheck` forbid.
+
+2. **The "inject content into existing worldgen" hook is V1-only.** `WorldGenModifier` is an asset
+   type (`Target` + `Op[] operations`) with content types `BiomePrefabContent`, `CavePrefabContent`,
+   and ore/layer/cover/fluid/tint variants — precisely "add my structure to that biome". The base
+   game ships **zero** instances of it (`WorldGenModifier: 0` on the census), which makes it a pure
+   mod extension point. **Read from bytecode, not exercised:** its only consumer outside its own
+   package is `server/worldgen/loader/ChunkGeneratorJsonLoader` — i.e. V1 — and there are **zero
+   references to it from `builtin/hytalegenerator`**. Scan used: extract
+   `builtin/hytalegenerator/**`, `server/worldgen/**`, `builtin/worldgen/**` (1209 classes) and
+   `grep -ral` the constant pools.
+
+**Observed:** the shipped world is generated by V1. The boot log reads
+
+```
+[World|default] Loading world 'default' with generator type:
+  'HytaleWorldGenProvider{name='Default', version=0.0.0, path='null'}'
+[World|default|M] Initializing world map generator:
+  com.hypixel.hytale.server.worldgen.map.GeneratorChunkWorldMap@…
+[WorldGenerator] Found location for unique zone 'Zone1_Spawn' -> Position: {599, 10}
+```
+
+while `HytaleGenerator` loads its assets, reports `Using 21 out of 24 available threads`, and
+generates nothing. That matches the public statement that V2 "will arrive in pieces".
+
+**Consequence.** Procedurally siting mod content in the shared world is, on this build, a
+**V1-only** capability — on the generator scheduled for retirement. Act IV's Circle should be
+built hand-placed, and worldgen revisited when V2 takes over generation. Deferral filed as
+`Workspace_Deferrals.md` **#18**, with the trigger below.
+
+> **Trigger to revisit:** the boot log's `Loading world 'default' with generator type:` line names
+> something other than `HytaleWorldGenProvider{name='Default'}`, **or** `/worldgen` gains a
+> world-creation subcommand. Both are visible in the `.scratch/hytale-server/` harness we already
+> boot, so the trigger has a real observation point.
+
+### `/worldgen` exists, and `reload` is the iteration lever
+
+**Observed**, typed at the server console:
+
+```
+/worldgen
+  benchmark <pos1> <pos2> [--seed=?] [--world=?]
+  reload [--clear] [--world=?]
+```
+
+`reload` re-reads generator assets without restarting, which is the fast authoring loop when this
+becomes live work. Note the console listing omits `CreateCommand` and `ViewportCommand`, which
+exist in the jar as `AbstractAsyncPlayerCommand` — **player-scoped, so the console cannot see
+them.** Per §4b, the in-game chat autocomplete is the authority on what a player can actually run.
+
+### One thing observed and not explained
+
+V1 prints its own asset-pack list at boot:
+
+```
+[WorldGenerator] Loading world-gen with the following asset-packs (highest priority first):
+[WorldGenerator] - [  0] Hytale:Hytale:0.0.0 - [.../Assets.zip]
+```
+
+**Our mod pack is not in that list**, even on a boot where `AssetModule` loaded it and counted our
+biome. Whether that is because our pack contains no V1 worldgen content, or because V1 enumerates
+packs differently, was not determined. Recorded rather than guessed.
+
+### Reproducing
+
+```bash
+# 1. add one asset; register its prefix in AssetPackIntegrityCheck's assetIdPrefixes
+#    (Rule 1 requires every shipped asset id to carry a Stormseeker-scoped prefix)
+mod/hytale/src/main/resources/Server/HytaleGenerator/Biomes/Biome_Stormseeker_Probe.json
+
+# 2. build, stage, boot normally — NOT --bare, NOT --validate-assets (see §4)
+./gradlew :mod:hytale:shadowJar
+cp mod/hytale/build/libs/*-all.jar .scratch/hytale-server/mods/
+bash .scratch/hytale-server/run-server.sh
+
+# 3. read the census by name, never by position
+grep "Total Loaded Assets" <log> | grep -oE "BiomeAsset: [0-9]+"
+```
 
 ---
 
