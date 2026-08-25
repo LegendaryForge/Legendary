@@ -1,0 +1,25 @@
+{
+  "Setup": {
+    "Type": "Objective",
+    "ObjectiveId": "Objective_Kill"
+  },
+  "Area": {
+    "Type": "Radius",
+    "EntryRadius": 25,
+    "ExitRadius": 35
+  },
+  "TriggerConditions": [
+    {
+      "Type": "Weather",
+      "WeatherIds": [
+        "Zone1_Foggy_Light",
+        "Zone1_Sunny_Fireflies",
+        "Zone1_Storm",
+        "Zone1_Sunny",
+        "Zone1_Cloudy_Medium",
+        "Zone1_Rain",
+        "Zone1_Rain_Light"
+      ]
+    }
+  ]
+}

@@ -9,6 +9,7 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 import io.github.legendaryforge.legendary.mod.hytale.command.StormseekerAdvanceCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.StormseekerStatusCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.StormseekerTrialCommand;
+import io.github.legendaryforge.legendary.mod.hytale.command.WeatherConditionProbeCommand;
 import io.github.legendaryforge.legendary.mod.hytale.stormseeker.HytaleStormseekerHost;
 import io.github.legendaryforge.legendary.mod.hytale.stormseeker.StormseekerStartLineInteraction;
 import io.github.legendaryforge.legendary.mod.hytale.stormseeker.StormseekerTickSystem;
@@ -61,7 +62,8 @@ public class LegendaryHytalePlugin extends JavaPlugin {
         getCommandRegistry().registerCommand(new StormseekerStatusCommand(stormseekerHost));
         getCommandRegistry().registerCommand(new StormseekerAdvanceCommand(stormseekerHost));
         getCommandRegistry().registerCommand(new StormseekerTrialCommand(stormseekerHost));
-        getLogger().atInfo().log("Commands registered: /stormseeker, /ss-advance, /ss-trial");
+        getCommandRegistry().registerCommand(new WeatherConditionProbeCommand());
+        getLogger().atInfo().log("Commands registered: /stormseeker, /ss-advance, /ss-trial, /weatherprobe");
     }
 
     private void onPlayerConnect(PlayerConnectEvent event) {

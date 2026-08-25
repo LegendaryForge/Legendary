@@ -1,0 +1,19 @@
+{
+  "Setup": {
+    "Type": "Objective",
+    "ObjectiveId": "Objective_Kill"
+  },
+  "Area": {
+    "Type": "Radius",
+    "EntryRadius": 25,
+    "ExitRadius": 35
+  },
+  "TriggerConditions": [
+    {
+      "Type": "Weather",
+      "WeatherIds": [
+        "Zone4_Wastes"
+      ]
+    }
+  ]
+}
