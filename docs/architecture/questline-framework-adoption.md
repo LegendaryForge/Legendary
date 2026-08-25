@@ -16,7 +16,8 @@
 >
 > P1–P3 are three real code changes that activate dormant paths in the module with the least test
 > coverage. **Settle the native-objectives question first**, or risk writing them against a spine
-> that is about to be replaced.
+> that is about to be replaced. The cost of that migration is inventoried in
+> `docs/architecture/native-objectives-migration-cost.md`.
 
 ## What exists
 
@@ -46,7 +47,7 @@ is scaffold in three places:
 
 1. `registerSystems(LegendarySystemRegistrar)` is an explicit no-op —
    `// Intentionally no-op in Phase C scaffold.` The tick system that actually
-   drives Phases 1, 1.5 and 2 (via `StormseekerWiring.tick(host)`) has no path
+   drives Phases 2, 3 and 4 (via `StormseekerWiring.tick(host)`) has no path
    through the framework.
 2. `registerListeners(EventBus)` is dormant. Nothing calls it. Calling it would
    construct `StormseekerAttunementService(bus, null)` and
