@@ -6,7 +6,7 @@
 
 **Architecture:** `mod/hytale` becomes an asset pack (`IncludesAssetPack: true`) shipping a `Server/` tree in its own jar. The questline spine — line, objectives, tasks, per-player progress — is native Hytale objectives. Four custom block items carry the builders' inscriptions through `SendMessageInteraction`, and the first of them chains `Next` → `StartObjective` to begin the line. All player-facing text lives in one `server.lang` file the pack ships. A new `buildSrc` guard enforces the design's never-override rule mechanically and gives CI its first real coverage of this module's content.
 
-**Tech Stack:** Java 25 (no new Java in this plan), Gradle multi-project with `buildSrc` typed tasks, Kotlin for build logic, Hytale server `0.5.9` asset schema, JSON assets, `.lang` translation files.
+**Tech Stack:** Java 25 (one new Java class in `mod/hytale` — see the Global Constraints override below), Gradle multi-project with `buildSrc` typed tasks, Kotlin for build logic, Hytale server `0.5.9` asset schema, JSON assets, `.lang` translation files.
 
 ## Global Constraints
 
@@ -15,6 +15,7 @@
 - **Never override shipped item text.** Every lang key this plan ships is prefixed `objectives.Objective_Stormseeker_`, `objectivelines.ObjectiveLine_Stormseeker_`, `items.Furniture_Stormseeker_`, or `stormseeker.`.
 - **Read verdict lines by name, never by exit status or line position.** `grep CENSUS_VERDICT`, not `tail -1`. Never pipe or chain a gate command.
 - **Add no Java to `mod/hytale`.** That module compiles nothing on any machine without the proprietary game jar (CI included), so Java added there is invisible to CI. The guard added by this plan lives in `buildSrc` and reads **files**, so it runs everywhere — the same reasoning as `ManifestEntrypointCheck`.
+  **Overridden mid-branch, 2026-08-25.** The play test proved this constraint uncompilable as stated: `StartObjective` is item-only and NPEs — disconnecting the player — when fired from a block interaction, and starting the line from an inscription block is exactly what this plan needs. There is no JSON-only way around an engine constraint. One class, `StormseekerStartLineInteraction`, was added to `mod/hytale` to reuse the shipped interaction's `Setup` field while skipping the item-stamping steps that don't apply without a held item. It stays invisible to CI for the same reason the rest of the module is — no game jar on the runner — same as everything else this constraint was written to keep out; it is a deliberate, evidenced exception, not a silent violation. See `docs/integration/hytale-asset-packs.md` §7c and §8 for the mechanism and the disconnect it was written to prevent.
 - **Do not bump `gradle/actions`.** It is held at `v5.0.2` on purpose; v6 relicenses caching as a proprietary component.
 - Toolchain is pinned (Temurin 25 via foojay). Do not add `org.gradle.configuration-cache=true` to `gradle.properties`.
 - Asset paths in this plan are relative to `mod/hytale/src/main/resources/`.

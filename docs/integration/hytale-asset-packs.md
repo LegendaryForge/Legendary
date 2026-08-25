@@ -146,9 +146,9 @@ the base game is itself a pack, with a two-line `manifest.json` reading
 > inspecting **base-game** assets, where it is still correct and still the fastest thing available.
 > It is wrong for anything shipped by a mod: **verified by running**, under `--bare` the
 > `PluginManager` never runs at all, so no plugin loads, `registerAssetPackIfNeeded` never fires,
-> and no mod pack is registered. The probe in §1 worked only because it was reading the store, not
-> because `--bare` loaded it — that probe predates this finding and was re-checked against a normal
-> boot.
+> and no mod pack is registered — which means the §1 probe, itself a plugin, could never have run
+> under `--bare` in the first place. That probe predates this finding and has been re-checked
+> against a normal boot.
 >
 > `--validate-assets --shutdown-after-validate` has the same defect for the same reason: it
 > completes **before** mods are loaded, so it validates the base game and nothing of ours.
@@ -186,9 +186,11 @@ public class ProbePlugin extends JavaPlugin {
 ```bash
 GAME=~/.var/app/com.hypixel.HytaleLauncher/data/Hytale/install/release/package/game/latest
 
+# NOT --bare: loading a mod's asset pack requires PluginManager to run, which --bare skips
+# entirely (see the correction above). Use a normal boot — see §4b for the full launch line.
 java -jar "$GAME/Server/HytaleServer.jar" \
      --assets "$GAME/Assets.zip" --mods <dir-containing-the-mod-jar> \
-     --bare --auth-mode offline --disable-sentry --disable-file-watcher
+     --auth-mode offline --disable-sentry --disable-file-watcher
 ```
 
 `map.getAssetPack(id)` is the key call: it reports which pack a given asset came from, which is what
@@ -592,9 +594,21 @@ bypassed by trade or drop, because only the crafting half counts.
 
 ### Admin completion is not equivalent to play
 
-`/objective complete objective <id>` completes the objective but does **not** roll up to line
-completion — the line's `TimesCompleted` stayed `0`. Admin commands are a shortcut for *reaching*
-a state, not a substitute for exercising one, which is why Act II was played rather than commanded.
+**Correction, 2026-08-25.** This claim's original evidence was that `/objective complete objective
+<id>` left the line's `TimesCompleted` at `0`. That measurement no longer discriminates anything:
+§8's play-through record shows a **genuine, cleanly-disconnected completion** also leaves line
+`TimesCompleted` at `0` (the caller-side gate found there, cause unidentified). So "stays at `0`"
+is not evidence admin completion differs from play — both do it.
+
+The claim itself still holds, on different grounds: `/objective complete` reaches an objective's
+*completed* state directly, skipping whatever the real advance path does along the way — task
+progress events firing, `InventoryChangeAware` hooks running, whatever chain of calls a genuine
+completion walks through before the state flips. Line-level bookkeeping (whatever produces a
+correct `TimesCompleted` on the line, when it does) is coupled to that real advance path, not to
+the objective's completed/not-completed state alone — an admin command is a shortcut for
+*reaching* a state, not a substitute for exercising the path that gets there. Act II was played
+rather than commanded for this reason; it is just that the specific number originally cited as
+proof turned out not to distinguish the two after all.
 
 ### Line-level completion did not roll up — and this is unresolved
 
@@ -655,11 +669,13 @@ list and recorded as findings above; items it opened are new here.
   but nothing has confirmed a *mod* pack can contribute a structure that the generator then places.
   Act II sidesteps it entirely — its ruin is hand-placed. Unproven, not disproven.
 - **Assets-only packs (no `Main`) were not established** — see the callout in §3.
-- **Nothing here says we should adopt the native framework.** It says adoption is *possible*,
-  cheap to author, and now demonstrably works at runtime. The design decision is separate and belongs
-  with `docs/architecture/native-objectives-migration-cost.md`,
-  `docs/architecture/questline-framework-adoption.md` and
-  `docs/stormseeker/stormseeker-canonical.md`.
+- **The native-objectives question this section used to leave open is now decided.** As of
+  2026-08-25, `docs/architecture/native-objectives-migration-cost.md` records **Status: DECIDED** —
+  adopt Hytale's native objectives for the Stormseeker content spine. This document's job was
+  showing adoption is *possible*, cheap to author, and demonstrably works at runtime; that evidence
+  is what the decision was made on. See the migration-cost doc for the decision record,
+  `docs/architecture/questline-framework-adoption.md` (superseded by the decision) and
+  `docs/stormseeker/stormseeker-canonical.md` (what is being built on it).
 
 ---
 
@@ -674,6 +690,10 @@ N questlines register into our plugin"; the native system answers "what a quest 
 persists" — the half `quests/stormseeker` currently hand-rolls, including a phase state machine and
 an on-disk progress store that `ObjectiveHistoryComponent` already provides per player.
 
-They are not substitutes, but the second materially shrinks the first. **Settle the native-objectives
-question before executing P1–P3**, or that work risks being written against a spine that is about to
-be replaced.
+**Update, 2026-08-25 — settled, not open.** This section used to end by telling the reader to
+settle the native-objectives question before executing P1–P3. That question is now decided:
+`docs/architecture/native-objectives-migration-cost.md` records **Status: DECIDED**, adopting the
+native system for the Stormseeker content spine, and states explicitly that P1–P3 are **discarded,
+not pending**. The reasoning above — that the native system materially shrinks what P1–P3 were
+scaffolding — is what the decision was made on; it is preserved here as the historical argument,
+not as an open question for the next reader to resolve.

@@ -510,9 +510,11 @@ destroyed; gate registration; item identity framework; extensive trial test cove
 (`Objective_Stormseeker_TheChamber`, `Objective_Stormseeker_TheTrace`), one reach-location marker,
 four inscription blocks plus a shared base asset, and one `server.lang`. Reading the first
 inscription starts the line; reading the builders' record completes the act. Confirmed on
-2026-08-25 on a dedicated server with a connected client: the four inscriptions each printed
-**their own** line, each ticked **their own** task, and every title and task line rendered as
-prose rather than as a raw localisation key.
+2026-08-25 on a dedicated server with a connected client: each of the four inscriptions printed
+**its own** message; three of the four (`Housed`, `Asked`, `Statue_Silent`) are also `UseBlock`
+tasks tracked by `Objective_Stormseeker_TheTrace` and each ticked **its own** task — the fourth
+(`Five`) starts the objective line rather than ticking a task of its own — and every title and
+task line rendered as prose rather than as a raw localisation key.
 
 One piece of Java was unavoidable. `StartObjective` is item-only — fired from a block it NPEs on
 the absent held item and **disconnects the player** — so starting the line from an inscription
