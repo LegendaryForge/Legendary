@@ -165,6 +165,22 @@ things" needs no plugin code at all.
 
 ## 5. Constraints and gotchas
 
+- **There is no weather forecasting API. `WeatherForecast` is not a forecast.** It is one row of a
+  weighted probability table — `weatherId` + `weight`, implementing `IWeightedElement` — i.e. the
+  `{"WeatherId": "Zone1_Storm", "Weight": 1}` entries in `Env_Zone1.json`. Weather is rolled from
+  those weights on an hour boundary (`WeatherResource.compareAndSwapHour(int)`). **Nothing exposes
+  "what weather is coming next."** A design that wants the player to anticipate a storm cannot read
+  it from the engine; it must either derive its own schedule or force the weather. Recorded because
+  the class name reads like a capability it does not have, and was taken for one during this audit.
+- **The server can force weather.** `WeatherResource.setForcedWeather(String)` /
+  `getForcedWeatherIndex()` / `consumeForcedWeatherChange()`. Useful for a scripted one-off; note it
+  changes the sky for every player in that environment, not just the one who triggered it.
+  `getWeatherIndexForEnvironment(int)` reads current weather per environment.
+- **Post-processing shaders are almost certainly unavailable.** February listed them as "Unknown"
+  with the Leyline Sight visual "TBD". The client is a closed native binary and nothing in the
+  server jar or protocol surfaces a shader hook. Treat any screen-space effect as unavailable until
+  proven otherwise: an in-world effect built from particles and `DynamicLight` is the supported
+  shape. This bounds what a "vision mode" can look like.
 - **Storms are rare.** In `Env_Zone1`'s forecast table, `Zone1_Storm` has `Weight: 1` against
   `Zone1_Sunny`'s `52` (~1.5% of rolls). Any design gated on an active storm is gated on an
   uncommon event. Check the forecast weights per zone before assuming availability.
