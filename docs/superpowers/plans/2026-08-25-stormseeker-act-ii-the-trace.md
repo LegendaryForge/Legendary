@@ -1076,11 +1076,13 @@ to:
 
 Run: `./gradlew :mod:hytale:checkAssetPackIntegrity`
 
-Expected: **FAIL**, with three lines:
+Expected: **FAIL**, with **two** lines — one for `.title`, one for `.desc`:
 
 ```
 - Server/Objective/Objectives/Objective_Stormseeker_TheTrace.json references translation key 'server.objectives.Objective_Stormseeker_TheTrace.title', which is not defined ...
 ```
+
+Two, not three: the guard finds keys by walking the JSON for `TitleId` / `DescriptionId` / `Key` / `server.`-prefixed `Name` fields, and the **per-task** text keys appear nowhere in the JSON at all — the engine derives `objectives.<AssetId>.taskSet.<i>.task.<j>` by naming convention from the asset id and the task's array index. There is no node for the guard to walk into, which is the same blindness Task 4's preamble warns about from the other direction: nothing in the build can check that task index 2's text describes the block at index 2.
 
 - [ ] **Step 4: Write the objective's text**
 
