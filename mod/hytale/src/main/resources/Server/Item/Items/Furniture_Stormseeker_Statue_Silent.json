@@ -7,6 +7,16 @@
     "Blocks.Deco"
   ],
   "Set": "Furniture_Temple_Light",
+  "Interactions": {
+    "Secondary": {
+      "Interactions": [
+        {
+          "Type": "SendMessage",
+          "Key": "server.stormseeker.inscription.silent"
+        }
+      ]
+    }
+  },
   "IconProperties": {
     "Rotation": [
       22.5,

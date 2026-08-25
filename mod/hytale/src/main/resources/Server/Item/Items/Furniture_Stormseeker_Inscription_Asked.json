@@ -7,6 +7,16 @@
     "Furniture.Signs"
   ],
   "Set": "Furniture_Temple_Wind",
+  "Interactions": {
+    "Secondary": {
+      "Interactions": [
+        {
+          "Type": "SendMessage",
+          "Key": "server.stormseeker.inscription.asked"
+        }
+      ]
+    }
+  },
   "BlockType": {
     "BlockParticleSetId": "Stone",
     "BlockSoundSetId": "Stone",

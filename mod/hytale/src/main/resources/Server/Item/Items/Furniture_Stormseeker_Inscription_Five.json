@@ -7,6 +7,23 @@
     "Furniture.Signs"
   ],
   "Set": "Furniture_Temple_Wind",
+  "Interactions": {
+    "Secondary": {
+      "Interactions": [
+        {
+          "Type": "SendMessage",
+          "Key": "server.stormseeker.inscription.five",
+          "Next": {
+            "Type": "StartObjective",
+            "Setup": {
+              "Type": "ObjectiveLine",
+              "ObjectiveLineId": "ObjectiveLine_Stormseeker_TheSixthCircle"
+            }
+          }
+        }
+      ]
+    }
+  },
   "BlockType": {
     "BlockParticleSetId": "Stone",
     "BlockSoundSetId": "Stone",
