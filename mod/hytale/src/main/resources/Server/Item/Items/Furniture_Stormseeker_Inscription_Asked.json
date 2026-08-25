@@ -8,16 +8,20 @@
   ],
   "Set": "Furniture_Temple_Wind",
   "Interactions": {
-    "Secondary": {
-      "Interactions": [
-        {
-          "Type": "SendMessage",
-          "Key": "server.stormseeker.inscription.asked"
-        }
-      ]
-    }
+    "Primary": "Block_Primary",
+    "Secondary": "Block_Secondary"
   },
   "BlockType": {
+    "Interactions": {
+      "Use": {
+        "Interactions": [
+          {
+            "Type": "SendMessage",
+            "Key": "server.stormseeker.inscription.asked"
+          }
+        ]
+      }
+    },
     "BlockParticleSetId": "Stone",
     "BlockSoundSetId": "Stone",
     "PhysicalMaterialId": "Stone",

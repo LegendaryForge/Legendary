@@ -8,23 +8,27 @@
   ],
   "Set": "Furniture_Temple_Wind",
   "Interactions": {
-    "Secondary": {
-      "Interactions": [
-        {
-          "Type": "SendMessage",
-          "Key": "server.stormseeker.inscription.five",
-          "Next": {
-            "Type": "StartObjective",
-            "Setup": {
-              "Type": "ObjectiveLine",
-              "ObjectiveLineId": "ObjectiveLine_Stormseeker_TheSixthCircle"
-            }
-          }
-        }
-      ]
-    }
+    "Primary": "Block_Primary",
+    "Secondary": "Block_Secondary"
   },
   "BlockType": {
+    "Interactions": {
+      "Use": {
+        "Interactions": [
+          {
+            "Type": "SendMessage",
+            "Key": "server.stormseeker.inscription.five",
+            "Next": {
+              "Type": "StartObjective",
+              "Setup": {
+                "Type": "ObjectiveLine",
+                "ObjectiveLineId": "ObjectiveLine_Stormseeker_TheSixthCircle"
+              }
+            }
+          }
+        ]
+      }
+    },
     "BlockParticleSetId": "Stone",
     "BlockSoundSetId": "Stone",
     "PhysicalMaterialId": "Stone",
