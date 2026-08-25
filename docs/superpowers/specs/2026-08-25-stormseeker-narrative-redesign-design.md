@@ -89,7 +89,7 @@ that previously had no method attached. Conditioning verbs on world state is the
 
 | Verb | Normally | Here | The question |
 |---|---|---|---|
-| Gathering | Click rocks | Storm-timed, perishable, cultivable | *How much will you take?* |
+| Gathering | Click rocks | Storm-timed, perishable, cultivable | *Will you take this place's future?* |
 | Travel | Follow the marker | No markers; read residue, terrain, sky | *Can you read where you are?* |
 | Waiting | Watch a cooldown | Storms are rare; prepare, observe, position | *Are you ready when it comes?* |
 | Exploring | Reveal the map | Crystal density **is** the map | *Can you find what isn't marked?* |
@@ -145,6 +145,11 @@ so most players will have handled them before meeting this questline.
 `Spirit_Thunder` matters here: it is the **only source of Essence of Lightning in the game**. Which
 poses the act's real question — the builders *harvested* the unhoused, and you need another way to
 be given what they took.
+
+**This act is also the gate on residue cores** (§4, Class C). Learning to read residue is what makes
+a core visible, which means the one irreversible act in the questline becomes available only to a
+player who has already read the builders' record in Act II. The capability and the cautionary tale
+arrive in that order deliberately.
 
 ### Act IV — The Raising
 *The long middle. The signature visual.*
@@ -217,22 +222,31 @@ Its stated purpose — *"crystals reveal space"* — becomes literal: **crystal 
 a Circle site.** The material is the map. Act IV's siting mechanic and Class C's purpose collapse
 into one thing, and the player learns to read the land instead of being told where to build.
 
-**Harvesting model — cultivation, not depletion.** An earlier draft made stripping a site thin the
-current permanently. Rejected: it punishes the attentive player and is invisible to the inattentive
-one, and on a shared server it would block questlines. Instead:
+**Harvesting model — depletion, regrowth, and one irreversible choice.**
 
-- Anyone can strip a site bare. No punishment, no frustration, and they get a real haul.
-- A player who harvests attentively — mature clusters, core left intact — can carry a **residue
-  core** back to their Circle and cultivate crystals there.
-- Wild sites are the **discovery** source. Cultivated crystals are the **sustained** source.
+- **Clusters are finite and regrow.** Anyone may harvest them; a stripped site recovers slowly from
+  the current that feeds it. This is the Minecraft-geode shape: exhaustible in the moment,
+  renewable in place. A stripped shared site is a delay, never a blocked questline.
+- **Each site also has a core**, and taking it **permanently ends that site** — but lets the player
+  transplant production to their own Circle, where crystals then form renewably.
+- **The core is visible and takeable only to a player who has learned to read residue** — Act III
+  onward. A casual player cannot see one and therefore cannot destroy a site, deliberately or
+  otherwise.
 
-Carelessness gets one payday; care gets a renewable supply at home. A stripped shared site becomes a
-minor annoyance rather than a blocked questline.
+That gate is what makes the mechanic safe on a shared server, and it is also what gives it teeth.
+The irreversible option is offered **only to someone who has already stood in the ruin and read
+*"It answered once. We asked again."*** The question the verb asks — *will you take this place's
+future for your own?* — is put only to players who have been told, in the builders' own words, what
+that costs.
 
-This is also better lore than depletion was. The unhoused wander because there is nowhere to gather,
-so residue **collecting at your Circle is proof the Circle is working** — a progress signal with no
-UI, no number and no text. It merges with thistle cultivation to make the Circle the place you
-keep, which is the restful counterweight the design principle requires.
+An earlier draft instead made over-harvesting thin the current as a punishment for greed. Rejected:
+it penalises the attentive player, is invisible to the inattentive one, and on a busy server would
+block questlines for people who did nothing wrong.
+
+The lore is exact either way. The unhoused wander because there is nowhere to gather, so residue
+**collecting at the player's Circle is proof the Circle is working** — a progress signal with no UI,
+no number and no text. It merges with thistle cultivation to make the Circle the place you keep,
+which is the restful counterweight the design principle requires.
 
 ### Class D — Keystones *(was "sigils")*
 The rules are right — deterministic, state truth not loot, never NPC-decided, never RNG — but the
@@ -368,6 +382,8 @@ yet.
 - **Tier count for the Storm Circle.** Earth ships 7 tiers, Frost 5. Storm's count is a pacing
   decision tied to Act IV's length.
 - **Minimum spacing** between player Circles.
+- **Regrowth rate for wild crystal clusters.** Fast enough that a stripped shared site is a delay
+  rather than a dead end; slow enough that cultivating at a Circle is worth doing.
 - **Class A materials** — the shared legendary backbone is named but not specified, and should be
   designed with the elemental family in mind rather than for Stormseeker alone.
 - **Where the single NPC reaction lands**, and who it is.
