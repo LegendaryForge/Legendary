@@ -22,13 +22,17 @@
 > will stop generating chunks — so that half is deferred rather than built. §8b's worldgen bullet
 > is corrected in place with the superseded text quoted.
 >
-> **Fourth pass, 2026-08-25 — the weather question, answered NO.** §8d is new, §4b gained the
+> **Fourth pass, 2026-08-25 — the weather question, answered NO at the asset layer and YES in code.** §8d is new, §4b gained the
 > `/weather` and `/objective locationmarker` commands, and §8b's `WeatherTriggerCondition` bullet is
 > retired in place. A human stood in a forced storm and watched the condition not fire — including
 > against a marker listing **all 87 weather ids in the game**, so it is not id-matching. `HourRange`
 > on an otherwise identical marker fires, so conditions are evaluated. The bounded claim is "does not
 > fire **from a mod-pack-shipped marker**"; the base game's own weather-conditioned marker was not
 > tested, and §8d names that as the next test rather than assuming the stronger conclusion.
+> **Amended the same evening:** a follow-up probe proved `mod/hytale` *can* read forced weather in
+> Java (`HytaleWeatherReader`, `Zone1_Sunny` → `Zone1_Storm [STORM]`), so storm-gating is available to
+> Stormseeker today in code. That also strengthens the null result — the storm was real to gameplay
+> code throughout the marker run, ruling out "the test lever was broken" as the explanation.
 >
 > Throughout, **"verified by running"** means observed in a log line or on a screen during that
 > session; **"read from bytecode"** means decompiled and reasoned about but not exercised. The two
@@ -950,6 +954,17 @@ that `Weather` conditions are broken for everyone, first-party included — is *
 That is the cheapest next test and the one that should be run before any redesign: place the base
 marker, force its weather, see whether its tracker appears.
 
+**What was ruled out the same evening.** The leading explanation for the null result was that
+`/weather set` might be a *display* override rather than real gameplay state — in which case the test
+lever, not the mechanism, would have been broken. That is now false for at least one consumer, and
+the null result is correspondingly **stronger**: it genuinely was storming, as far as gameplay code
+was concerned, throughout the six-marker run. See the route-2 evidence below.
+
+Note the paths are still distinct, so this does **not** establish that the condition's own data source
+is healthy: `WeatherTriggerCondition` reads a `WeatherResource` keyed off `TransformComponent`, while
+the route-2 evidence reads a `WeatherTracker` **component on the player**. Forced weather could update
+one and not the other. Untested.
+
 ### Consequence for Stormseeker
 
 Storm-gating via `WeatherTriggerCondition` is **not currently a mechanism to design on**. Act III's
@@ -958,14 +973,28 @@ proven-ness:
 
 1. **`HourRange` is proven** and gates by in-game time. It is not weather, but it is a working
    pacing lever available today.
-2. **Java-side weather access from our own plugin.** `WeatherTriggerCondition` reads a
-   `WeatherResource` keyed off the player's `TransformComponent`; `mod/hytale` already registers
-   systems and a custom `Interaction`, so reading weather in code and gating there is available
-   without the asset-level condition. **Read from bytecode, not exercised** — it is a candidate, not
-   a proven route.
+2. **Java-side weather access from our own plugin — PROVEN by running, 2026-08-25.** Not a
+   candidate: a mechanism. `mod/hytale` already ships `HytaleWeatherReader`, which reads a
+   `WeatherTracker` component off `PlayerRef` and maps its index through `Weather.getAssetMap()`.
+   Probed by forcing weather from the console and reading `/stormseeker` back:
+
+   | Forced | `/stormseeker` reports |
+   |---|---|
+   | `Zone1_Sunny` | `Weather: Zone1_Sunny (index=51)` |
+   | `Zone1_Storm` | `Weather: Zone1_Storm (index=52) [STORM]` |
+
+   The index moves, the id resolves, and `isStorm()` fires. **Storm-gating is therefore available to
+   Stormseeker today** — in code, not in assets.
+
+   Worth recording how close this came to being missed: `HytaleWeatherReader` had **exactly one
+   caller**, a debug command, which by this repo's own *"grep its call sites — if the only callers are
+   its own tests, it is a design, not a mechanism"* rule made it barely distinguishable from dead
+   code. It had never been checked against a known weather state. The probe cost zero new Java
+   because the reader and its debug surface already existed; what was missing was anyone having run
+   them against a controlled input.
 3. **Drop storm-gating** and let storms be atmosphere rather than a gate.
 
-Deciding between them is Act III design work and is not settled here.
+Deciding between them is Act III design work and is not settled here — but the choice is now between a **proven** code-side gate and a broken asset-side one, rather than between two unknowns.
 
 ---
 
