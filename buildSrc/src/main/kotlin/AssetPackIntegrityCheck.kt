@@ -59,6 +59,16 @@ abstract class AssetPackIntegrityCheck : DefaultTask() {
         "stormseeker.",
     )
 
+    /**
+     * Is this referenced id ours to resolve? Anything mentioning "Stormseeker" must resolve to
+     * one of our own shipped files; anything else is assumed to be a base-game id we don't ship
+     * and don't have a copy of to check against. Deliberately `contains`, not `startsWith` a
+     * fixed prefix — a typo that drops or duplicates a letter (`Stormseker`, `SStormseeker`)
+     * still contains "Stormseeker" and so still gets checked, where a prefix match would
+     * misclassify the typo'd id as base-game and silently skip it.
+     */
+    private fun isOurs(id: String) = id.contains("Stormseeker")
+
     @TaskAction
     fun verify() {
         val problems = mutableListOf<String>()
@@ -99,9 +109,12 @@ abstract class AssetPackIntegrityCheck : DefaultTask() {
             }
         }
 
-        // Rule 2 — objective lines must name objectives that exist.
         val objectivesDir = File(serverDir, "Objective/Objectives")
         val linesDir = File(serverDir, "Objective/ObjectiveLines")
+        val itemsDir = File(serverDir, "Item/Items")
+        val reachLocationMarkersDir = File(serverDir, "Objective/ReachLocationMarkers")
+
+        // Rule 2 — objective lines must name objectives that exist.
         if (linesDir.isDirectory) {
             for (file in linesDir.listFiles { f: File -> f.extension == "json" }.orEmpty()) {
                 val line = JsonSlurper().parse(file) as? Map<*, *>
@@ -113,7 +126,12 @@ abstract class AssetPackIntegrityCheck : DefaultTask() {
                     continue
                 }
                 for (id in ids.filterIsInstance<String>()) {
-                    if (!id.startsWith("Objective_Stormseeker_")) continue // a base-game objective
+                    // Anything mentioning Stormseeker must resolve to one of our own files;
+                    // anything else is assumed base-game and left alone. A prefix check here
+                    // would treat a typo'd id (e.g. a dropped letter) as "base-game" and skip
+                    // it silently — `contains` still catches it because the typo'd id still
+                    // mentions Stormseeker, it just doesn't match any of our real files.
+                    if (!isOurs(id)) continue
                     if (!File(objectivesDir, "$id.json").isFile) {
                         problems += "${file.name} names objective '$id', which has no file at " +
                             "Server/Objective/Objectives/$id.json"
@@ -149,7 +167,9 @@ abstract class AssetPackIntegrityCheck : DefaultTask() {
 
         // Rule 4 — every key our assets reference must have a translation behind it.
         // A key may be written with or without the file's own 'server.' prefix; both resolve
-        // to the same entry, and which form the engine wants is settled empirically in Task 5.
+        // to the same entry. The 'server.'-prefixed form is the one the engine actually wants —
+        // proven in game in Task 5 — so the bare-key match here is deliberate slack for whichever
+        // asset happens to omit the prefix, not an open question about which form is correct.
         fun resolves(key: String) =
             translations.containsKey(key) || translations.containsKey(key.removePrefix("server."))
 
@@ -160,6 +180,56 @@ abstract class AssetPackIntegrityCheck : DefaultTask() {
                     problems += "${file.relativeTo(root)} references translation key '$key', " +
                         "which is not defined in Server/Languages/en-US/server.lang — it would " +
                         "render to the player as the raw key."
+                }
+            }
+        }
+
+        // Rule 5 — an item's Parent must name an item that exists.
+        for (file in assetFiles) {
+            val asset = JsonSlurper().parse(file) as? Map<*, *> ?: continue
+            for (parentId in collectValuesForKey(asset, "Parent")) {
+                if (!isOurs(parentId)) continue
+                if (!File(itemsDir, "$parentId.json").isFile) {
+                    problems += "${file.relativeTo(root)} names Parent '$parentId', which has no " +
+                        "file at Server/Item/Items/$parentId.json"
+                }
+            }
+        }
+
+        // Rule 6 — a Next.Setup.ObjectiveLineId must name an objective line that exists.
+        for (file in assetFiles) {
+            val asset = JsonSlurper().parse(file) as? Map<*, *> ?: continue
+            for (lineId in collectValuesForKey(asset, "ObjectiveLineId")) {
+                if (!isOurs(lineId)) continue
+                if (!File(linesDir, "$lineId.json").isFile) {
+                    problems += "${file.relativeTo(root)} references ObjectiveLineId '$lineId', " +
+                        "which has no file at Server/Objective/ObjectiveLines/$lineId.json"
+                }
+            }
+        }
+
+        // Rule 7 — a task's BlockTagOrItemId.ItemId must name an item that exists.
+        // (BlockTagOrItemId can also carry a BlockTag instead — only ItemId is checked here.)
+        for (file in assetFiles) {
+            val asset = JsonSlurper().parse(file) as? Map<*, *> ?: continue
+            for (itemId in collectValuesForKey(asset, "ItemId")) {
+                if (!isOurs(itemId)) continue
+                if (!File(itemsDir, "$itemId.json").isFile) {
+                    problems += "${file.relativeTo(root)} references BlockTagOrItemId.ItemId " +
+                        "'$itemId', which has no file at Server/Item/Items/$itemId.json"
+                }
+            }
+        }
+
+        // Rule 8 — a task's TargetLocation must name a reach-location marker that exists.
+        for (file in assetFiles) {
+            val asset = JsonSlurper().parse(file) as? Map<*, *> ?: continue
+            for (targetLocation in collectValuesForKey(asset, "TargetLocation")) {
+                if (!isOurs(targetLocation)) continue
+                if (!File(reachLocationMarkersDir, "$targetLocation.json").isFile) {
+                    problems += "${file.relativeTo(root)} references TargetLocation " +
+                        "'$targetLocation', which has no file at " +
+                        "Server/Objective/ReachLocationMarkers/$targetLocation.json"
                 }
             }
         }
@@ -179,6 +249,16 @@ abstract class AssetPackIntegrityCheck : DefaultTask() {
             }
         }
         is List<*> -> node.flatMap { collectKeys(it) }
+        else -> emptyList()
+    }
+
+    /** Every string value of a key named [targetKey] in this asset, at any nesting depth. */
+    private fun collectValuesForKey(node: Any?, targetKey: String): List<String> = when (node) {
+        is Map<*, *> -> node.entries.flatMap { (k, v) ->
+            val direct = if (k == targetKey && v is String) listOf(v) else emptyList()
+            direct + collectValuesForKey(v, targetKey)
+        }
+        is List<*> -> node.flatMap { collectValuesForKey(it, targetKey) }
         else -> emptyList()
     }
 

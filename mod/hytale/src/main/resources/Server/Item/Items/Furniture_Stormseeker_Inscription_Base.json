@@ -1,4 +1,7 @@
 {
+  "TranslationProperties": {
+    "Name": "server.items.Furniture_Stormseeker_Inscription_Base.name"
+  },
   "PlayerAnimationsId": "Block",
   "Categories": [
     "Furniture.Signs"

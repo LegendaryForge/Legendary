@@ -20,6 +20,7 @@ objectives.Objective_Stormseeker_TheChamber.taskSet.0.task.0 = Reach the centre 
 
 # === Act II block names ===
 
+items.Furniture_Stormseeker_Inscription_Base.name = Inscription
 items.Furniture_Stormseeker_Inscription_Five.name = Inscription
 items.Furniture_Stormseeker_Inscription_Housed.name = Inscription
 items.Furniture_Stormseeker_Inscription_Asked.name = Inscription
