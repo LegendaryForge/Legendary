@@ -16,14 +16,16 @@ final class StormseekerFlowingTrialLoopTest {
     void tickReturnsViewsWithObjectiveSnapshotsForAllPlayers() {
         StormseekerFlowingTrialLoop loop = new StormseekerFlowingTrialLoop();
 
-        // p0: Phase 0
+        // p0: an early-phase player (The Mark). UNTOUCHED would correctly yield no objectives.
         StormseekerProgress p0 = new StormseekerProgress();
+        p0.advanceToNextOrThrow(StormseekerPhase.PHASE_1_THE_MARK);
 
-        // p1: Phase 2 (Dual Sigils / Flowing Trial)
+        // p1: The Trials (Flowing Trial)
         StormseekerProgress p1 = new StormseekerProgress();
-        p1.advanceToNextOrThrow(StormseekerPhase.PHASE_1_STORM_TREK);
-        p1.advanceToNextOrThrow(StormseekerPhase.PHASE_1_5_ATTUNEMENT);
-        p1.advanceToNextOrThrow(StormseekerPhase.PHASE_2_DUAL_SIGILS);
+        p1.advanceToNextOrThrow(StormseekerPhase.PHASE_1_THE_MARK);
+        p1.advanceToNextOrThrow(StormseekerPhase.PHASE_2_THE_TREK);
+        p1.advanceToNextOrThrow(StormseekerPhase.PHASE_3_THE_WAKING);
+        p1.advanceToNextOrThrow(StormseekerPhase.PHASE_4_THE_TRIALS);
 
         Map<String, StormseekerProgress> progress = new HashMap<>();
         progress.put("p0", p0);

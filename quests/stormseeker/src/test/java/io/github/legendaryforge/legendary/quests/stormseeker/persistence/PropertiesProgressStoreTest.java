@@ -34,7 +34,7 @@ final class PropertiesProgressStoreTest {
     void load_withNoSaveFile_returnsFreshProgress(@TempDir Path dir) {
         StormseekerProgress progress = new PropertiesProgressStore(dir).load("nobody");
 
-        assertEquals(StormseekerPhase.PHASE_0_WATCHING_ELEMENTAL, progress.phase());
+        assertEquals(StormseekerPhase.UNTOUCHED, progress.phase());
         assertFalse(progress.hasSigilA());
         assertFalse(progress.hasSigilB());
     }
@@ -42,14 +42,14 @@ final class PropertiesProgressStoreTest {
     @Test
     void save_thenLoad_roundTripsPhaseAndBothSigils(@TempDir Path dir) {
         var store = new PropertiesProgressStore(dir);
-        StormseekerProgress saved = at(StormseekerPhase.PHASE_2_DUAL_SIGILS);
+        StormseekerProgress saved = at(StormseekerPhase.PHASE_4_THE_TRIALS);
         saved.grantSigilA();
         saved.grantSigilB();
 
         store.save("p1", saved);
         StormseekerProgress loaded = store.load("p1");
 
-        assertEquals(StormseekerPhase.PHASE_2_DUAL_SIGILS, loaded.phase());
+        assertEquals(StormseekerPhase.PHASE_4_THE_TRIALS, loaded.phase());
         assertTrue(loaded.hasSigilA());
         assertTrue(loaded.hasSigilB());
     }
@@ -57,7 +57,7 @@ final class PropertiesProgressStoreTest {
     @Test
     void save_thenLoad_keepsSigilsIndependent(@TempDir Path dir) {
         var store = new PropertiesProgressStore(dir);
-        StormseekerProgress saved = at(StormseekerPhase.PHASE_2_DUAL_SIGILS);
+        StormseekerProgress saved = at(StormseekerPhase.PHASE_4_THE_TRIALS);
         saved.grantSigilA();
 
         store.save("p1", saved);
@@ -84,7 +84,7 @@ final class PropertiesProgressStoreTest {
         StormseekerProgress loaded = new PropertiesProgressStore(dir).load("p1");
 
         // load stays total: a bad save must not break player connect.
-        assertEquals(StormseekerPhase.PHASE_0_WATCHING_ELEMENTAL, loaded.phase());
+        assertEquals(StormseekerPhase.UNTOUCHED, loaded.phase());
         assertFalse(loaded.hasSigilA());
     }
 
@@ -95,14 +95,14 @@ final class PropertiesProgressStoreTest {
 
         assertDoesNotThrow(() -> {
             StormseekerProgress loaded = new PropertiesProgressStore(dir).load("p1");
-            assertEquals(StormseekerPhase.PHASE_0_WATCHING_ELEMENTAL, loaded.phase());
+            assertEquals(StormseekerPhase.UNTOUCHED, loaded.phase());
         });
     }
 
     @Test
     void load_thatFails_quarantinesTheOriginalInsteadOfLeavingItToBeOverwritten(@TempDir Path dir) throws IOException {
         Path file = dir.resolve("p1.properties");
-        String original = "phase=PHASE_4_STORMS_ANSWER\nsigilA=true\nsigilB=true\n";
+        String original = "phase=PHASE_6_THE_FORGING\nsigilA=true\nsigilB=true\n";
         Files.writeString(file, original);
         var store = new PropertiesProgressStore(dir);
 
@@ -125,7 +125,7 @@ final class PropertiesProgressStoreTest {
         // disconnect. Before quarantining, a single unreadable read permanently
         // replaced a finished questline with PHASE_0 the moment the player left.
         Path file = dir.resolve("p1.properties");
-        String original = "phase=PHASE_4_STORMS_ANSWER\nsigilA=true\nsigilB=true\n";
+        String original = "phase=PHASE_6_THE_FORGING\nsigilA=true\nsigilB=true\n";
         Files.writeString(file, original);
         var store = new PropertiesProgressStore(dir);
         Files.writeString(file, "phase=PHASE_9_NOT_A_REAL_PHASE\n");
@@ -165,7 +165,7 @@ final class PropertiesProgressStoreTest {
     @Test
     void playerIds_differingOnlyInSanitisedCharacters_collide(@TempDir Path dir) {
         var store = new PropertiesProgressStore(dir);
-        StormseekerProgress advanced = at(StormseekerPhase.PHASE_1_STORM_TREK);
+        StormseekerProgress advanced = at(StormseekerPhase.PHASE_2_THE_TREK);
 
         store.save("a.b", advanced);
         StormseekerProgress other = store.load("a/b");
@@ -177,19 +177,19 @@ final class PropertiesProgressStoreTest {
         // makes this live immediately. Pinned so that change fails a test instead of
         // silently merging two players' progress; not worth a key-encoding migration while
         // the sole caller keeps it unreachable.
-        assertEquals(StormseekerPhase.PHASE_1_STORM_TREK, other.phase());
+        assertEquals(StormseekerPhase.PHASE_2_THE_TREK, other.phase());
     }
 
     @Test
     void saveAll_writesEveryPlayerViaTheLookup(@TempDir Path dir) {
         var store = new PropertiesProgressStore(dir);
         Map<String, StormseekerProgress> progressById = Map.of(
-                "p1", at(StormseekerPhase.PHASE_1_STORM_TREK),
-                "p2", at(StormseekerPhase.PHASE_2_DUAL_SIGILS));
+                "p1", at(StormseekerPhase.PHASE_2_THE_TREK),
+                "p2", at(StormseekerPhase.PHASE_4_THE_TRIALS));
 
         store.saveAll(List.of("p1", "p2"), progressById::get);
 
-        assertEquals(StormseekerPhase.PHASE_1_STORM_TREK, store.load("p1").phase());
-        assertEquals(StormseekerPhase.PHASE_2_DUAL_SIGILS, store.load("p2").phase());
+        assertEquals(StormseekerPhase.PHASE_2_THE_TREK, store.load("p1").phase());
+        assertEquals(StormseekerPhase.PHASE_4_THE_TRIALS, store.load("p2").phase());
     }
 }

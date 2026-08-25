@@ -27,11 +27,11 @@ public final class StormseekerQuestStepMapper {
      */
     public static Optional<String> stepFor(StormseekerPhase phase) {
         return switch (phase) {
-            case PHASE_0_WATCHING_ELEMENTAL, PHASE_1_STORM_TREK, PHASE_1_5_ATTUNEMENT, PHASE_2_DUAL_SIGILS ->
+            case UNTOUCHED, PHASE_1_THE_MARK, PHASE_2_THE_TREK, PHASE_3_THE_WAKING, PHASE_4_THE_TRIALS ->
                 Optional.empty();
-            case PHASE_3_INCOMPLETE_FORM -> Optional.of(StormseekerQuestSteps.PHASE_3_INCOMPLETE_FORM);
-            case PHASE_4_STORMS_ANSWER -> Optional.of(StormseekerQuestSteps.PHASE_4_STORMS_ANSWER);
-            case PHASE_5_EPILOGUE -> Optional.of(StormseekerQuestSteps.PHASE_5_EPILOGUE);
+            case PHASE_5_THE_FRAME -> Optional.of(StormseekerQuestSteps.PHASE_5_THE_FRAME);
+            case PHASE_6_THE_FORGING -> Optional.of(StormseekerQuestSteps.PHASE_6_THE_FORGING);
+            case COMPLETE -> Optional.of(StormseekerQuestSteps.COMPLETE);
         };
     }
 }

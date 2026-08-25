@@ -13,8 +13,8 @@ import java.util.List;
 public final class StormseekerObjectiveSnapshotService {
 
     // Stable objective ids (string ids to keep this API portable).
-    public static final String OBJ_REACH_ATTUNEMENT = "stormseeker.phase2.reach_attunement";
-    public static final String OBJ_EARN_SIGIL_A = "stormseeker.phase2.sigil_a_flowing";
+    public static final String OBJ_REACH_ATTUNEMENT = "stormseeker.phase1.reach_the_waking";
+    public static final String OBJ_EARN_SIGIL_A = "stormseeker.phase4.sigil_a_flowing";
 
     /**
      * Snapshot objectives for the current phase (minimal scaffold).
@@ -23,16 +23,15 @@ public final class StormseekerObjectiveSnapshotService {
         List<ObjectiveStatus> out = new ArrayList<>();
         StormseekerPhase phase = progress.phase();
 
-        // Phase 0: player is not yet in Attunement.
-        if (phase == StormseekerPhase.PHASE_0_WATCHING_ELEMENTAL) {
+        // The Mark: the player has been marked but has not yet reached the circle.
+        if (phase == StormseekerPhase.PHASE_1_THE_MARK) {
             out.add(ObjectiveStatus.incomplete(
-                    OBJ_REACH_ATTUNEMENT,
-                    "Advance to Phase 1 (Attunement) to begin elemental alignment.")); // scaffold hint
+                    OBJ_REACH_ATTUNEMENT, "Follow the elemental's trail to the circle.")); // scaffold hint
             return out;
         }
 
-        // Phase 2 (Dual Sigils): Flowing Trial -> Sigil A.
-        if (phase == StormseekerPhase.PHASE_2_DUAL_SIGILS) {
+        // The Trials: Flowing Trial -> Sigil A.
+        if (phase == StormseekerPhase.PHASE_4_THE_TRIALS) {
             if (progress.hasSigilA()) {
                 out.add(ObjectiveStatus.complete(OBJ_EARN_SIGIL_A));
             } else {

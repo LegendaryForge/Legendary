@@ -8,7 +8,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Phase 1.5 (Attunement) authoritative manager.
+ * Phase 3 (The Waking) authoritative manager.
  *
  * <p>Manages the 30-second Attunement Ritual at the Ancient Air Leyline Calibration Station.
  * Handles state transitions, diegetic feedback, and player interaction for up to 6 plates independently.

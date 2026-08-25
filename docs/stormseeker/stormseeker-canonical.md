@@ -1,13 +1,45 @@
 # Stormseeker — Canonical Questline Document
 
-> **Version:** 3.0 (Phase 0/1/1.5 redesigned)
-> **Last Updated:** 2026-02-16
-> **Status:** Narrative locked. Materials locked. Phase 0/1/1.5 mechanics redesigned (movement restriction removed). Implementation partial.
+> **Version:** 3.1 (phases renumbered)
+> **Last Updated:** 2026-08-24
+> **Status:** Narrative locked. Materials locked. Implementation partial. The phase *bodies* below
+> still describe the pre-revision design and are pending a pass against
+> `canon-alignment-recommendations.md`.
 > **Inspiration:** Thunderfury, Blessed Blade of the Windseeker (World of Warcraft)
 
 This document is the **single source of truth** for the Stormseeker questline. It replaces all
 previous narrative.md, design.md, and quest-phases.md documents. Any contradiction between this
 document and the codebase should be resolved in favor of this document.
+
+---
+
+## Phase numbering (renumbered 2026-08-24)
+
+The old scheme ran Phase 0 → 5 with a fractional **Phase 1.5** left over from the v3.0 redesign,
+and had no way to say "has not started" — a new player was already in Phase 0. It is now six
+numbered phases bracketed by two states.
+
+| Was | Now | `StormseekerPhase` constant | Section below |
+|---|---|---|---|
+| — | — | `UNTOUCHED` | *(new — the questline has not begun)* |
+| Phase 0 | **Phase 1** | `PHASE_1_THE_MARK` | Phase 1 — The Watching Elemental |
+| Phase 1 | **Phase 2** | `PHASE_2_THE_TREK` | Phase 2 — The Trek |
+| Phase 1.5 | **Phase 3** | `PHASE_3_THE_WAKING` | Phase 3 — Attunement |
+| Phase 2 | **Phase 4** | `PHASE_4_THE_TRIALS` | Phase 4 — Dual Sigil Trials |
+| Phase 3 | **Phase 5** | `PHASE_5_THE_FRAME` | Phase 5 — Craft Frame |
+| Phase 4 | **Phase 6** | `PHASE_6_THE_FORGING` | Phase 6 — Final Encounter |
+| Phase 5 | **Complete** | `COMPLETE` | Complete — Epilogue |
+
+**Why the constant names and the section names differ.** The constants anticipate the revised
+design in `canon-alignment-recommendations.md` (a mark, a waking, a forging); the section headings
+still name what the bodies below actually describe. They converge when the bodies are revised.
+The *numbering* is authoritative in both.
+
+Entries in Document History are deliberately left under their original numbering — they record what
+was decided at the time, and renumbering them would falsify the record.
+
+No save migration was kept: progress persisted under the old constant names is unreadable by
+design, a clean break taken while nothing in flight depended on it.
 
 ---
 
@@ -24,8 +56,8 @@ Stormseeker is a legendary weapon questline inspired by World of Warcraft's Thun
 | Elementium Ore (MC trash mobs) | Storm-bound elemental ore | Visible/harvestable during storms only |
 | Arcane Crystals + Arcanite Bars | Leyline-bound crystals | Spawn within leyline influence radius |
 | Fiery Core / Lava Core (MC bosses) | Generic legendary materials | Vanilla-plus rare, shared across mods |
-| Enchanted Elementium Bars | Stormseeker Frame (Phase 3) | Crafted composite of all material classes |
-| Summoning + defeating Thunderaan | Final Encounter (Phase 4) | Temper/energize frame into finished sword |
+| Enchanted Elementium Bars | Stormseeker Frame (Phase 5) | Crafted composite of all material classes |
+| Summoning + defeating Thunderaan | Final Encounter (Phase 6) | Temper/energize frame into finished sword |
 | Thunderfury | Stormseeker | The finished weapon |
 
 ### Core Principles
@@ -54,7 +86,7 @@ Stormseeker is a legendary weapon questline inspired by World of Warcraft's Thun
 
 ---
 
-## Phase 0 — The Watching Elemental
+## Phase 1 — The Watching Elemental
 
 ### Resonator Structure (Independent Behavior)
 
@@ -68,12 +100,12 @@ This is not quest-gated. Any player exploring during a storm can see a glowing s
 distance. This is intentional.
 
 **Skip path:** Any player who enters the Resonator's radius and steps on a plate during a thunder
-storm triggers Phase 1.5 (Attunement), regardless of whether they've encountered the elemental or
+storm triggers Phase 3 (Attunement), regardless of whether they've encountered the elemental or
 followed a trail. Right place, right time — rewarded. Phases 0 and 1 are skipped.
 
 ### Trigger
 
-- Player is Phase 0 (new to the questline)
+- Player is Phase 1 (new to the questline)
 - A thunder storm is active
 - **Pre-validation passes:** A viable Resonator exists within range (~500 blocks) with no ocean
   crossing required. If no valid path exists, the elemental does not appear. The player never
@@ -99,15 +131,15 @@ followed a trail. Right place, right time — rewarded. Phases 0 and 1 are skipp
 
 ### Key Design Decisions
 
-- The elemental appears on the **first storm** of a Phase 0 player's experience (pending path validation)
+- The elemental appears on the **first storm** of a Phase 1 player's experience (pending path validation)
 - The elemental **bolts on the first approach** — no multi-storm watching phase, no training the player to ignore it
 - Within a single storm, the watching period is brief (~1-2 minutes of hovering before the player approaches)
-- The entire Phase 0 → 1 → 1.5 sequence is **completable within a single storm**
+- The entire Phase 1 → 2 → 3 sequence is **completable within a single storm**
 
-### Transition to Phase 1
+### Transition to Phase 2
 
 When the player approaches the elemental (~10 blocks), the elemental bolts toward the Resonator,
-leaving a trail of scorched earth. The trail marks the beginning of Phase 1.
+leaving a trail of scorched earth. The trail marks the beginning of Phase 2.
 
 ### Systems Required
 
@@ -122,7 +154,7 @@ leaving a trail of scorched earth. The trail marks the beginning of Phase 1.
 
 ---
 
-## Phase 1 — The Trek
+## Phase 2 — The Trek
 
 ### Trigger
 
@@ -171,12 +203,12 @@ structure avoidance."
 
 - Trail dissipates (blocks restored via Leave No Trace)
 - No punishment, no lost progress
-- Next thunder storm: Phase 0 resets — elemental appears again, same sequence
+- Next thunder storm: Phase 1 resets — elemental appears again, same sequence
 - Player gets unlimited attempts
 
-### Transition to Phase 1.5
+### Transition to Phase 3
 
-Phase 1 ends when the player reaches the Resonator during an active thunder storm.
+Phase 2 ends when the player reaches the Resonator during an active thunder storm.
 
 ### Worldgen Consideration
 
@@ -184,7 +216,7 @@ Resonator structures must be placed at a density that ensures:
 - At least one Resonator is likely within ~500 blocks of any given player position
 - The Resonator is reachable within the duration of a single thunder storm (accounting for terrain
   traversal, not straight-line distance)
-- Storm duration and Resonator density are balanced so the Phase 0→1→1.5 sequence is completable
+- Storm duration and Resonator density are balanced so the Phase 1→2→3 sequence is completable
   in one storm without rushing
 
 ### Systems Required
@@ -199,7 +231,7 @@ Resonator structures must be placed at a density that ensures:
 
 ---
 
-## Phase 1.5 — Attunement
+## Phase 3 — Attunement
 
 ### Trigger
 
@@ -228,13 +260,13 @@ On completion: `AttunementCompleteEvent` fires, Leyline Sight unlocks.
 
 ### Post-Attunement
 
-- Player advances to Phase 2 (Dual Sigil Trials)
+- Player advances to Phase 4 (Dual Sigil Trials)
 - The Flowing and Anchored Trials become available
 - Leyline Sight is unlocked but keybind not yet wired
 
-### Transition to Phase 2
+### Transition to Phase 4
 
-Attunement is the pivot. Phase 2 becomes available immediately after.
+Attunement is the pivot. Phase 4 becomes available immediately after.
 
 ### Systems Required
 
@@ -249,7 +281,7 @@ Attunement is the pivot. Phase 2 becomes available immediately after.
 
 ---
 
-## Phase 2 — Dual Sigil Trials
+## Phase 4 — Dual Sigil Trials
 
 ### Narrative
 
@@ -337,14 +369,14 @@ sigil grant, leave/cleanup.
 - Two distinct trial sites in the world (separate from convergence structures).
 - Trial logic is authoritative and server-side.
 
-### Transition to Phase 3
+### Transition to Phase 5
 
-Phase 2 ends once both sigils are obtained. This is the first truly "gated" step — but the gate
+Phase 4 ends once both sigils are obtained. This is the first truly "gated" step — but the gate
 is enforced by systems, not NPC entitlement.
 
-### Phase 2 Completion (Precise Statement)
+### Phase 4 Completion (Precise Statement)
 
-Phase 2 is complete only when Flowing Sigil is granted AND Anchored Sigil is granted. Nothing
+Phase 4 is complete only when Flowing Sigil is granted AND Anchored Sigil is granted. Nothing
 else. No NPC logic, no narrative authority, no implied attunement milestone. Downstream
 unlocking is handled entirely by ECS systems based on sigil presence.
 
@@ -359,16 +391,16 @@ unlocking is handled entirely by ECS systems based on sigil presence.
 
 ---
 
-## Phase 3 — Craft Frame
+## Phase 5 — Craft Frame
 
 ### Narrative
 
 The player is now trusted enough to construct the Stormseeker frame — the vessel that can survive
-what comes next. This is construction, not tempering. The frame is inert until Phase 4.
+what comes next. This is construction, not tempering. The frame is inert until Phase 6.
 
 ### Materials Required
 
-Phase 3 crafting draws from three of the four material classes:
+Phase 5 crafting draws from three of the four material classes:
 
 #### A. Generic Legendary Materials
 - Shared backbone across all Legendary mods.
@@ -406,9 +438,9 @@ If the player loses the frame (death, destruction, etc.):
 - Uniqueness enforced: one active frame per owner.
 - Logic: `StormseekerRecraftRules.canRecraftFrame()`
 
-### Transition to Phase 4
+### Transition to Phase 6
 
-Phase 3 ends when the player possesses the Stormseeker frame.
+Phase 5 ends when the player possesses the Stormseeker frame.
 
 ### Open Design Questions
 
@@ -428,7 +460,7 @@ Phase 3 ends when the player possesses the Stormseeker frame.
 
 ---
 
-## Phase 4 — Final Encounter
+## Phase 6 — Final Encounter
 
 ### Narrative
 
@@ -457,9 +489,9 @@ If the player loses the finished Stormseeker:
 - Uniqueness enforced: one active Stormseeker per owner.
 - Logic: `StormseekerRecraftRules.canRecraftStormseeker()`
 
-### Transition to Phase 5
+### Transition to Complete
 
-Phase 4 ends when the energizing completes and the weapon becomes Stormseeker (finished state).
+Phase 6 ends when the energizing completes and the weapon becomes Stormseeker (finished state).
 
 ### Open Design Questions
 
@@ -478,7 +510,7 @@ Phase 4 ends when the energizing completes and the weapon becomes Stormseeker (f
 
 ---
 
-## Phase 5 — Epilogue
+## Complete — Epilogue
 
 ### Narrative
 
@@ -574,7 +606,7 @@ sense that calm is an agreement rather than a guarantee.
 - Resource ID system for stable identifiers
 - Activation lifecycle (session management, attempt results)
 
-**Legendary — Phase 2 (Dual Sigil Trials):**
+**Legendary — Phase 4 (Dual Sigil Trials):**
 - `FlowingTrialSession` / `FlowingTrialEvaluator` / `FlowAlignmentEvaluationSystem` — full Flowing Trial pipeline
 - `FlowingSigilGrantSystem` / `FlowingSigilIssuer` — Sigil A grant logic
 - `FlowHintEmissionSystem` / `FlowHintIntent` — presentation hints during Flowing Trial
@@ -590,7 +622,7 @@ sense that calm is an agreement rather than a guarantee.
 - `StormseekerProgress` — phase tracking + sigil state
 - `StormseekerPhase` enum — phase definitions
 - `StormseekerCapabilities` — capability queries per phase
-- `StormseekerQuestSteps` — gate step identifiers for Phase 3+
+- `StormseekerQuestSteps` — gate step identifiers for Phase 5+
 - `StormseekerQuestStepMapper` — maps progress to quest steps
 - `StormseekerObjectives` / `StormseekerObjectiveSnapshotService` — objective tracking
 - `StormseekerMilestoneOutcome` / `StormseekerPhaseMilestone` — milestone emission
@@ -615,12 +647,12 @@ sense that calm is an agreement rather than a guarantee.
 
 ### What Does NOT Exist Yet
 
-- Phase 0: Pre-flight validation (ocean check), elemental entity registration + spawn, hover/drift behavior, approach detection, bolt behavior, scorched earth trail placement
-- Phase 1: Natural vs. artificial block detection, structure avoidance (lateral nudge), block state read/write, Leave No Trace cleanup, Resonator DynamicLight storm activation
-- Phase 1.5: Attunement ritual state machine (spool up/active lock/spool down), plate interaction detection, player rooting, `AttunementCompleteEvent`, multi-plate support, leyline-vision toggle, capability component wiring
-- Phase 3: Frame crafting system, material gathering, assembly state machine
-- Phase 4: Final encounter orchestration, energizing progression
-- Phase 5: Post-completion systems, epilogue flags
+- Phase 1: Pre-flight validation (ocean check), elemental entity registration + spawn, hover/drift behavior, approach detection, bolt behavior, scorched earth trail placement
+- Phase 2: Natural vs. artificial block detection, structure avoidance (lateral nudge), block state read/write, Leave No Trace cleanup, Resonator DynamicLight storm activation
+- Phase 3: Attunement ritual state machine (spool up/active lock/spool down), plate interaction detection, player rooting, `AttunementCompleteEvent`, multi-plate support, leyline-vision toggle, capability component wiring
+- Phase 5: Frame crafting system, material gathering, assembly state machine
+- Phase 6: Final encounter orchestration, energizing progression
+- Complete: Post-completion systems, epilogue flags
 - Persistence: `StormseekerProgress` is in-memory only (no save/load across sessions)
 - Storm weather integration: reading Hytale's weather system for storm detection
 
@@ -631,15 +663,15 @@ The code logic itself is generally correct — the names are wrong.
 
 | Code | Current Name | Should Be | Reason |
 |---|---|---|---|
-| `StormseekerAttunementService` | "Phase 1 Attunement control surface" | Phase 1.5 Attunement ritual service | Now correctly refers to attunement (Phase 1.5 redesign); name is accurate but phase label needs updating |
+| `StormseekerAttunementService` | "Phase 2 Attunement control surface" | Phase 3 Attunement ritual service | Now correctly refers to attunement (Phase 3 redesign); name is accurate but phase label needs updating |
 
 Resolved in v3.0:
-- ~~`StormseekerPhase1Loop`~~ → Fixed: now `StormseekerFlowingTrialLoop` (Phase 2 Flowing Trial coordinator)
+- ~~`StormseekerPhase1Loop`~~ → Fixed: now `StormseekerFlowingTrialLoop` (Phase 4 Flowing Trial coordinator)
 - ~~`StormseekerPhase1Outcome`~~ → Fixed: now `StormseekerFlowingTrialOutcome`
 - ~~`StormseekerPhase1TickView`~~ → Fixed: now `StormseekerFlowingTrialTickView`
 - ~~`emitPhase1TickView()` / `emitPhase1Outcome()`~~ → Fixed: now `emitFlowingTrialTickView()` / `emitFlowingTrialOutcome()`
 - ~~`phase1Attunement()`~~ → Fixed: now `phase2FlowingTrial()`
-- ~~`StormseekerObjectiveSnapshotService` Flowing Trial mapped to Phase 1~~ → Fixed: now mapped to Phase 2
+- ~~`StormseekerObjectiveSnapshotService` Flowing Trial mapped to Phase 2~~ → Fixed: now mapped to Phase 4
 - ~~`StormseekerPhase.PHASE_1_ATTUNEMENT`~~ → Fixed: now `PHASE_1_STORM_TREK`
 - ~~`StormseekerPhase.PHASE_1_5_AFTERSHOCK`~~ → Fixed: now `PHASE_1_5_ATTUNEMENT`
 - ~~`StormseekerPhase.PHASE_5_FINAL_TEMPERING`~~ → Fixed: now `PHASE_5_EPILOGUE`
@@ -652,10 +684,10 @@ Resolved in v3.0:
 Hytale has a weather system with classes for `Weather`, `WeatherForecast`, `WeatherParticle`,
 `UpdateWeather` packets, fog, clouds, and time-of-day colors. This will be critical for:
 
-- Phase 0: Storm detection for elemental spawn + pre-flight validation
-- Phase 1: Storm duration tracking (trail lifetime, Leave No Trace cleanup trigger)
-- Phase 1.5: Storm state check for attunement trigger at Resonator
-- Phase 3: Storm-timed crafting (if storm timing is required)
+- Phase 1: Storm detection for elemental spawn + pre-flight validation
+- Phase 2: Storm duration tracking (trail lifetime, Leave No Trace cleanup trigger)
+- Phase 3: Storm state check for attunement trigger at Resonator
+- Phase 5: Storm-timed crafting (if storm timing is required)
 
 Weather integration has not been explored yet but the server-side classes exist.
 
@@ -678,6 +710,11 @@ StormseekerWiring.tick(host)
 ---
 
 ## Document History
+
+- **v3.1 (2026-08-24):** Phases renumbered — six numbered phases bracketed by `UNTOUCHED` and
+  `COMPLETE`, removing the fractional Phase 1.5 and separating "has not started" from "is in the
+  first phase". Mapping table at the head of this document. The code was renumbered in the same
+  change. No design content was altered; the phase bodies still describe v3.0.
 
 - **v1.0 (2026-02-04):** Original narrative, design, and quest-phases documents (now superseded).
 - **v2.0 (2026-02-10):** Complete rewrite. Corrected phase structure, clarified sigil placement

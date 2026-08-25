@@ -18,7 +18,7 @@ public final class StormseekerProgress {
     private boolean hasSigilB;
 
     public StormseekerProgress() {
-        this.phase = StormseekerPhase.PHASE_0_WATCHING_ELEMENTAL;
+        this.phase = StormseekerPhase.UNTOUCHED;
         this.hasSigilA = false;
         this.hasSigilB = false;
     }
@@ -55,27 +55,28 @@ public final class StormseekerProgress {
      */
     public void advanceIfEligible() {
         switch (phase) {
-            case PHASE_0_WATCHING_ELEMENTAL -> phase = StormseekerPhase.PHASE_1_STORM_TREK;
-            case PHASE_1_STORM_TREK -> phase = StormseekerPhase.PHASE_1_5_ATTUNEMENT;
-            case PHASE_1_5_ATTUNEMENT -> phase = StormseekerPhase.PHASE_2_DUAL_SIGILS;
+            case UNTOUCHED -> phase = StormseekerPhase.PHASE_1_THE_MARK;
+            case PHASE_1_THE_MARK -> phase = StormseekerPhase.PHASE_2_THE_TREK;
+            case PHASE_2_THE_TREK -> phase = StormseekerPhase.PHASE_3_THE_WAKING;
+            case PHASE_3_THE_WAKING -> phase = StormseekerPhase.PHASE_4_THE_TRIALS;
 
-            case PHASE_2_DUAL_SIGILS -> {
+            case PHASE_4_THE_TRIALS -> {
                 if (hasSigilA && hasSigilB) {
-                    phase = StormseekerPhase.PHASE_3_INCOMPLETE_FORM;
+                    phase = StormseekerPhase.PHASE_5_THE_FRAME;
                 }
             }
 
-            case PHASE_3_INCOMPLETE_FORM -> {
+            case PHASE_5_THE_FRAME -> {
                 // Scaffold stub: later integrates "frame assembled" proof.
                 // No automatic advancement in scaffold mode.
             }
 
-            case PHASE_4_STORMS_ANSWER -> {
+            case PHASE_6_THE_FORGING -> {
                 // Scaffold stub: later integrates "storm correction resolved" proof.
                 // No automatic advancement in scaffold mode.
             }
 
-            case PHASE_5_EPILOGUE -> {
+            case COMPLETE -> {
                 // Final; no-op.
             }
         }

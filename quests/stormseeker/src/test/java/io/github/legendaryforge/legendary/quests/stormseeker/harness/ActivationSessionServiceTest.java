@@ -98,7 +98,7 @@ public final class ActivationSessionServiceTest {
                         Map.of(
                                 io.github.legendaryforge.legendary.quests.stormseeker.quest.StormseekerQuestAttributes
                                         .QUEST_STEP,
-                                StormseekerQuestSteps.PHASE_3_INCOMPLETE_FORM));
+                                StormseekerQuestSteps.PHASE_5_THE_FRAME));
 
         var first = sessions.begin(req);
         assertTrue(first.status() == ActivationSessionBeginStatus.CREATED
@@ -140,7 +140,7 @@ public final class ActivationSessionServiceTest {
                         Map.of(
                                 io.github.legendaryforge.legendary.quests.stormseeker.quest.StormseekerQuestAttributes
                                         .QUEST_STEP,
-                                StormseekerQuestSteps.PHASE_4_STORMS_ANSWER));
+                                StormseekerQuestSteps.PHASE_6_THE_FORGING));
 
         var result = sessions.begin(req);
         assertEquals(ActivationSessionBeginStatus.CREATED, result.status());
@@ -172,8 +172,7 @@ public final class ActivationSessionServiceTest {
                                 io.github.legendaryforge.legendary.quests.stormseeker.StormseekerWiring
                                         .GATE_ACTIVATION),
                         StormseekerGateTestKit.requiredAndCanonicalStep(
-                                StormseekerQuestSteps.PHASE_3_INCOMPLETE_FORM,
-                                StormseekerQuestSteps.PHASE_4_STORMS_ANSWER));
+                                StormseekerQuestSteps.PHASE_5_THE_FRAME, StormseekerQuestSteps.PHASE_6_THE_FORGING));
 
         var result = sessions.begin(req);
 

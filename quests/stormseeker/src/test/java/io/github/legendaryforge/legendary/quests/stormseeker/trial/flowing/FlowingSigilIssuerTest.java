@@ -25,11 +25,12 @@ final class FlowingSigilIssuerTest {
     void doesNotAdvancePastDualSigilsWithoutBoth() {
         StormseekerProgress p = new StormseekerProgress();
 
-        // Drive to PHASE_2_DUAL_SIGILS.
-        p.advanceIfEligible(); // 0 -> 1
-        p.advanceIfEligible(); // 1 -> 1.5
-        p.advanceIfEligible(); // 1.5 -> 2
-        assertEquals(StormseekerPhase.PHASE_2_DUAL_SIGILS, p.phase());
+        // Drive to PHASE_4_THE_TRIALS.
+        p.advanceIfEligible(); // UNTOUCHED -> 1
+        p.advanceIfEligible(); // 1 -> 2
+        p.advanceIfEligible(); // 2 -> 3
+        p.advanceIfEligible(); // 3 -> 4
+        assertEquals(StormseekerPhase.PHASE_4_THE_TRIALS, p.phase());
 
         // Grant only Sigil A (Flowing).
         assertTrue(FlowingSigilIssuer.grantIfMissing(p));
@@ -37,18 +38,19 @@ final class FlowingSigilIssuerTest {
         assertFalse(p.hasSigilB());
 
         // Still must remain in Phase 2 until Sigil B exists.
-        assertEquals(StormseekerPhase.PHASE_2_DUAL_SIGILS, p.phase());
+        assertEquals(StormseekerPhase.PHASE_4_THE_TRIALS, p.phase());
     }
 
     @Test
     void advancesWhenBothSigilsExist() {
         StormseekerProgress p = new StormseekerProgress();
 
-        // Drive to PHASE_2_DUAL_SIGILS.
+        // Drive to PHASE_4_THE_TRIALS.
         p.advanceIfEligible();
         p.advanceIfEligible();
         p.advanceIfEligible();
-        assertEquals(StormseekerPhase.PHASE_2_DUAL_SIGILS, p.phase());
+        p.advanceIfEligible();
+        assertEquals(StormseekerPhase.PHASE_4_THE_TRIALS, p.phase());
 
         // Grant Sigil A via issuer.
         assertTrue(FlowingSigilIssuer.grantIfMissing(p));
@@ -58,7 +60,7 @@ final class FlowingSigilIssuerTest {
 
         // Now advancement should occur.
         p.advanceIfEligible();
-        assertEquals(StormseekerPhase.PHASE_3_INCOMPLETE_FORM, p.phase());
+        assertEquals(StormseekerPhase.PHASE_5_THE_FRAME, p.phase());
     }
 
     @Test

@@ -26,7 +26,7 @@ public final class StormseekerQuestStepGateTest {
                 Optional.empty(),
                 Optional.empty(),
                 Optional.empty(),
-                StormseekerGateTestKit.requiredStep(StormseekerQuestSteps.PHASE_3_INCOMPLETE_FORM)));
+                StormseekerGateTestKit.requiredStep(StormseekerQuestSteps.PHASE_5_THE_FRAME)));
 
         assertFalse(missing.allowed());
         assertEquals(StormseekerWiring.DENY_NOT_ON_REQUIRED_QUEST_STEP, missing.reasonCode());
@@ -38,7 +38,7 @@ public final class StormseekerQuestStepGateTest {
                 Optional.empty(),
                 Optional.empty(),
                 StormseekerGateTestKit.requiredAndCanonicalStep(
-                        StormseekerQuestSteps.PHASE_3_INCOMPLETE_FORM, StormseekerQuestSteps.PHASE_4_STORMS_ANSWER)));
+                        StormseekerQuestSteps.PHASE_5_THE_FRAME, StormseekerQuestSteps.PHASE_6_THE_FORGING)));
 
         assertFalse(wrong.allowed());
         assertEquals(StormseekerWiring.DENY_NOT_ON_REQUIRED_QUEST_STEP, wrong.reasonCode());
@@ -57,7 +57,7 @@ public final class StormseekerQuestStepGateTest {
                 Optional.empty(),
                 Optional.empty(),
                 StormseekerGateTestKit.requiredAndCanonicalStep(
-                        StormseekerQuestSteps.PHASE_3_INCOMPLETE_FORM, StormseekerQuestSteps.PHASE_3_INCOMPLETE_FORM)));
+                        StormseekerQuestSteps.PHASE_5_THE_FRAME, StormseekerQuestSteps.PHASE_5_THE_FRAME)));
 
         assertTrue(ok.allowed());
         assertEquals(ResourceId.of("legendarycore", "allowed"), ok.reasonCode());
