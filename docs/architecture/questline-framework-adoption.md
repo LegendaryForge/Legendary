@@ -46,7 +46,7 @@ is scaffold in three places:
 
 1. `registerSystems(LegendarySystemRegistrar)` is an explicit no-op —
    `// Intentionally no-op in Phase C scaffold.` The tick system that actually
-   drives Phases 1, 1.5 and 2 (via `StormseekerWiring.tick(host)`) has no path
+   drives Phases 2, 3 and 4 (via `StormseekerWiring.tick(host)`) has no path
    through the framework.
 2. `registerListeners(EventBus)` is dormant. Nothing calls it. Calling it would
    construct `StormseekerAttunementService(bus, null)` and

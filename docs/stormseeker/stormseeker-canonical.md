@@ -76,13 +76,13 @@ Stormseeker is a legendary weapon questline inspired by World of Warcraft's Thun
 
 | Phase | Name | Purpose | Player Knows? |
 |---|---|---|---|
-| 0 | The Watching Elemental | Elemental appears, watches, bolts toward Resonator leaving a trail | No — feels like a strange storm event |
-| 1 | The Trek | Follow scorched earth trail to the Resonator | Partially — player follows visible trail |
-| 1.5 | Attunement | Step on Resonator plate; leyline sight granted | Yes — world visibly changes |
-| 2 | Dual Sigil Trials | Prove competence; earn Sigil A and Sigil B | Yes — explicit trials |
-| 3 | Craft Frame | Construct the Stormseeker frame | Yes — gathering and crafting |
-| 4 | Final Encounter | Boss fight + temper/energize into finished sword | Yes — climactic encounter |
-| 5 | Epilogue | Aftermath and world acknowledgement | Yes — closure |
+| 1 | The Watching Elemental | Elemental appears, watches, bolts toward Resonator leaving a trail | No — feels like a strange storm event |
+| 2 | The Trek | Follow scorched earth trail to the Resonator | Partially — player follows visible trail |
+| 3 | Attunement | Step on Resonator plate; leyline sight granted | Yes — world visibly changes |
+| 4 | Dual Sigil Trials | Prove competence; earn Sigil A and Sigil B | Yes — explicit trials |
+| 5 | Craft Frame | Construct the Stormseeker frame | Yes — gathering and crafting |
+| 6 | Final Encounter | Boss fight + temper/energize into finished sword | Yes — climactic encounter |
+| Complete | Epilogue | Aftermath and world acknowledgement | Yes — closure |
 
 ---
 
@@ -101,7 +101,7 @@ distance. This is intentional.
 
 **Skip path:** Any player who enters the Resonator's radius and steps on a plate during a thunder
 storm triggers Phase 3 (Attunement), regardless of whether they've encountered the elemental or
-followed a trail. Right place, right time — rewarded. Phases 0 and 1 are skipped.
+followed a trail. Right place, right time — rewarded. Phases 1 and 2 are skipped.
 
 ### Trigger
 

@@ -74,7 +74,7 @@ what the native system does and does not cover:
 (`WeatherTriggerCondition` takes `weatherIds[]` directly), reach-a-location objectives, gather and
 craft objectives for Phase 5 (The Frame) materials, kill objectives against `Spirit_Thunder`, reward delivery,
 completion history, and the objective panel UI. All of Phase 5's "materials + validation gates",
-most of Phases 0–1, and all of the progress bookkeeping.
+most of Phases 1–2, and all of the progress bookkeeping.
 
 **What it cannot express** — the two trials. `FlowingTrialEvaluator` scores continuous alignment
 against a storm gradient every tick; `AnchoredTrialSession` evaluates a sustained stationary streak
@@ -194,7 +194,7 @@ leyline question — they are labels on sound mechanics, not load-bearing world 
    Zone 2**, which is a design constraint nobody wrote down, not a bug.
 
 **Re-examine the skip path against storm rarity.** `Zone1_Storm` carries `Weight: 1` against
-`Zone1_Sunny`'s `52`. Storms are ~1.5% of forecast rolls. A design where Phases 0→1→1.5 must
+`Zone1_Sunny`'s `52`. Storms are ~1.5% of forecast rolls. A design where Phases 1→2→3 must
 complete "within a single storm" is gated on a rare event, and the skip path — walk onto a plate
 during any storm and attune — becomes the *likely* first contact rather than the exception. That
 was already the sharpest open design question; the weights make it sharper.
@@ -314,7 +314,7 @@ hits. Damage becomes one consequence of the effect rather than the whole mechani
    suggests canon-native costs less than expected.
 2. **Resolve the residue naming** (§4). It is upstream of Phase 3's reward, Class C materials,
    and the Resonator's identity, and nothing else can be settled around it.
-3. **Settle the skip path and storm rarity** (§4). It determines whether Phases 0–1 are real content.
+3. **Settle the skip path and storm rarity** (§4). It determines whether Phases 1–2 are real content.
 4. **Brainstorm the native-objectives adoption separately** (§2). Largest structural call; do not
    fold it into a lore pass.
 5. Only then return to code. The weather-reader fix is small enough to do at any point.
