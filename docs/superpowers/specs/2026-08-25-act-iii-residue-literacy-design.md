@@ -17,7 +17,7 @@ Both are from 2026-08-25 and neither was known when Act III was written.
 **Weather is a property of place, not of time.** Storm chance is a static field on each
 `Environment` asset. It varies by more than an order of magnitude between environments and is
 essentially flat across the 24 hours — 6 of the 9 storm-capable environments have identical odds
-in every hour. The top-to-bottom ratio was **32×** when first measured against 0.6.0 and is
+in every hour. The top-to-bottom ratio was **32×** when first measured against 0.5.9 and is
 **~46×** on 0.6.1; that figure is the least stable thing in this section, because it is a ratio
 of the highest rate to the *lowest*, and the lowest are the three Zone1 environments whose
 weights the patch re-tuned. The robust form of the claim is the one that did not move: two
@@ -54,14 +54,14 @@ values propagate rather than being exceptions. "Storm" means a weather asset tag
 | every cave, dungeon and interior | 0% |
 
 > **Re-measured against 0.6.1 on 2026-08-27.** Everything at or above 2.50% is byte-identical to
-> the 0.6.0 reading, as is the structure: 122 environment files, 50 declaring / 72 inheriting, the
+> the 0.5.9 reading, as is the structure: 122 environment files, 50 declaring / 72 inheriting, the
 > same seven `Storm`-tagged weathers, 9 storm-capable, 6 of 9 flat across all 24 hours. Only the
 > three Zone1 rows moved, and not because storms were re-tuned — the storm **weights** are
 > unchanged. Their forecast tables were re-weighted elsewhere, so the denominator shrank
 > (`Env_Zone1_Plains`: 2/128 → 2/107) and the storm's share rose. The three Zone1 rows are also
 > the three non-flat environments, so a single number understates them; the values above are the
 > **maximum** hourly rate, and `Env_Zone1_Plains` reaches 0.00% in its quietest hours.
-> Superseded 0.6.0 values, for provenance: 1.56%, 1.41%, 1.04% — headline ratio 32×.
+> Superseded 0.5.9 values, for provenance: 1.56%, 1.41%, 1.04% — headline ratio 32×.
 
 **Game time runs 30× real time** — measured, 30 real seconds produced exactly 15 game-minutes.
 So **one game hour = 2 real minutes**, and a full day = 48 real minutes. **Re-confirmed on 0.6.1**
