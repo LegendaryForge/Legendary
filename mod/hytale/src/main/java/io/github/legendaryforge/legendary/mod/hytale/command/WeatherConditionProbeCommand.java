@@ -13,6 +13,7 @@ import com.hypixel.hytale.server.core.modules.entity.component.TransformComponen
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.chunk.BlockChunk;
+import com.hypixel.hytale.server.core.universe.world.chunk.section.ChunkSection;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
@@ -27,11 +28,20 @@ import it.unimi.dsi.fastutil.ints.Int2IntMap;
  * <p>The condition's chain, read from {@code HytaleServer.jar} bytecode, is:
  *
  * <pre>
- *   chunkRef = transform.getChunkRef()          // false if null or invalid
- *   env      = blockChunk.getEnvironment(pos)   // environment index at the MARKER's position
- *   index    = weatherResource.getWeatherIndexForEnvironment(env)
- *   return Arrays.binarySearch(sortedWeatherIndexes, index) >= 0
+ *   sectionRef = transform.getSectionRef()             // false if null or invalid
+ *   section    = chunkStore[sectionRef] as ChunkSection
+ *   columnRef  = section.getChunkColumnReference()     // false if null or invalid
+ *   env        = blockChunk.getEnvironment(pos)        // environment index at the MARKER's position
+ *   index      = weatherResource.getWeatherIndexForEnvironment(env)
+ *   return Arrays.binarySearch(weatherIndexes, index) >= 0
  * </pre>
+ *
+ * <p><strong>Changed in 0.6.1.</strong> The first hop was {@code transform.getChunkRef()} returning a
+ * ref resolvable directly as a {@link BlockChunk}. 0.6.1 renamed it {@code getSectionRef()} and
+ * inserted a {@link ChunkSection} between the two, so the ref must now be resolved as a section and
+ * its {@code getChunkColumnReference()} followed to reach the {@code BlockChunk}. The rename alone
+ * compiles; resolving the section ref as a {@code BlockChunk} would yield null and read as "player
+ * is not in a loaded chunk" rather than as a mistake.
  *
  * <p>Two traps this exists to make visible. {@code environmentWeather} carries a
  * {@code defaultReturnValue} of {@link Integer#MIN_VALUE}, so an absent environment key yields a
@@ -116,15 +126,30 @@ public class WeatherConditionProbeCommand extends AbstractWorldCommand {
             return;
         }
 
-        Ref<ChunkStore> chunkRef = transform.getChunkRef();
-        if (chunkRef == null || !chunkRef.isValid()) {
-            sb.append("chunkRef ")
-                    .append(chunkRef == null ? "null" : "INVALID")
+        Ref<ChunkStore> sectionRef = transform.getSectionRef();
+        if (sectionRef == null || !sectionRef.isValid()) {
+            sb.append("sectionRef ")
+                    .append(sectionRef == null ? "null" : "INVALID")
                     .append(" -- condition returns false here, before weather is consulted\n");
             return;
         }
 
-        BlockChunk chunk = world.getChunkStore().getStore().getComponent(chunkRef, BlockChunk.getComponentType());
+        Store<ChunkStore> chunkStore = world.getChunkStore().getStore();
+        ChunkSection section = chunkStore.getComponent(sectionRef, ChunkSection.getComponentType());
+        if (section == null) {
+            sb.append("ChunkSection ABSENT\n");
+            return;
+        }
+
+        Ref<ChunkStore> columnRef = section.getChunkColumnReference();
+        if (columnRef == null || !columnRef.isValid()) {
+            sb.append("columnRef ")
+                    .append(columnRef == null ? "null" : "INVALID")
+                    .append(" -- condition returns false here, before weather is consulted\n");
+            return;
+        }
+
+        BlockChunk chunk = chunkStore.getComponent(columnRef, BlockChunk.getComponentType());
         if (chunk == null) {
             sb.append("BlockChunk ABSENT\n");
             return;
