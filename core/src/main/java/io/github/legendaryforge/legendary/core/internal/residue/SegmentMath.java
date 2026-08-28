@@ -5,7 +5,13 @@ import io.github.legendaryforge.legendary.core.api.residue.WorldPoint2d;
 /** Planar segment primitives shared by the density, flow and Circle queries. */
 final class SegmentMath {
 
-    private static final double EPSILON = 1e-9;
+    // Three epsilon thresholds for different purposes, all numerically 1e-9.
+    // They measure different scales (squared length, cross-product, and dimensionless parameter),
+    // but currently coincide. They need not stay coupled; if one threshold needs to change
+    // independently, split the numeric values.
+    private static final double LENGTH_SQUARED_EPSILON = 1e-9;
+    private static final double CROSS_PRODUCT_EPSILON = 1e-9;
+    private static final double PARAMETER_EPSILON = 1e-9;
 
     private SegmentMath() {}
 
@@ -14,7 +20,7 @@ final class SegmentMath {
         double abx = b.x() - a.x();
         double abz = b.z() - a.z();
         double lengthSquared = abx * abx + abz * abz;
-        if (lengthSquared < EPSILON) {
+        if (lengthSquared < LENGTH_SQUARED_EPSILON) {
             return 0.0;
         }
         double t = ((px - a.x()) * abx + (pz - a.z()) * abz) / lengthSquared;
@@ -38,7 +44,7 @@ final class SegmentMath {
         double bz = b2.z() - b1.z();
 
         double denominator = ax * bz - az * bx;
-        if (Math.abs(denominator) < EPSILON) {
+        if (Math.abs(denominator) < CROSS_PRODUCT_EPSILON) {
             return null; // parallel or degenerate
         }
 
@@ -47,7 +53,10 @@ final class SegmentMath {
         double t = (dx * bz - dz * bx) / denominator;
         double u = (dx * az - dz * ax) / denominator;
 
-        if (t <= EPSILON || t >= 1.0 - EPSILON || u <= EPSILON || u >= 1.0 - EPSILON) {
+        if (t <= PARAMETER_EPSILON
+                || t >= 1.0 - PARAMETER_EPSILON
+                || u <= PARAMETER_EPSILON
+                || u >= 1.0 - PARAMETER_EPSILON) {
             return null; // touches an endpoint, or misses
         }
         return new WorldPoint2d(a1.x() + ax * t, a1.z() + az * t);

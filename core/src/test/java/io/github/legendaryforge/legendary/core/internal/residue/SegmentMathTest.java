@@ -68,13 +68,48 @@ class SegmentMathTest {
     }
 
     @Test
-    void intersection_touchingAtEndpoint_returnsNull() {
-        // Consecutive arm segments share an endpoint; treating that as a crossing would report a
-        // Circle at every single step.
+    void intersection_collinearTouching_returnsNull() {
+        // Collinear segments; denominator is zero, so the parallel/degenerate guard catches this.
         assertNull(SegmentMath.intersection(
                 new WorldPoint2d(0.0, 0.0),
                 new WorldPoint2d(10.0, 0.0),
                 new WorldPoint2d(10.0, 0.0),
                 new WorldPoint2d(20.0, 0.0)));
+    }
+
+    @Test
+    void intersection_bendAtSharedEndpoint_returnsNull() {
+        // Non-parallel, so the denominator is non-zero and the parallel guard does NOT fire.
+        // The shared endpoint gives t == 1.0 exactly, which the epsilon branch must reject.
+        // This is the case consecutive arm segments actually produce.
+        assertNull(SegmentMath.intersection(
+                new WorldPoint2d(0.0, 0.0),
+                new WorldPoint2d(10.0, 0.0),
+                new WorldPoint2d(10.0, 0.0),
+                new WorldPoint2d(10.0, 10.0)));
+    }
+
+    @Test
+    void intersection_asymmetricCrossing_offOrigin() {
+        // A: (0,0)->(10,0), B: (3,-2)->(7,6). Hand-computed: t = 0.4, u = 0.25, point = (4,0).
+        // Asymmetric in both parameters, so a t/u swap or a sign error changes the result.
+        WorldPoint2d hit = SegmentMath.intersection(
+                new WorldPoint2d(0.0, 0.0),
+                new WorldPoint2d(10.0, 0.0),
+                new WorldPoint2d(3.0, -2.0),
+                new WorldPoint2d(7.0, 6.0));
+        assertNotNull(hit);
+        assertEquals(4.0, hit.x(), 1e-9);
+        assertEquals(0.0, hit.z(), 1e-9);
+    }
+
+    @Test
+    void intersection_nonParallelNearMiss_returnsNull() {
+        // Denominator is non-zero; the segments simply do not reach each other within [0,1].
+        assertNull(SegmentMath.intersection(
+                new WorldPoint2d(0.0, 0.0),
+                new WorldPoint2d(10.0, 0.0),
+                new WorldPoint2d(50.0, -5.0),
+                new WorldPoint2d(50.0, 5.0)));
     }
 }
