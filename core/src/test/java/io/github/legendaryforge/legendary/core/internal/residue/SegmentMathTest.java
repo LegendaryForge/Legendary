@@ -112,4 +112,17 @@ class SegmentMathTest {
                 new WorldPoint2d(50.0, -5.0),
                 new WorldPoint2d(50.0, 5.0)));
     }
+
+    @Test
+    void intersection_uOutOfRange_returnsNull() {
+        // t is IN range and u is OUT of range, so only the u clauses of the epsilon guard can
+        // reject this. Every other case in this class is decided by t or by the parallel guard,
+        // which left the u clauses deletable with the suite still green.
+        // A=(0,0)->(10,0), B=(5,5)->(5,15): t = 0.5, u = -0.5.
+        assertNull(SegmentMath.intersection(
+                new WorldPoint2d(0.0, 0.0),
+                new WorldPoint2d(10.0, 0.0),
+                new WorldPoint2d(5.0, 5.0),
+                new WorldPoint2d(5.0, 15.0)));
+    }
 }

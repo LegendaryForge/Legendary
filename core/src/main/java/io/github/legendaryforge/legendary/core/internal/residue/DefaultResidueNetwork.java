@@ -66,6 +66,10 @@ public final class DefaultResidueNetwork implements ResidueNetwork {
 
     @Override
     public List<WorldPoint2d> circlesWithin(double minX, double minZ, double maxX, double maxZ) {
+        if (!Double.isFinite(minX) || !Double.isFinite(minZ) || !Double.isFinite(maxX) || !Double.isFinite(maxZ)) {
+            throw new IllegalArgumentException(
+                    "bounds must be finite: " + minX + "," + minZ + " to " + maxX + "," + maxZ);
+        }
         if (minX > maxX || minZ > maxZ) {
             throw new IllegalArgumentException("inverted bounds: " + minX + "," + minZ + " to " + maxX + "," + maxZ);
         }

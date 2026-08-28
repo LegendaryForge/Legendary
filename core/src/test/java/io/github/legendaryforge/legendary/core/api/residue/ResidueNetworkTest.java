@@ -109,6 +109,45 @@ class ResidueNetworkTest {
     }
 
     @Test
+    void circlesWithin_rejectsInvertedBoundsOnZ() {
+        // The existing inverted-bounds test only inverts X, leaving the Z half of the guard unexercised.
+        ResidueNetwork n = new DefaultResidueNetwork(SEED, PARAMS);
+        assertThrows(IllegalArgumentException.class, () -> n.circlesWithin(0.0, 10.0, 10.0, 0.0));
+    }
+
+    @Test
+    void circlesWithin_rejectsNonFiniteBounds() {
+        // NaN slipped through the inverted-bounds guard and produced an empty list -- a silent
+        // wrong answer, where every other type in this package rejects non-finite input.
+        ResidueNetwork n = new DefaultResidueNetwork(SEED, PARAMS);
+        assertThrows(IllegalArgumentException.class, () -> n.circlesWithin(Double.NaN, -100.0, 100.0, 100.0));
+        assertThrows(
+                IllegalArgumentException.class, () -> n.circlesWithin(-100.0, -100.0, Double.POSITIVE_INFINITY, 100.0));
+    }
+
+    @Test
+    void circlesWithin_filtersOnZIndependentlyOfX() {
+        // Every other box in this suite is X/Z-symmetric, so swapping maxZ for maxX in the filter
+        // changed no result. This box is deliberately asymmetric.
+        for (long seed = 0; seed < 20; seed++) {
+            ResidueNetwork n = new DefaultResidueNetwork(seed, PARAMS);
+            List<WorldPoint2d> all = n.circlesWithin(-100_000.0, -100_000.0, 100_000.0, 100_000.0);
+            if (all.isEmpty()) {
+                continue;
+            }
+            WorldPoint2d c = all.get(0);
+            // A band that contains c in X but excludes it in Z.
+            List<WorldPoint2d> excludedByZ = n.circlesWithin(c.x() - 1.0, c.z() + 10.0, c.x() + 1.0, c.z() + 20.0);
+            assertTrue(excludedByZ.isEmpty(), "a crossing outside the Z band must be filtered out");
+            // The same X band, with a Z band that does contain it.
+            List<WorldPoint2d> includedByZ = n.circlesWithin(c.x() - 1.0, c.z() - 1.0, c.x() + 1.0, c.z() + 1.0);
+            assertTrue(includedByZ.contains(c), "a crossing inside both bands must be returned");
+            return;
+        }
+        fail("no seed in 0..19 produced a crossing to filter");
+    }
+
+    @Test
     void circlesWithin_findsCrossings_forSomeSeed() {
         // Guards against circlesWithin returning empty unconditionally. Crossing counts are
         // seed-dependent and low at these parameters -- some seeds legitimately yield zero -- so
