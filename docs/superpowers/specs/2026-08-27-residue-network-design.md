@@ -235,6 +235,7 @@ Sub-projects in dependency order. Each gets its own spec and plan.
 2. **Storm current (`:quests:stormseeker`)** — the storm instance of (1): its parameters,
    its Circles as content, its siting rules.
 3. **World expression (`:mod:hytale`)** — crystals near currents, density scaled by (1).
+   Unblocked: particle emission is available to plugins at arbitrary positions (§8).
 4. **The needle** — item, bench recipe with `KnowledgeRequired: true`, the `Recipe_` item that
    teaches it, and its Circle placement.
 5. **The workshop** — the Grand Convergence structure and the frame recipe.
@@ -269,9 +270,13 @@ assumed.
   display-only — read by the journal UI and the role builders, by nothing that computes a level.
 - **Worldgen still V1:** boot logs `HytaleWorldGenProvider{name='Default'}` and `/worldgen`
   exposes only `benchmark` and `reload`, despite 0.6.1 adding 20+ WorldGen V2 graph nodes.
-- **Particles:** `ActionSpawnParticles` gained a `float scale`, but it is an **NPC action** and
-  `emitWorldParticle` is private. Whether a plugin can emit a scaled world particle at an
-  arbitrary position is **open** and blocks sub-project 3.
+- **Particles — resolved 2026-08-27.** `ActionSpawnParticles` gained a `float scale`, but it is
+  an **NPC action** and `emitWorldParticle` is private, so the capability appeared NPC-locked. Its
+  bytecode's terminal call is **`ParticleUtil.spawnParticleEffect`**, a `public static` utility
+  taking a raw position; `ActionSpawnParticles` is merely one caller. Verified on a live server
+  with a connected client via `/residueprobe`: 225 dispatches, zero throws, three visually
+  distinct effects confirmed by the operator. **A plugin can emit any shipped particle at any
+  position, with no NPC involved.**
 - **Points (new in 0.6.1):** `PointEntry` carries id, world, position, rotation, name, enabled,
   shape and a `Map<String,String>` of tags; it persists, travels with prefabs
   (`PointPrefabContributor`), and `SensorPoints` queries by range and tag. Not used by this
@@ -284,10 +289,10 @@ assumed.
 
 - **N1 — Storm's self-crossing frequency.** How many Circles per world. The per-element figure
   every future current will imitate (§6).
+- **~~N3~~ — closed 2026-08-27.** A plugin can emit world particles at arbitrary positions via
+  `ParticleUtil.spawnParticleEffect`. Sub-project 3 is unblocked. See §8.
 - **N2 — Needle cost and yield.** How many crystals per needle, and how far one gets you. Sets
   whether the loop in §5 is a rhythm or a chore. Against play data.
-- **N3 — Can a plugin emit a scaled world particle at an arbitrary position?** Blocks
-  sub-project 3. Answerable by a spike.
 - **N4 — Does storm frequency bias where currents run?** The 0.6.1 storm table is a real signal
   about place and it would be a shame to waste it, but nothing currently requires the coupling.
 - **N5 — Does Act III need a completion condition at all,** now that its content is world
