@@ -109,6 +109,38 @@ class ResidueNetworkTest {
     }
 
     @Test
+    void circlesWithin_findsCrossings_forSomeSeed() {
+        // Guards against circlesWithin returning empty unconditionally. Crossing counts are
+        // seed-dependent and low at these parameters -- some seeds legitimately yield zero -- so
+        // this asserts existence across a scan rather than a count at one seed, which would be
+        // brittle against any geometry change.
+        int seedsWithCrossings = 0;
+        for (long seed = 0; seed < 20; seed++) {
+            ResidueNetwork n = new DefaultResidueNetwork(seed, PARAMS);
+            if (!n.circlesWithin(-100_000.0, -100_000.0, 100_000.0, 100_000.0).isEmpty()) {
+                seedsWithCrossings++;
+            }
+        }
+        assertTrue(seedsWithCrossings > 0, "no seed in 0..19 produced a crossing; crossing detection is dead");
+    }
+
+    @Test
+    void circlesWithin_crossingLiesOnTheNetwork() {
+        // A crossing is by construction a point on two segments, so density there must be maximal.
+        // This catches a circlesWithin that returns points unrelated to the geometry.
+        for (long seed = 0; seed < 20; seed++) {
+            ResidueNetwork n = new DefaultResidueNetwork(seed, PARAMS);
+            List<WorldPoint2d> circles = n.circlesWithin(-100_000.0, -100_000.0, 100_000.0, 100_000.0);
+            if (!circles.isEmpty()) {
+                WorldPoint2d c = circles.get(0);
+                assertEquals(1.0, n.densityAt(c.x(), c.z()), 1e-6, "a crossing must lie on a current");
+                return;
+            }
+        }
+        fail("no seed in 0..19 produced a crossing to check");
+    }
+
+    @Test
     void isDeterministic() {
         ResidueNetwork a = new DefaultResidueNetwork(SEED, PARAMS);
         ResidueNetwork b = new DefaultResidueNetwork(SEED, PARAMS);
