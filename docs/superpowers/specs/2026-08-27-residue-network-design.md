@@ -295,6 +295,23 @@ assumed.
   whether the loop in §5 is a rhythm or a chore. Against play data.
 - **N4 — Does storm frequency bias where currents run?** The 0.6.1 storm table is a real signal
   about place and it would be a shame to waste it, but nothing currently requires the coupling.
+- **N6 — `densityAt` is a plateau, so a Circle is not a local maximum of density.** §4 states the
+  opposite as load-bearing: *"Because a Circle is a local maximum of density, it is reachable by
+  literacy alone — walk uphill."* The shipped implementation is `1 − d/R` against the nearest
+  segment, which is **exactly 1.0 at every point on the network** — verified at a Circle and at
+  sixteen arbitrary on-current vertices. Walking uphill reaches a current and then stops; it never
+  distinguishes a Circle. Three ways out: give `densityAt` a Circle-proximity term (makes §4 true
+  and keeps sub-project 3 cheap); revise §4 so crystals mark currents uniformly and Circles are
+  found by *following* one; or accept that sub-project 3 must call `circlesWithin` per placement
+  region — which is the O(n²) per-tick use §7 defers a spatial index for. **Decide before
+  sub-project 3.** Found by the whole-branch review 2026-08-27; no per-task review could see it.
+- **N7 — the Z-filter regression hole in `circlesWithin` is open.** The production fix for
+  non-finite bounds landed, but the test meant to prove Z filtering is independent of X does not
+  kill the `maxZ → maxX` mutation — proven against a compiled mutant, not by inspection. At seed 1
+  the crossing is `c=(371.16, 260.65)` and both the real and substituted upper bounds sit above
+  `c.z()`, so the swap changes nothing. A correct test must **select** a crossing where the two
+  bounds straddle `c.z()`; it cannot be written blind to the geometry. Production behaviour is
+  unaffected — this is a regression hole, not a live defect.
 - **N5 — Does Act III need a completion condition at all,** now that its content is world
   structure rather than a granted state? Carried unchanged from the prior spec's O4.
 

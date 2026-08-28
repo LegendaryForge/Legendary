@@ -13,6 +13,7 @@
 - **`:core` must not import `com.hypixel.*`** — enforced by `:core:checkNoPlatformImports`, which fails the build. This subsystem is pure math and must stay that way.
 - **`:core` must not contain the literal text `legendary.quests.`** — enforced by `:core:checkNoQuestlineImports`. Nothing here may name a questline. "Storm" must not appear in any type or field name; the storm current is sub-project 2, in `:quests:stormseeker`.
 - **Package roots mirror module paths.** `:core` → `io.github.legendaryforge.legendary.core.*`. Public types go under `core.api.residue`, implementation under `core.internal.residue`.
+- **`core.api` must never import `core.internal`.** There are currently zero such imports in the module; do not add the first. `api` holds interfaces and value types, `internal` holds `Default*` implementations with public constructors that consumers instantiate directly — the pattern `Registry`/`DefaultRegistry` and `DefaultCoreRuntime` already follow.
 - **Coordinates are 2D (world X/Z), `double`.** Currents are horizontal; Y is not modelled. This is a deliberate simplification — residue is read on the surface — and is stated in `package-info.java` so nobody re-derives it.
 - **No persistence, no world mutation, no I/O.** Every value is a pure function of `(worldSeed, position)`. `checkModuleCoverage` requires `:core` to compile its whole source set; do not add a file that cannot compile standalone.
 - **Formatting is enforced.** Run `./gradlew spotlessApply` before every commit or `:core:spotlessJavaCheck` fails the build.
@@ -519,14 +520,6 @@ class GrandConvergenceTest {
     }
 
     @Test
-    void locate_isIndependentOfCurrentParameters() {
-        // Signature check: any future overload taking parameters would let two questlines
-        // compute different convergences for one world. locate takes the seed and nothing else.
-        WorldPoint2d point = GrandConvergence.locate(99L);
-        assertNotNull(point);
-    }
-
-    @Test
     void locate_staysWithinDeclaredRadiusBand() {
         WorldPoint2d origin = new WorldPoint2d(0.0, 0.0);
         for (long seed = 0; seed < 500; seed++) {
@@ -570,7 +563,9 @@ import io.github.legendaryforge.legendary.core.api.residue.WorldPoint2d;
  *
  * <p>Takes the world seed and nothing else. Every elemental questline must compute the *same*
  * point independently, so a dependency on any per-element parameter would be a correctness bug,
- * not a flexibility feature.
+ * not a flexibility feature. Do not add an overload taking {@code CurrentParameters}: it would let
+ * two questlines disagree about where the shared anchor is, and nothing would fail loudly. This is
+ * enforced by the signature, because no test can assert that a second overload does not exist.
  */
 final class GrandConvergence {
 
@@ -595,7 +590,7 @@ final class GrandConvergence {
 - [ ] **Step 4: Run the test to verify it passes**
 
 Run: `./gradlew :core:test --tests 'io.github.legendaryforge.legendary.core.internal.residue.GrandConvergenceTest'`
-Expected: PASS, 5 tests.
+Expected: PASS, 4 tests.
 
 - [ ] **Step 5: Format and commit**
 
@@ -973,12 +968,12 @@ git commit -m "feat(core): segment projection and proper-crossing primitives"
 
 **Files:**
 - Create: `core/src/main/java/io/github/legendaryforge/legendary/core/api/residue/ResidueNetwork.java`
-- Create: `core/src/main/java/io/github/legendaryforge/legendary/core/internal/residue/PolylineResidueNetwork.java`
+- Create: `core/src/main/java/io/github/legendaryforge/legendary/core/internal/residue/DefaultResidueNetwork.java`
 - Test: `core/src/test/java/io/github/legendaryforge/legendary/core/api/residue/ResidueNetworkTest.java`
 
 **Interfaces:**
 - Consumes: `CurrentGeometry`, `SegmentMath`, `CurrentParameters`, `WorldPoint2d`, `FlowVector`.
-- Produces: `ResidueNetwork` with `static ResidueNetwork create(long worldSeed, CurrentParameters parameters)`, `double densityAt(double x, double z)`, `Optional<FlowVector> flowAt(double x, double z)`, `List<WorldPoint2d> circlesWithin(double minX, double minZ, double maxX, double maxZ)`, `WorldPoint2d grandConvergence()`.
+- Produces: `ResidueNetwork` with a public constructor `DefaultResidueNetwork(long worldSeed, CurrentParameters parameters)` in `core.internal.residue`, `double densityAt(double x, double z)`, `Optional<FlowVector> flowAt(double x, double z)`, `List<WorldPoint2d> circlesWithin(double minX, double minZ, double maxX, double maxZ)`, `WorldPoint2d grandConvergence()`.
 
 **Flow orientation is the load-bearing decision.** `flowAt` returns the direction that moves *toward* the convergence — arm element 0 is the convergence, so that is the direction of decreasing index. This is what makes "follow the flow upstream" reach the workshop, per §4 of the spec. Getting it backwards would leave the design's navigation silently inverted, so it is asserted directly.
 
@@ -1000,21 +995,21 @@ class ResidueNetworkTest {
 
     @Test
     void densityAt_convergence_isMaximum() {
-        ResidueNetwork n = ResidueNetwork.create(SEED, PARAMS);
+        ResidueNetwork n = new DefaultResidueNetwork(SEED, PARAMS);
         WorldPoint2d c = n.grandConvergence();
         assertEquals(1.0, n.densityAt(c.x(), c.z()), 1e-9);
     }
 
     @Test
     void densityAt_farAway_isZero() {
-        ResidueNetwork n = ResidueNetwork.create(SEED, PARAMS);
+        ResidueNetwork n = new DefaultResidueNetwork(SEED, PARAMS);
         WorldPoint2d c = n.grandConvergence();
         assertEquals(0.0, n.densityAt(c.x() + 100_000.0, c.z() + 100_000.0), 1e-9);
     }
 
     @Test
     void densityAt_isBounded() {
-        ResidueNetwork n = ResidueNetwork.create(SEED, PARAMS);
+        ResidueNetwork n = new DefaultResidueNetwork(SEED, PARAMS);
         WorldPoint2d c = n.grandConvergence();
         for (int i = -50; i <= 50; i++) {
             double d = n.densityAt(c.x() + i * 13.0, c.z() + i * 7.0);
@@ -1024,7 +1019,7 @@ class ResidueNetworkTest {
 
     @Test
     void densityAt_fallsOffWithDistance() {
-        ResidueNetwork n = ResidueNetwork.create(SEED, PARAMS);
+        ResidueNetwork n = new DefaultResidueNetwork(SEED, PARAMS);
         WorldPoint2d c = n.grandConvergence();
         double near = n.densityAt(c.x(), c.z());
         double mid = n.densityAt(c.x(), c.z() + PARAMS.influenceRadius() * 0.5);
@@ -1033,14 +1028,14 @@ class ResidueNetworkTest {
 
     @Test
     void flowAt_farAway_isEmpty() {
-        ResidueNetwork n = ResidueNetwork.create(SEED, PARAMS);
+        ResidueNetwork n = new DefaultResidueNetwork(SEED, PARAMS);
         WorldPoint2d c = n.grandConvergence();
         assertEquals(Optional.empty(), n.flowAt(c.x() + 100_000.0, c.z() + 100_000.0));
     }
 
     @Test
     void flowAt_onCurrent_isPresentAndUnit() {
-        ResidueNetwork n = ResidueNetwork.create(SEED, PARAMS);
+        ResidueNetwork n = new DefaultResidueNetwork(SEED, PARAMS);
         WorldPoint2d c = n.grandConvergence();
         Optional<FlowVector> flow = n.flowAt(c.x(), c.z());
         assertTrue(flow.isPresent());
@@ -1051,7 +1046,7 @@ class ResidueNetworkTest {
     void flowAt_pointsTowardConvergence() {
         // The whole navigation design rests on this: walking along the flow must reduce the
         // distance to the Grand Convergence. Reversed flow would silently invert the questline.
-        ResidueNetwork n = ResidueNetwork.create(SEED, PARAMS);
+        ResidueNetwork n = new DefaultResidueNetwork(SEED, PARAMS);
         WorldPoint2d c = n.grandConvergence();
         int checked = 0;
         // Sample a ring around the convergence; points that land within influence of an arm are
@@ -1073,7 +1068,7 @@ class ResidueNetworkTest {
 
     @Test
     void circlesWithin_areInsideTheBounds() {
-        ResidueNetwork n = ResidueNetwork.create(SEED, PARAMS);
+        ResidueNetwork n = new DefaultResidueNetwork(SEED, PARAMS);
         List<WorldPoint2d> circles = n.circlesWithin(-5000.0, -5000.0, 5000.0, 5000.0);
         for (WorldPoint2d p : circles) {
             assertTrue(p.x() >= -5000.0 && p.x() <= 5000.0, "x out of bounds: " + p);
@@ -1083,20 +1078,20 @@ class ResidueNetworkTest {
 
     @Test
     void circlesWithin_emptyRegion_isEmpty() {
-        ResidueNetwork n = ResidueNetwork.create(SEED, PARAMS);
+        ResidueNetwork n = new DefaultResidueNetwork(SEED, PARAMS);
         assertTrue(n.circlesWithin(500_000.0, 500_000.0, 510_000.0, 510_000.0).isEmpty());
     }
 
     @Test
     void circlesWithin_rejectsInvertedBounds() {
-        ResidueNetwork n = ResidueNetwork.create(SEED, PARAMS);
+        ResidueNetwork n = new DefaultResidueNetwork(SEED, PARAMS);
         assertThrows(IllegalArgumentException.class, () -> n.circlesWithin(10.0, 0.0, 0.0, 10.0));
     }
 
     @Test
     void isDeterministic() {
-        ResidueNetwork a = ResidueNetwork.create(SEED, PARAMS);
-        ResidueNetwork b = ResidueNetwork.create(SEED, PARAMS);
+        ResidueNetwork a = new DefaultResidueNetwork(SEED, PARAMS);
+        ResidueNetwork b = new DefaultResidueNetwork(SEED, PARAMS);
         assertEquals(a.grandConvergence(), b.grandConvergence());
         assertEquals(a.densityAt(100.0, 200.0), b.densityAt(100.0, 200.0), 1e-12);
         assertEquals(
@@ -1118,7 +1113,6 @@ Expected: FAIL — `ResidueNetwork` does not exist.
 ```java
 package io.github.legendaryforge.legendary.core.api.residue;
 
-import io.github.legendaryforge.legendary.core.internal.residue.ResidueNetworks;
 import java.util.List;
 import java.util.Optional;
 
@@ -1130,10 +1124,6 @@ import java.util.Optional;
  * worldgen dependency.
  */
 public interface ResidueNetwork {
-
-    static ResidueNetwork create(long worldSeed, CurrentParameters parameters) {
-        return ResidueNetworks.polyline(worldSeed, parameters);
-    }
 
     /** Residue density in {@code [0,1]}: 1 on a current, falling to 0 at the influence radius. */
     double densityAt(double x, double z);
@@ -1154,7 +1144,10 @@ public interface ResidueNetwork {
 }
 ```
 
-`PolylineResidueNetwork.java` — plus a tiny public factory so `api` need not depend on a package-private constructor:
+`DefaultResidueNetwork.java` — a public implementation with a public constructor, constructed
+directly by consumers exactly as `DefaultRegistry` and `DefaultCoreRuntime` are today. **`core.api`
+must not import `core.internal`** — there are currently zero such imports in the module and this
+task must not add the first.
 
 ```java
 package io.github.legendaryforge.legendary.core.internal.residue;
@@ -1170,12 +1163,12 @@ import java.util.Objects;
 import java.util.Optional;
 
 /** Polyline implementation of {@link ResidueNetwork}. */
-public final class PolylineResidueNetwork implements ResidueNetwork {
+public final class DefaultResidueNetwork implements ResidueNetwork {
 
     private final CurrentGeometry geometry;
     private final double influenceRadius;
 
-    PolylineResidueNetwork(long worldSeed, CurrentParameters parameters) {
+    public DefaultResidueNetwork(long worldSeed, CurrentParameters parameters) {
         Objects.requireNonNull(parameters, "parameters");
         this.geometry = new CurrentGeometry(worldSeed, parameters);
         this.influenceRadius = parameters.influenceRadius();
@@ -1280,27 +1273,6 @@ public final class PolylineResidueNetwork implements ResidueNetwork {
 }
 ```
 
-`ResidueNetworks.java` (factory bridge):
-
-```java
-package io.github.legendaryforge.legendary.core.internal.residue;
-
-import io.github.legendaryforge.legendary.core.api.residue.CurrentParameters;
-import io.github.legendaryforge.legendary.core.api.residue.ResidueNetwork;
-
-/** Construction entry point for {@link ResidueNetwork#create}. */
-public final class ResidueNetworks {
-
-    private ResidueNetworks() {}
-
-    public static ResidueNetwork polyline(long worldSeed, CurrentParameters parameters) {
-        return new PolylineResidueNetwork(worldSeed, parameters);
-    }
-}
-```
-
-Add `ResidueNetworks.java` to the Files list when committing.
-
 - [ ] **Step 4: Run the tests to verify they pass**
 
 Run: `./gradlew :core:test --tests 'io.github.legendaryforge.legendary.core.api.residue.ResidueNetworkTest'`
@@ -1322,7 +1294,7 @@ Expected: `BUILD SUCCESSFUL`; `CENSUS_VERDICT: GREEN`; `COVERAGE_VERDICT: GREEN 
 
 ```bash
 ./gradlew spotlessApply
-git add core/src/main/java/io/github/legendaryforge/legendary/core/api/residue/ResidueNetwork.java core/src/main/java/io/github/legendaryforge/legendary/core/internal/residue/PolylineResidueNetwork.java core/src/main/java/io/github/legendaryforge/legendary/core/internal/residue/ResidueNetworks.java core/src/test/java/io/github/legendaryforge/legendary/core/api/residue/ResidueNetworkTest.java
+git add core/src/main/java/io/github/legendaryforge/legendary/core/api/residue/ResidueNetwork.java core/src/main/java/io/github/legendaryforge/legendary/core/internal/residue/DefaultResidueNetwork.java core/src/test/java/io/github/legendaryforge/legendary/core/api/residue/ResidueNetworkTest.java
 git commit -m "feat(core): ResidueNetwork query surface — density, flow, Circles"
 ```
 
@@ -1383,4 +1355,4 @@ git push origin --delete feat/core-residue-network
 
 **Known limitation, stated rather than hidden.** `circlesWithin` is O(n²) over segments — 4 arms × 160 steps is 640 segments and ~200k pairs, which is fine for a one-off query but is not a per-tick call. If sub-project 2 needs it per tick, add a spatial index then, against a real profile. Deferring it now is YAGNI, not an oversight.
 
-**Type consistency.** `WorldPoint2d`, `FlowVector`, `CurrentParameters` are defined in Tasks 1 and 3 and used unchanged in 4–7. `ResidueRandom.signed` (Task 2) is used in Task 5. `SegmentMath.projectionParameter` / `pointAt` / `intersection` (Task 6) are used in Task 7. `ResidueNetwork.create` delegates to `ResidueNetworks.polyline`, both introduced in Task 7.
+**Type consistency.** `WorldPoint2d`, `FlowVector`, `CurrentParameters` are defined in Tasks 1 and 3 and used unchanged in 4–7. `ResidueRandom.signed` (Task 2) is used in Task 5. `SegmentMath.projectionParameter` / `pointAt` / `intersection` (Task 6) are used in Task 7. `ResidueNetwork` (interface, api) and `DefaultResidueNetwork` (implementation, internal) are both introduced in Task 7; api never imports internal.
