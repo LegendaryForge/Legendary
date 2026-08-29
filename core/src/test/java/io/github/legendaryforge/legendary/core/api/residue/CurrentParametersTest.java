@@ -17,32 +17,32 @@ class CurrentParametersTest {
 
     @Test
     void rejects_nonPositiveArmCount() {
-        assertThrows(IllegalArgumentException.class, () -> new CurrentParameters(0, 100, 16.0, 0.35, 24.0));
+        assertThrows(IllegalArgumentException.class, () -> new CurrentParameters(0, 100, 16.0, 0.35, 24.0, 0.3));
     }
 
     @Test
     void rejects_nonPositiveSteps() {
-        assertThrows(IllegalArgumentException.class, () -> new CurrentParameters(4, 0, 16.0, 0.35, 24.0));
+        assertThrows(IllegalArgumentException.class, () -> new CurrentParameters(4, 0, 16.0, 0.35, 24.0, 0.3));
     }
 
     @Test
     void rejects_nonPositiveStepLength() {
-        assertThrows(IllegalArgumentException.class, () -> new CurrentParameters(4, 100, 0.0, 0.35, 24.0));
+        assertThrows(IllegalArgumentException.class, () -> new CurrentParameters(4, 100, 0.0, 0.35, 24.0, 0.3));
     }
 
     @Test
     void rejects_negativeJitter() {
-        assertThrows(IllegalArgumentException.class, () -> new CurrentParameters(4, 100, 16.0, -0.1, 24.0));
+        assertThrows(IllegalArgumentException.class, () -> new CurrentParameters(4, 100, 16.0, -0.1, 24.0, 0.3));
     }
 
     @Test
     void rejects_nonPositiveInfluenceRadius() {
-        assertThrows(IllegalArgumentException.class, () -> new CurrentParameters(4, 100, 16.0, 0.35, 0.0));
+        assertThrows(IllegalArgumentException.class, () -> new CurrentParameters(4, 100, 16.0, 0.35, 0.0, 0.3));
     }
 
     @Test
     void accepts_zeroJitter_forStraightArms() {
-        CurrentParameters p = new CurrentParameters(4, 100, 16.0, 0.0, 24.0);
+        CurrentParameters p = new CurrentParameters(4, 100, 16.0, 0.0, 24.0, 0.3);
         assertEquals(0.0, p.headingJitter(), 1e-9);
     }
 }

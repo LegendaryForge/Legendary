@@ -10,15 +10,17 @@ import org.junit.jupiter.api.Test;
 
 class ResidueNetworkTest {
 
-    private static final CurrentParameters PARAMS = new CurrentParameters(4, 80, 16.0, 0.35, 24.0);
+    private static final CurrentParameters PARAMS = new CurrentParameters(4, 80, 16.0, 0.35, 24.0, 0.3);
     private static final long SEED = 20260827L;
     private static final ResourceId ELEMENT = ResourceId.of("test", "element");
 
     @Test
-    void densityAt_convergence_isMaximum() {
+    void densityAt_convergence_isOrdinaryCurrent() {
         ResidueNetwork n = new DefaultResidueNetwork(SEED, ELEMENT, PARAMS);
         WorldPoint2d c = n.grandConvergence();
-        assertEquals(1.0, n.densityAt(c.x(), c.z()), 1e-9);
+        // N6 reserved 1.0 for a nexus. Every arm starts at the convergence, and shared endpoints
+        // are deliberately not counted as crossings, so the convergence is ordinary current.
+        assertEquals(1.0 - PARAMS.nexusWeight(), n.densityAt(c.x(), c.z()), 1e-9);
     }
 
     @Test

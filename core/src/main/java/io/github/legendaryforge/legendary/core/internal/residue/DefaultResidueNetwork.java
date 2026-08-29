@@ -16,6 +16,8 @@ public final class DefaultResidueNetwork implements ResidueNetwork {
 
     private final CurrentGeometry geometry;
     private final double influenceRadius;
+    private final double nexusRadius;
+    private final double nexusWeight;
 
     /**
      * @param elementId which element's current this is; required, and deliberately not defaulted —
@@ -26,15 +28,33 @@ public final class DefaultResidueNetwork implements ResidueNetwork {
         Objects.requireNonNull(parameters, "parameters");
         this.geometry = new CurrentGeometry(worldSeed, elementId, parameters);
         this.influenceRadius = parameters.influenceRadius();
+        this.nexusRadius = parameters.nexusRadius();
+        this.nexusWeight = parameters.nexusWeight();
     }
 
     @Override
     public double densityAt(double x, double z) {
-        double nearest = nearestDistance(x, z);
-        if (nearest >= influenceRadius) {
+        double currentTerm = clamp01(1.0 - nearestDistance(x, z) / influenceRadius);
+        if (currentTerm <= 0.0) {
             return 0.0;
         }
-        return 1.0 - (nearest / influenceRadius);
+        double nexusTerm = clamp01(1.0 - nearestNexusDistance(x, z) / nexusRadius);
+        // At a nexus both terms are 1, so density is exactly 1.0 and nowhere else. Moving along the
+        // current holds currentTerm at 1 while nexusTerm falls; moving off it lowers both. The
+        // maximum is therefore strict rather than a shoulder, which is the gradient a player walks.
+        return (1.0 - nexusWeight) * currentTerm + nexusWeight * nexusTerm;
+    }
+
+    private static double clamp01(double v) {
+        return v < 0.0 ? 0.0 : Math.min(v, 1.0);
+    }
+
+    private double nearestNexusDistance(double x, double z) {
+        double best = Double.MAX_VALUE;
+        for (WorldPoint2d n : geometry.crossings()) {
+            best = Math.min(best, Math.hypot(n.x() - x, n.z() - z));
+        }
+        return best;
     }
 
     @Override
@@ -80,15 +100,10 @@ public final class DefaultResidueNetwork implements ResidueNetwork {
             throw new IllegalArgumentException("inverted bounds: " + minX + "," + minZ + " to " + maxX + "," + maxZ);
         }
 
-        List<WorldPoint2d> segmentsA = flatten();
         List<WorldPoint2d> found = new ArrayList<>();
-        for (int i = 0; i + 1 < segmentsA.size(); i += 2) {
-            for (int j = i + 2; j + 1 < segmentsA.size(); j += 2) {
-                WorldPoint2d hit = SegmentMath.intersection(
-                        segmentsA.get(i), segmentsA.get(i + 1), segmentsA.get(j), segmentsA.get(j + 1));
-                if (hit != null && hit.x() >= minX && hit.x() <= maxX && hit.z() >= minZ && hit.z() <= maxZ) {
-                    found.add(hit);
-                }
+        for (WorldPoint2d hit : geometry.crossings()) {
+            if (hit.x() >= minX && hit.x() <= maxX && hit.z() >= minZ && hit.z() <= maxZ) {
+                found.add(hit);
             }
         }
         return Collections.unmodifiableList(found);
@@ -111,17 +126,5 @@ public final class DefaultResidueNetwork implements ResidueNetwork {
             }
         }
         return best;
-    }
-
-    /** Every segment as a flat endpoint-pair list, so crossings between arms are found too. */
-    private List<WorldPoint2d> flatten() {
-        List<WorldPoint2d> flat = new ArrayList<>();
-        for (List<WorldPoint2d> arm : geometry.arms()) {
-            for (int i = 1; i < arm.size(); i++) {
-                flat.add(arm.get(i - 1));
-                flat.add(arm.get(i));
-            }
-        }
-        return flat;
     }
 }

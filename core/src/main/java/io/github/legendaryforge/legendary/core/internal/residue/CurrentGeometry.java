@@ -23,6 +23,7 @@ final class CurrentGeometry {
 
     private final WorldPoint2d convergence;
     private final List<List<WorldPoint2d>> arms;
+    private final List<WorldPoint2d> crossings;
 
     CurrentGeometry(long worldSeed, ResourceId elementId, CurrentParameters parameters) {
         Objects.requireNonNull(elementId, "elementId");
@@ -42,6 +43,40 @@ final class CurrentGeometry {
             built.add(Collections.unmodifiableList(buildArm(elementSeed, headingOffset, parameters, arm)));
         }
         this.arms = Collections.unmodifiableList(built);
+        this.crossings = Collections.unmodifiableList(findCrossings());
+    }
+
+    /**
+     * Every proper self-crossing of the network.
+     *
+     * <p>Eager, not memoised. The crossing set is a pure function of the seed, element and
+     * parameters — it does not depend on any query — and {@code densityAt} now needs it, so every
+     * consumer pays for it regardless. Laziness would buy nothing except a thread-safety problem on
+     * a multithreaded server. Construction is O(segments squared).
+     */
+    private List<WorldPoint2d> findCrossings() {
+        List<WorldPoint2d> flat = new ArrayList<>();
+        for (List<WorldPoint2d> arm : arms) {
+            for (int i = 1; i < arm.size(); i++) {
+                flat.add(arm.get(i - 1));
+                flat.add(arm.get(i));
+            }
+        }
+        List<WorldPoint2d> found = new ArrayList<>();
+        for (int i = 0; i + 1 < flat.size(); i += 2) {
+            for (int j = i + 2; j + 1 < flat.size(); j += 2) {
+                WorldPoint2d hit = SegmentMath.intersection(flat.get(i), flat.get(i + 1), flat.get(j), flat.get(j + 1));
+                if (hit != null) {
+                    found.add(hit);
+                }
+            }
+        }
+        return found;
+    }
+
+    /** Proper self-crossings of the network — the nexuses. Computed once, in the constructor. */
+    List<WorldPoint2d> crossings() {
+        return crossings;
     }
 
     private List<WorldPoint2d> buildArm(
