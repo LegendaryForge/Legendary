@@ -148,39 +148,62 @@ Adopting it reintroduces the quadratic term the exclusion was written to remove.
 The concern this answers: with six elemental networks eventually sharing one convergence, does the
 world end up with crystals everywhere and no legible signal?
 
-Measured by grid-sampling the disc around the convergence and counting points inside at least one
-element's influence radius:
+Measured by rasterising every arm's influence footprint over an 8 m grid, with all elements sharing
+one Grand Convergence as the design specifies, at the `6×240` target.
 
-| Network | Influence radius | 1 element | 3 elements | 6 elements |
-|---|---|---|---|---|
-| 4×160 | 16 | 2.18% | 5.03% | 6.66% |
-| 4×160 | 24 | 3.24% | 7.49% | **9.79%** |
-| 4×160 | 32 | 4.26% | 9.85% | 12.72% |
-| 6×240 | 16 | 2.17% | 6.15% | 10.63% |
-| 6×240 | 24 | 3.20% | 9.03% | **15.23%** |
-| 6×240 | 32 | 4.22% | 11.77% | 19.42% |
-| 8×320 | 16 | 2.15% | 5.98% | 11.03% |
-| 8×320 | 24 | 3.15% | 8.66% | **15.51%** |
+**The aggregate is reassuring and misleading.** Six elements at `influenceRadius = 24` cover **14.9%**
+of the disc — but that average hides a steep gradient, because every arm of every element radiates
+from the *same point*:
 
-**Coverage is scale-invariant.** The 1-element column barely moves across all three network sizes
-(3.24% / 3.20% / 3.15% at radius 24), and the 6-element figure is likewise flat (9.79% / 15.23% /
-15.51%).
-Growing the network grows the region it occupies in proportion, so density is unchanged. Analytically:
+| Influence radius | Elements | Overall | **< 500 m** | 500–1500 m | > 1500 m |
+|---|---|---|---|---|---|
+| 16 | 1 | 2.15% | 20.9% | 6.3% | 0.6% |
+| 16 | 6 | 10.8% | 64.5% | 28.3% | 5.0% |
+| **24** | **1** | 3.18% | **30.5%** | 9.4% | 0.9% |
+| **24** | **6** | **14.9%** | **79.6%** | **38.9%** | 7.3% |
+| 32 | 6 | 18.5% | 88.6% | 47.7% | 9.5% |
+
+**Within 500 m of the convergence, six elements cover 80% of the ground.** The literacy signal is
+meaningless there: everywhere reads as on-current, so there is no gradient to walk up. At
+`influenceRadius = 32` it reaches 88.6%. Beyond 1500 m the signal is clean — 7.3% — and a single
+element is legible at every distance.
+
+This is inherent to the shared convergence, not a tuning accident. Thirty-six arms (six elements ×
+six arms) all begin at one point, so within a few hundred metres their influence discs almost
+entirely overlap.
+
+### Is the saturated core a defect?
+
+Arguably not, and the answer differs by mechanism:
+
+- **For navigation, it is harmless.** Density is the *early* mechanism. By the time a player
+  approaches the convergence they hold the needle and are following flow, not reading density.
+  Overwhelming residue at the place where all currents meet is thematically right.
+- **For harvesting, it is a problem.** If crystals are trivially abundant within 500 m of the
+  convergence, prospecting for a good nexus competes with simply gathering at the centre. §8's economy
+  must therefore tie yield to **nexus quality**, never to crystal abundance — which the direction as
+  written already does, but it is now load-bearing rather than incidental.
+
+### The lever, if the core needs thinning
+
+Arms begin exactly at the convergence. Giving them a **start radius** — radiating from a ring rather
+than a point — would cut core overlap sharply while leaving the convergence the shared anchor. It
+costs the clean property in §4 that separation is *exactly* zero there, so it is recorded as an option
+rather than adopted. **Filed as N12.**
+
+### What actually controls coverage
+
+Away from the core, coverage depends on the **ratio** `armCount / stepsPerArm` and on
+`influenceRadius` — not on network size. Growing a network grows the region it occupies in
+proportion:
 
 ```
 coverage ≈ armCount · 2 · influenceRadius / (π · stepsPerArm · stepLength · 0.72)
 ```
 
-Coverage depends on the **ratio** `armCount / stepsPerArm` and on `influenceRadius` — not on how big
-the network is. So the saturation worry has two levers and neither is network size:
-
 - Raising `armCount` alone increases both crossings **and** coverage.
 - Raising `stepsPerArm` alone increases crossings and **reduces** coverage.
 - `influenceRadius` scales coverage linearly and does not affect crossings at all.
-
-At six elements and `influenceRadius = 24`, coverage is about **15%** — crystals across roughly one
-seventh of the charged region. That is a legible signal, not saturation. There is comfortable
-headroom before the world reads as uniformly crystalline.
 
 ---
 
@@ -299,4 +322,6 @@ fire. The N6 spec's figures are updated to match rather than left describing a r
 - **N9** — what happens at a cross-element crossing (§5).
 - **N10** — is residue a regional feature by decision, and how far does a network reach (§9)?
 - **N11** — the harvest and restoration economy (§8).
+- **N12** — should arms radiate from a ring rather than the convergence point, to thin the saturated
+  core (§6)?
 - **N2, N5** — unchanged from the prior spec.
