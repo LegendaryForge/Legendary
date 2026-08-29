@@ -123,7 +123,7 @@ would mean reopening what sub-project 2 had just fixed.
 ## 5. Crossings are computed once
 
 `DefaultResidueNetwork.circlesWithin` currently recomputes the full pairwise crossing scan on every
-call — roughly 204,000 intersection tests at default parameters — although the crossing set is a
+call — 204,480 intersection tests at the shipped placeholder parameters — although the crossing set is a
 pure function of `(worldSeed, parameters)` and does not depend on the query bounds at all.
 
 The scan moves into `CurrentGeometry` as a **final field built in the constructor**, beside `arms`.
@@ -136,8 +136,11 @@ multithreaded server. An eager final field has neither.
 
 ### Lifecycle, stated because the code already assumes it
 
-Construction becomes O(segments²). A `ResidueNetwork` is therefore **built once per (world,
-element) and held** — not constructed per tick, per region, or per query. The existing design
+Construction becomes O(segments²). Measured: 204,480 pairs / 3 ms at the shipped placeholder
+`4×160`, and 1,036,080 pairs / 4 ms at the `6×240` target that
+`2026-08-28-graded-nexuses-design.md` §7 sets — about 24 ms of server start once six elements exist.
+A `ResidueNetwork` is therefore **built once per (world, element) and held** — not constructed per
+tick, per region, or per query. The existing design
 already relies on this, since `arms` is built in the constructor; this change raises the cost of
 violating it from wasteful to serious, so it is written down rather than implied.
 
