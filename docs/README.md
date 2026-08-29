@@ -1,81 +1,93 @@
 # Legendary Project Documentation
 
-This directory contains the **canonical design documentation** for the Legendary project. These documents define the creative vision, architectural principles, and implementation constraints.
+Canonical design, architecture, and integration documentation for the Legendary project.
+
+> **Index verified 2026-08-29** — every path below was existence-checked against the tree.
+>
+> The previous version of this file was dated **2026-02-04**. It indexed 3 of 29 documents, linked
+> three paths that had since moved to `stormseeker/archive/`, and presented
+> `repository-structure.md` as authoritative although that file already carries its own ⚠️ STALE
+> banner. It described the five-repository layout that the 2026-08-24 consolidation removed.
 
 ---
 
-## Documentation Structure
+## Architecture (`architecture/`)
 
-### 📐 Architecture (`/architecture`)
-Core technical principles that govern how the mod is built:
-- **[ecs-principles.md](architecture/ecs-principles.md)** - ECS architecture, host/runtime boundaries, multiplayer design
-- **[repository-structure.md](architecture/repository-structure.md)** - How LegendaryCore, Legendary, and LegendaryContent relate
-- **[testing-strategy.md](architecture/testing-strategy.md)** - Unit tests, harness tests, and validation approach
+| Document | What it is |
+|---|---|
+| [ecs-principles.md](architecture/ecs-principles.md) | ECS architecture, host/runtime boundaries, multiplayer design. Sourced from the Hytale Canonical Modding Architecture v1.2; dated 2026-02-04. |
+| [testing-strategy.md](architecture/testing-strategy.md) | Unit tests, harness tests, validation approach. Dated 2026-02-04. |
+| [native-objectives-migration-cost.md](architecture/native-objectives-migration-cost.md) | **DECIDED 2026-08-25** — adopt Hytale's native objectives for the Stormseeker content spine, and what that cost. |
+| [questline-framework-adoption.md](architecture/questline-framework-adoption.md) | **SUPERSEDED 2026-08-25 — do not execute P1–P3.** They are preconditions for a hand-rolled content spine that will no longer exist. Kept unedited because the reasons they went unexecuted became evidence for the decision above. What survives is its description of what `core`'s questline framework *is*. |
+| [repository-structure.md](architecture/repository-structure.md) | **STALE** — describes the pre-consolidation five-repository layout. Superseded by the root `CLAUDE.md`. |
 
-### ⚡ Stormseeker (`/stormseeker`)
-The first Legendary questline:
-- **[narrative.md](stormseeker/narrative.md)** - The story as experienced by the player
-- **[design.md](stormseeker/design.md)** - Locked gameplay mechanics and design decisions
-- **[quest-phases.md](stormseeker/quest-phases.md)** - Implementation guide for each phase
+## Integration (`integration/`)
 
----
+Everything in this directory is verified against **one game build and expires with it** — Hytale
+ships every 2–6 weeks. Re-verify by executing, not by reading, after any launcher update.
 
-## How to Use This Documentation
+| Document | Verified against | What it is |
+|---|---|---|
+| [hytale-status.md](integration/hytale-status.md) | Sources compiling in `mod/hytale/`, 2026-08-24 | Server API package structure and consumption. Written from imports that currently compile, not from JAR inspection. |
+| [hytale-asset-packs.md](integration/hytale-asset-packs.md) | Server `0.5.9`, by running | How a mod ships content as JSON. Verified with a probe plugin, not inferred from class names. |
+| [hytale-capability-audit.md](integration/hytale-capability-audit.md) | Server `0.5.9`, `javap` | Engine capability audit. **Unreliable per row** — signature inspection is a hypothesis; at least one row (`BlockAccessor`) is wrong for 0.6.1. |
+| [live-server-testing.md](integration/live-server-testing.md) | Server `0.6.1`, by running | Operating notes for a live test server: harness, console TTY/FIFO, command forms, weather gating, asset and prefab traps, probe design. |
 
-### For Implementation Work
-1. Read the relevant **quest-phases.md** to understand what needs to be built
-2. Check **design.md** for locked mechanical constraints
-3. Reference **ecs-principles.md** to ensure architectural compliance
-4. Consult **testing-strategy.md** for how to validate your work
+## Stormseeker (`stormseeker/`)
 
-### For Creative/Design Work
-1. Start with **narrative.md** to understand the player journey
-2. Use **quest-phases.md** to connect narrative beats to implementation
-3. Reference **design.md** when making mechanical decisions
+| Document | What it is |
+|---|---|
+| [stormseeker-canonical.md](stormseeker/stormseeker-canonical.md) | **The canonical questline document.** v4.0, narrative rewritten from canon, updated 2026-08-25. Start here. |
+| `archive/narrative.md`, `archive/design.md`, `archive/quest-phases.md`, `archive/canon-alignment-recommendations.md` | Superseded by the canonical document above. Retained as the record of the pre-v4.0 design. |
 
-### For Handoffs / New Contributors
-1. Read **narrative.md** to understand the vision
-2. Skim **design.md** to see what's locked vs pending
-3. Review **ecs-principles.md** for non-negotiable constraints
-4. Check the actual repo code for current implementation state
+## Setting (`setting/`)
 
----
+| Document | What it is |
+|---|---|
+| [hytale-orbis-setting-brief.md](setting/hytale-orbis-setting-brief.md) | Orbis — enough of Hytale's world to write a questline *inside* it rather than beside it. Durable: it describes a fictional setting, not an API. |
 
-## Authority Hierarchy
+## Specs and plans (`superpowers/`)
 
-When in doubt about what's "true":
+Dated design records, newest last. Specs state what was decided and why; plans state how it was to
+be executed. These are **historical records, not live instructions** — a spec is authoritative for
+the decision it records, not for current state.
 
-1. **Code in the repositories** - Source of truth for what's implemented
-2. **These markdown docs** - Source of truth for what should be implemented
-3. **Conversations/chat history** - Non-authoritative, disposable
+**Specs** — `2026-08-24` monorepo consolidation · `2026-08-24` build conventions and CI ·
+`2026-08-25` Stormseeker narrative redesign · `2026-08-25` Act III residue literacy ·
+`2026-08-27` residue network · `2026-08-28` residue density Circle peak ·
+`2026-08-28` graded nexuses · `2026-08-29` six-element residue framework
 
----
-
-## Document Maintenance
-
-### When to Update
-- Design documents should be updated when creative decisions change
-- Architecture documents should be updated when principles evolve
-- Quest phase documents should be updated when implementation scope is locked
-
-### What NOT to Do
-- Don't update docs to reflect implementation progress (that's what git commits are for)
-- Don't delete deferred/future content (mark it as `DEFERRED` or `FUTURE` instead)
-- Don't duplicate implementation details that belong in code comments
+**Plans** — `2026-08-24` monorepo consolidation · `2026-08-24` build conventions and CI ·
+`2026-08-24` module boundary realignment · `2026-08-25` Stormseeker Act II the trace ·
+`2026-08-27` core residue network
 
 ---
 
-## Current Status (2026-02-04)
+## Authority hierarchy
 
-### ✅ Locked & Implemented
-- Phase 1, 2, 3 design locked
-- Phase 4 design locked
-- Phase 4 Anchored Trial scaffolded and merged
+When in doubt about what is true:
 
-### 🚧 In Progress
-- Phase 4 full implementation
+1. **Code in the repository** — source of truth for what is implemented.
+2. **The root `CLAUDE.md`** — source of truth for structure, build, and workflow.
+3. **These documents** — source of truth for what should be implemented, and for decisions.
+4. **Chat history** — non-authoritative, disposable.
 
-### 📋 Pending Design
-- Phase 5+
-- Flowing Trial mechanics
-- Ancient Forge implementation details
+A document that contradicts the code is stale, and marking it so is more useful than deleting it.
+
+---
+
+## Maintenance
+
+**When to update:** design documents when creative decisions change; architecture documents when
+principles evolve; integration documents after any launcher update that invalidates them.
+
+**What not to do:**
+
+- **Don't record implementation progress here.** That is what git and the vault session-status doc
+  are for. The previous version of this file carried a "Current Status" section dated 2026-02-04 —
+  exactly what this rule forbids. It was removed rather than refreshed.
+- **Don't delete superseded content.** Mark it `SUPERSEDED` or `STALE` with a pointer to what
+  replaced it, as the architecture entries above do.
+- **Don't leave a pointer behind when you move or supersede a document.** The stale index this file
+  replaced was not caused by documents going unmaintained — every document it mis-described had been
+  correctly updated. It was caused by nobody updating the thing that *points at* them.
