@@ -61,6 +61,10 @@ Of the four elements whose elementals still wander, three have monuments and **L
 none**. The Root↔Earth link is an association (root, druid, plant, Life), not an identity, and
 should be written that way wherever it is used.
 
+**Held, not proven** (operator ruling, 2026-08-29). Nothing shipped refutes it and the pairing looks
+intended, so the design leans on it. If it is ever refuted the claim degrades to *two of three*,
+which still carries the premise — so nothing downstream is load-bearing on Root specifically.
+
 > **Do not re-derive the element list from the monument prefabs.** They are a different set (Earth 79,
 > Sand 37, Frost 31, Poison 14, Fire 14 — 175 prefabs) that overlaps the essences on Fire only, with Frost/Ice being one idea
 > under two names. Sand and Poison have no essence; Void, Water and Life have no monument.
@@ -97,10 +101,25 @@ are its own tests:
 `BeaconRadius: 10` / `SpawnRadius: 12`"* — the footprint of a **man-made** Elemental Circle, used to
 size the density peak of a **natural** feature. Under this split that reasoning no longer holds.
 
-**The value may well survive; the justification does not.** Either re-derive `nexusRadius` from
-something about the currents themselves, or keep 12.0 and record it honestly as a provisional
-number with no derivation. Do not leave the beacon sentence in place — it now reads as a derivation
-and is not one.
+**The value survives; the justification is replaced.** `nexusRadius` is re-derived from the network
+itself as **half the current's own influence radius**:
+
+```
+nexusRadius = influenceRadius / 2
+```
+
+At the `defaults()` / `6x240` value of `influenceRadius = 24.0` this yields **12.0** — numerically
+what was there, now resting on the field rather than on a monument's footprint.
+
+The reasoning is containment and legibility. The nexus peak must sit *inside* the current's own
+influence band, or density would rise before the player is on the current at all, breaking the
+two-mechanism split. And it must be narrow enough to read as a peak rather than swamp the arm it
+sits on. Half-width puts the player inside the peak for the final half of their approach along a
+current — legible, bounded, and scaling automatically if `influenceRadius` is retuned, which a bare
+constant would not.
+
+**Provisional, like every other content number here.** The ratio is the claim; ½ is a first target
+to be moved against play data, and it cannot be judged without seeing it in-game.
 
 ### What we cannot claim
 
@@ -111,12 +130,19 @@ We *can* place a structure at a computed nexus at runtime, anywhere, with no pla
 the workshop at the Grand Convergence — 512–2048 m from origin — is reachable. What it cannot be is
 *pre-generated*: it materialises when we place it, not when the world is made.
 
-That is the ordinary worldgen contract restated one layer up. Vanilla knows deterministically what
-a chunk will contain and materialises it on load; our network is the deterministic part and a
-`ChunkPreLoadProcessEvent` hook is the materialisation. The one difference to design for: real
-worldgen writes a chunk once, at generation, whereas a load hook fires on every load — so the write
-must be idempotent. Read the world for a sentinel and skip if the structure is already there, which
-also honours *state lives in placed objects, never in the field*.
+**Decision: the workshop materialises the way everything else in the world does** — on chunk load,
+via `ChunkPreLoadProcessEvent`, before the chunk becomes visible. This is the ordinary worldgen
+contract restated one layer up: vanilla knows deterministically what a chunk will contain and fills
+it on load; our network is the deterministic part and the hook is the fill.
+
+Remote placement is available (§9) and deliberately **not** used for this. Materialising on arrival
+keeps one rule for how the world comes into being, and avoids a second code path that could place a
+structure somewhere the deterministic function would not have put it.
+
+One difference from vanilla to design for: real worldgen writes a chunk once, at generation, whereas
+a load hook fires on **every** load — so the write must be idempotent. Read the world for a sentinel
+and skip when the structure is already there. That needs no new persistence and honours *state lives
+in placed objects, never in the field*.
 
 ---
 
@@ -163,7 +189,7 @@ Nine families ship: Blue, Cyan, Green, **Iridescent**, Pink, Purple, Red, White,
 | Void | `Rock_Crystal_Purple` | no golem; Purple is unclaimed. Its `#103` light is **byte-identical to Water's**, so the colour corroborates nothing — this is a choice, not a derivation |
 | Water | `Rock_Crystal_Water` | its own family |
 
-Leaving **White**, **Iridescent** and **Pink** unclaimed by any element.
+Leaving **Iridescent** (the convergence, §7), **White** and **Pink** unclaimed.
 
 > **Tripwire: rock name is not shard name.** `Rock_Crystal_Water` drops `Ingredient_Crystal_Blue`,
 > and `Rock_Crystal_Blue` drops `Ingredient_Crystal_Cyan`. Any code that infers the shard from the
@@ -273,15 +299,17 @@ still a local maximum of its neighbourhood.
 The convergence is the zero-separation limit nexus and the ancients' workshop stands on it. Under
 the Lightning null it is also the emptiest place in the world for yellow crystal.
 
-**What stands there instead is white — or iridescent — crystal that no longer grows.** Not a
-resource. Inert, unharvestable, the residue of what the six currents made together before the
-builders spent it. The recombination image is exactly right for what the convergence *was*; it goes
-wrong the moment the player can pick it up, because that hands them the perfect nexus the whole
-design says was already taken.
+**What stands there instead is `Rock_Crystal_Iridescent`, and it no longer grows.** Not a resource.
+Inert, unharvestable, the residue of what the six currents made together before the builders spent
+it. The recombination image is exactly right for what the convergence *was*; it goes wrong the
+moment the player can pick it up, because that hands them the perfect nexus the whole design says
+was already taken.
 
-`Rock_Crystal_White` and `Rock_Crystal_Iridescent` both ship and neither is claimed by an element.
-**Iridescent is the better literal fit** for many currents recombining; White is the better fit for
-something bleached and spent. Open, §11.
+**Decided: Iridescent, not White.** Iridescent is the literal reading of six currents recombining,
+where white is an optical metaphor the setting never uses. It ships in Small / Medium / Large and is
+claimed by no element — and notably it is the one crystal family with **no `_Block` variant**, so it
+cannot be built with. A material that exists only as a found formation and never as a building block
+is exactly right for something the player may stand in but never own.
 
 ---
 
@@ -388,11 +416,10 @@ with this spec, or the next reader inherits the contradiction.
 - **N13 (new)** — White or Iridescent at the convergence (§7).
 - **~~N14~~ — closed 2026-08-29.** Remote prefab placement works; `PasteRegion` is optional. Use
   the 8-arg overload (§9).
-- **N16 (new)** — which materialisation strategy for the workshop and Act IV's Circle: a
-  `ChunkPreLoadProcessEvent` hook (vanilla-like, arrives before the chunk is visible, must be
-  idempotent) or an explicit one-shot placement. Capability is not the constraint; this is a design
-  choice.
-- **N15 (new)** — `nexusRadius` needs a real derivation or an honest "provisional" label (§3).
+- **~~N16~~ — decided 2026-08-29.** The workshop materialises the way everything else in the world
+  does: on chunk load, via `ChunkPreLoadProcessEvent`, before the chunk is visible. See §3.
+- **~~N15~~ — resolved 2026-08-29.** `nexusRadius = influenceRadius / 2` (§3). The ratio is
+  provisional and expected to move against play data.
 
 ---
 

@@ -313,6 +313,12 @@ Register, by example:
 
 Literally true in the shipped game — Earth, Fire, Frost, Poison, Sand.
 
+> **Scope clarified 2026-08-29.** That is the monument set, not the framework's element list, which
+> is the six shipped **essences** (Fire, Ice, Life, Lightning, Void, Water). The premise is now made
+> on one axis instead of across two taxonomies: of the four elements with a wandering **spirit** —
+> Ember/Fire, Frost/Ice, Root/Life, Thunder/Lightning — three have a monument family and Lightning
+> alone has none. Stronger, because it compares like with like. See `2026-08-29-six-element-residue-framework-design.md` §2.
+
 > *"The others gather where we set the stones. This one would not be housed."*
 >
 > *"It answered once. We asked again."*

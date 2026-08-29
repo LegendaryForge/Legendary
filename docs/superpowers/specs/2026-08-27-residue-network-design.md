@@ -61,6 +61,10 @@ A current has a *direction* — it flows — and that is load-bearing, not flavo
 **Circles.** Where the storm current crosses **itself**. These are the nexuses: places of
 concentrated storm power, and where crystal density peaks. Findable by literacy alone (§4).
 
+> **Renamed 2026-08-29.** These are **nexuses**. A *Circle* is now a man-made structure that may
+> stand at one — the two were sharing a word. Read every later use of "Circle" in this document as
+> "nexus" unless it plainly means a built monument. See `2026-08-29-six-element-residue-framework-design.md` §3.
+
 **The Grand Convergence.** The single rare point where **all** currents meet. An ancient
 workshop stands there. It is where the Stormseeker frame is forged, and it is the only place in
 the design that refers to elements we are not building.
@@ -211,6 +215,12 @@ The elemental roster is not open-ended and does not need guessing. The base game
 Elemental Circles — **Earth, Fire, Frost, Poison, Sand** — and ships **no Storm circle**. That
 absence is the hole this questline fills, so the plausible complete set is **six** currents.
 
+> **Scope clarified 2026-08-29.** This list is the **Elemental Circle monument** set, and it is
+> not the framework's element list. The six the residue framework serves are the shipped
+> **essences** — Fire, Ice, Life, Lightning, Void, Water — which overlap the monuments on Fire
+> alone (Frost/Ice being one idea under two names). The sentence stays true of monuments; do not
+> read it as naming the elements. See `2026-08-29-six-element-residue-framework-design.md` §2.
+
 (Caveat: essences are a different axis — seven exist, including Life, Void and Water, which have
 no circles. Whether currents follow circles or essences is a *choice*, and it moves N from 6 to
 ~7. It does not change the shape of the budget.)
@@ -236,6 +246,12 @@ Sub-projects in dependency order. Each gets its own spec and plan.
    its Circles as content, its siting rules.
 3. **World expression (`:mod:hytale`)** — crystals near currents, density scaled by (1).
    Unblocked: particle emission is available to plugins at arbitrary positions (§8).
+
+   > **Corrected 2026-08-29.** Particle emission was verified live and is real, but it does not
+   > unblock *this* sub-project: Class C crystals are harvested, depleted and cultivated, so they
+   > are blocks, not particles. The cited evidence never reached the claim. Sub-project 3 is
+   > nonetheless unblocked, for the right reason — runtime block placement and prefab pasting are
+   > both confirmed by execution on 0.6.1. See `2026-08-29-six-element-residue-framework-design.md` §9.
 4. **The needle** — item, bench recipe with `KnowledgeRequired: true`, the `Recipe_` item that
    teaches it, and its Circle placement.
 5. **The workshop** — the Grand Convergence structure and the frame recipe.

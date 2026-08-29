@@ -57,6 +57,14 @@ pitch  = clamp(pitch, −maxPitch, +maxPitch)
 y     += sin(pitch) · stepLength
 ```
 
+> **Gap noted 2026-08-29.** The formula above uses `restore` and `maxPitch`, and neither is given a
+> value anywhere in this document — so the measurements in this section and in §7 **cannot be
+> reproduced** by a later reader. Re-deriving them was attempted: `restore 0.020 / maxPitch 0.35`
+> gives a p5–p95 crossing-height span of −105..+107 and `restore 0.010 / maxPitch 0.50` gives
+> −200..+201, bracketing the −155..+158 reported below. The true pair is unrecorded. State both
+> values when the height profile is implemented; until then treat every `|dy|` figure here as
+> calibration-dependent. Crossing **counts** and zero-crossing rates are unaffected — they are 2D.
+
 `CurrentParameters` gains `pitchJitter` and `heightBand`. Measured across 300 seeds at
 `pitchJitter = 0.15`, `heightBand = 96`, current heights at crossings span roughly **−155 to +158**
 about the datum (p5–p95) — genuinely subterranean to airborne without anything being authored.
@@ -162,6 +170,13 @@ from the *same point*:
 | **24** | **1** | 3.18% | **30.5%** | 9.4% | 0.9% |
 | **24** | **6** | **14.9%** | **79.6%** | **38.9%** | 7.3% |
 | 32 | 6 | 18.5% | 88.6% | 47.7% | 9.5% |
+
+> **Corrected 2026-08-29.** The paragraph below describes the **union** of six elements' influence
+> footprints. That is not what a player reads. `densityAt` is an instance method on
+> `ResidueNetwork`, so six elements are six independent density fields, and elements are visually
+> distinct. For the one element being read the same table gives 30.5% / 9.4% / 0.9% — a clean 3x
+> gradient rising toward the convergence. **The literacy signal is intact; it was never lost.** What
+> survives is harvest competition, which is answered in `2026-08-29-six-element-residue-framework-design.md` §6.
 
 **Within 500 m of the convergence, six elements cover 80% of the ground.** The literacy signal is
 meaningless there: everywhere reads as on-current, so there is no gradient to walk up. At
