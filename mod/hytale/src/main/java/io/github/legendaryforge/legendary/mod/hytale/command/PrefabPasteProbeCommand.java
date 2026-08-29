@@ -8,6 +8,7 @@ import com.hypixel.hytale.server.core.asset.type.blocktype.config.Rotation;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
 import com.hypixel.hytale.server.core.command.system.basecommands.AbstractWorldCommand;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
+import com.hypixel.hytale.server.core.prefab.PrefabRotation;
 import com.hypixel.hytale.server.core.prefab.PrefabStore;
 import com.hypixel.hytale.server.core.prefab.selection.buffer.PrefabBufferUtil;
 import com.hypixel.hytale.server.core.prefab.selection.buffer.impl.PrefabBuffer;
@@ -17,50 +18,63 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.PrefabUtil;
 import java.nio.file.Path;
 import java.util.Random;
+import java.util.concurrent.CompletableFuture;
 import org.joml.Vector3d;
 import org.joml.Vector3i;
 
 /**
  * Debug command: {@code /prefabprobe}
  *
- * <p>Answers the second half of the placement question: <em>can a plugin paste a multi-block
- * prefab into the world at runtime?</em> {@code /blockprobe} settled single blocks. Monuments —
- * Act IV's Circle, and the idea of standing in for the missing Storm Elemental Circles — are
- * prefabs, and the residue specs record runtime prefab placement as unproven, with worldgen
- * (deferral #18) as the only alternative.
+ * <p>Can a plugin paste a multi-block prefab into the world at runtime, and can it do so where no
+ * player is standing? Monuments are prefabs — Act IV's Circle, and the workshop at the Grand
+ * Convergence, which sits 512–2048 m from origin.
  *
- * <p>The call chain was read out of {@code PastePrefabEffect}'s bytecode rather than guessed,
- * the same way {@code ParticleUtil.spawnParticleEffect} was found for {@code /residueprobe}:
- * {@code PrefabStore.get().findAssetPrefabPath(name)} then
- * {@code PrefabBufferUtil.loadBuffer(path)} then {@link PrefabUtil#paste}. All three are public.
+ * <p>An earlier run established that {@code PrefabUtil.paste} writes only into chunks already in
+ * memory, silently skipping the rest: an 862-block prefab wrote 26, 3 and 51 cells at three sites
+ * near spawn and exactly 0 at five sites further out. Every one of those runs was headless with no
+ * player in the world, so only spawn-adjacent chunks were resident — the result says nothing about
+ * distance and everything about residency.
  *
- * <p>Name resolution is the part most likely to fail, so several forms are tried and each is
- * reported. A null path is "wrong name form", not "prefabs are unavailable" — the distinction
- * this probe exists to preserve.
+ * <p>This version runs a controlled comparison at the <em>same</em> far-from-spawn distance:
+ *
+ * <ul>
+ *   <li><b>Plain</b> — the 8-arg overload the shipped {@code PastePrefabEffect} calls, with its
+ *       {@code (1, 4)} arguments read from its bytecode. Expected to write nothing.
+ *   <li><b>Region</b> — {@code loadPasteRegionAsync} first, awaited via
+ *       {@code IWorldChunks.waitForFutureWithoutLock} (which exists precisely so the world thread
+ *       can wait on its own futures without deadlocking), then the overload taking that
+ *       {@code PasteRegion}.
+ * </ul>
+ *
+ * <p>If Region writes and Plain does not, remote placement is available and a structure can be
+ * materialised anywhere. If neither writes, placement is bounded to loaded chunks and the design
+ * must materialise on arrival — which is how ordinary worldgen behaves anyway.
  */
 public class PrefabPasteProbeCommand extends AbstractWorldCommand {
 
-    /** Shipped Elemental Circle monuments, under Server/Prefabs/Monuments/Unique/Elemental_Circles/. */
-    private static final String CACHED = "Monuments/Unique/Elemental_Circles/Fire/Pillar_Forward/"
-            + "Unique_Fire_Pillar_Forward_Firelands_StoneCircle_Forward_001";
+    private static final String FIRE_PILLAR = "Monuments/Unique/Elemental_Circles/Fire/Pillar_Forward/"
+            + "Unique_Fire_Pillar_Forward_Firelands_StoneCircle_Forward_001.prefab.json";
 
-    /**
-     * Base-game prefabs are extracted to {@code .cache/prefabs/<pack>/Server/Prefabs/} as
-     * {@code .prefab.json.lpf}, and {@code findAssetPrefabPath} resolves against that directory
-     * with {@code Files.exists} — so only prefabs actually on disk can be found. The cache holds
-     * only what worldgen references: of 175 Elemental Circle prefabs, exactly 4 are cached, all
-     * {@code Fire/Pillar_Forward}. The last entry is deliberately an UNCACHED prefab, so the
-     * cached/uncached distinction is measured rather than assumed.
-     */
-    private static final String[] CANDIDATE_NAMES = {
-        CACHED + ".prefab.json",
-        CACHED,
-        "Server/Prefabs/" + CACHED + ".prefab.json",
-        "Monuments/Unique/Elemental_Circles/Earth/01/Unique_Earth_01_Druid_Circles_1_001.prefab.json",
-    };
+    /** Name form is the path under {@code Server/Prefabs/} WITH the suffix; bare names return null. */
+    private static final String DRUID_CIRCLE =
+            "Monuments/Unique/Elemental_Circles/Earth/01/Unique_Earth_01_Druid_Circles_1_001.prefab.json";
+
+    /** Sized from the Fire pillar's real extents (x -2..4, y 4..33, z -13..13), with margin. */
+    private static final int R_XZ = 20;
+
+    private static final int Y_LO = -30;
+    private static final int Y_HI = 40;
+
+    /** Far enough out that no chunk is resident on a headless server. */
+    private static final int FAR = 600;
+
+    /** The two ints the shipped PastePrefabEffect passes, read from its bytecode. */
+    private static final int PASTE_ARG_A = 1;
+
+    private static final int PASTE_ARG_B = 4;
 
     public PrefabPasteProbeCommand() {
-        super("prefabprobe", "Loads a shipped monument prefab and pastes it, to test runtime prefab placement");
+        super("prefabprobe", "Compares plain vs PasteRegion prefab pasting far from any player");
     }
 
     @Override
@@ -68,7 +82,146 @@ public class PrefabPasteProbeCommand extends AbstractWorldCommand {
         StringBuilder sb = new StringBuilder();
         sb.append("--- prefab paste probe (0.6.1) ---\n");
 
-        Vector3d origin = null;
+        Vector3d origin = resolveOrigin(world, store, sb);
+        if (origin == null) {
+            sendText(context, sb.toString());
+            return;
+        }
+
+        PrefabStore prefabStore = PrefabStore.get();
+        sb.append("PrefabStore: ").append(prefabStore == null ? "null" : "ok").append("\n\n");
+        if (prefabStore == null) {
+            sendText(context, sb.toString());
+            return;
+        }
+
+        String[] names = {FIRE_PILLAR, DRUID_CIRCLE};
+        for (int i = 0; i < names.length; i++) {
+            PrefabBuffer buffer = load(prefabStore, names[i], sb);
+            if (buffer == null) {
+                continue;
+            }
+            int oy = (int) Math.floor(origin.y);
+            // Two sites, same distance band, neither touched by any earlier run.
+            attempt(world, store, sb, buffer, new Vector3i(FAR + 128 * i, oy, FAR + 128), "PLAIN ", "PLAIN");
+            attempt(world, store, sb, buffer, new Vector3i(FAR + 128 * i, oy, FAR + 192), "REGION", "REGION");
+            attempt(world, store, sb, buffer, new Vector3i(FAR + 128 * i, oy, FAR + 256), "LEGACY", "LEGACY");
+        }
+
+        sendText(context, sb.toString());
+    }
+
+    private void attempt(
+            World world,
+            Store<EntityStore> store,
+            StringBuilder sb,
+            PrefabBuffer buffer,
+            Vector3i at,
+            String label,
+            String mode) {
+        sb.append("  ")
+                .append(label)
+                .append(" at ")
+                .append(at.x)
+                .append(" ")
+                .append(at.y)
+                .append(" ")
+                .append(at.z);
+
+        int[] before = snapshot(world, at);
+        int solid = 0;
+        int unreadable = 0;
+        for (int id : before) {
+            if (id < 0) {
+                unreadable++;
+            } else if (id != 0) {
+                solid++;
+            }
+        }
+        sb.append(" | before solid=").append(solid).append(" unreadable=").append(unreadable);
+
+        try {
+            if ("REGION".equals(mode)) {
+                CompletableFuture<PrefabUtil.PasteRegion> future = PrefabUtil.loadPasteRegionAsync(
+                        buffer.newAccess(), world, at, PrefabRotation.ROTATION_0, PASTE_ARG_B);
+                PrefabUtil.PasteRegion region = world.waitForFutureWithoutLock(future);
+                sb.append(" | region=").append(region == null ? "null" : "ok");
+                if (region == null) {
+                    sb.append("\n");
+                    return;
+                }
+                PrefabUtil.paste(
+                        buffer.newAccess(),
+                        world,
+                        at,
+                        Rotation.None,
+                        new Random(1L),
+                        PASTE_ARG_A,
+                        PASTE_ARG_B,
+                        region,
+                        PrefabUtil.NOOP_BLOCK_ENTITY_CONSUMER,
+                        PrefabUtil.NOOP_ENTITY_CONSUMER,
+                        store);
+            } else if ("LEGACY".equals(mode)) {
+                // The 6-arg overload every earlier run used, at a distance the 8-arg form handles
+                // fine. Isolates the overload as the variable, rather than distance or residency.
+                PrefabUtil.paste(buffer.newAccess(), world, at, Rotation.None, new Random(1L), store);
+            } else {
+                PrefabUtil.paste(
+                        buffer.newAccess(), world, at, Rotation.None, new Random(1L), PASTE_ARG_A, PASTE_ARG_B, store);
+            }
+        } catch (Exception e) {
+            sb.append(" | THREW ")
+                    .append(e.getClass().getSimpleName())
+                    .append(": ")
+                    .append(e.getMessage())
+                    .append("\n");
+            return;
+        }
+
+        int[] after = snapshot(world, at);
+        int changed = 0;
+        for (int i = 0; i < before.length; i++) {
+            if (before[i] != after[i]) {
+                changed++;
+            }
+        }
+        sb.append(" | CHANGED CELLS ").append(changed).append("\n");
+    }
+
+    private PrefabBuffer load(PrefabStore prefabStore, String name, StringBuilder sb) {
+        Path path;
+        try {
+            path = prefabStore.findAssetPrefabPath(name);
+        } catch (RuntimeException e) {
+            sb.append(name)
+                    .append(" -> findAssetPrefabPath THREW ")
+                    .append(e.getClass().getSimpleName())
+                    .append("\n");
+            return null;
+        }
+        if (path == null) {
+            sb.append(name).append(" -> null\n");
+            return null;
+        }
+        sb.append(name).append("\n");
+        try {
+            PrefabBuffer buffer = PrefabBufferUtil.loadBuffer(path);
+            if (buffer == null) {
+                sb.append("  loadBuffer returned null\n");
+            }
+            return buffer;
+        } catch (Exception e) {
+            sb.append("  loadBuffer THREW ")
+                    .append(e.getClass().getSimpleName())
+                    .append(": ")
+                    .append(e.getMessage())
+                    .append("\n");
+            return null;
+        }
+    }
+
+    private Vector3d resolveOrigin(World world, Store<EntityStore> store, StringBuilder sb) {
         for (PlayerRef playerRef : world.getPlayerRefs()) {
             Ref<EntityStore> ref = playerRef.getReference();
             if (ref == null) {
@@ -76,146 +229,30 @@ public class PrefabPasteProbeCommand extends AbstractWorldCommand {
             }
             TransformComponent transform = store.getComponent(ref, TransformComponent.getComponentType());
             if (transform != null) {
-                origin = new Vector3d(transform.getPosition());
+                return new Vector3d(transform.getPosition());
+            }
+        }
+        sb.append("no connected player -- headless fallback at x=0 z=0\n");
+        for (int y = 160; y >= 20; y--) {
+            Integer b = read(world, 0, y, 0);
+            if (b == null) {
                 break;
             }
+            if (b != 0) {
+                sb.append("  ground at y=").append(y).append("\n");
+                return new Vector3d(0.5, y + 1, 0.5);
+            }
         }
-        if (origin == null) {
-            sb.append("no connected player -- headless fallback at x=0 z=0\n");
-            int groundY = -1;
-            for (int y = 160; y >= 20; y--) {
-                Integer b = read(world, 0, y, 0);
-                if (b == null) {
-                    break;
-                }
-                if (b != 0) {
-                    groundY = y;
-                    break;
-                }
-            }
-            if (groundY < 0) {
-                sendText(context, sb.append("  no ground in column x=0 z=0\n").toString());
-                return;
-            }
-            origin = new Vector3d(0.5, groundY + 1, 0.5);
-            sb.append("  ground at y=").append(groundY).append("\n");
-        }
-
-        PrefabStore prefabStore;
-        try {
-            prefabStore = PrefabStore.get();
-        } catch (RuntimeException e) {
-            sendText(
-                    context,
-                    sb.append("PrefabStore.get() THREW ")
-                            .append(e.getClass().getSimpleName())
-                            .append(": ")
-                            .append(e.getMessage())
-                            .append("\n")
-                            .toString());
-            return;
-        }
-        sb.append("PrefabStore: ").append(prefabStore == null ? "null" : "ok").append("\n");
-
-        int lane = 0;
-        for (String name : CANDIDATE_NAMES) {
-            Path path;
-            try {
-                path = prefabStore == null ? null : prefabStore.findAssetPrefabPath(name);
-            } catch (RuntimeException e) {
-                sb.append("  ")
-                        .append(name)
-                        .append(" -> findAssetPrefabPath THREW ")
-                        .append(e.getClass().getSimpleName())
-                        .append("\n");
-                continue;
-            }
-            sb.append("  ").append(name).append("\n    -> ").append(path).append("\n");
-            if (path == null) {
-                continue;
-            }
-
-            PrefabBuffer buffer;
-            try {
-                buffer = PrefabBufferUtil.loadBuffer(path);
-            } catch (Exception e) {
-                sb.append("    loadBuffer THREW ")
-                        .append(e.getClass().getSimpleName())
-                        .append(": ")
-                        .append(e.getMessage())
-                        .append("\n");
-                continue;
-            }
-            if (buffer == null) {
-                sb.append("    loadBuffer returned null\n");
-                continue;
-            }
-
-            lane++;
-            Vector3i at = new Vector3i(
-                    (int) Math.floor(origin.x) + 16 * lane,
-                    (int) Math.floor(origin.y),
-                    (int) Math.floor(origin.z) - 16 * lane);
-            int[] before = snapshot(world, at);
-            try {
-                PrefabUtil.paste(buffer.newAccess(), world, at, Rotation.None, new Random(1L), store);
-            } catch (Exception e) {
-                sb.append("    paste THREW ")
-                        .append(e.getClass().getSimpleName())
-                        .append(": ")
-                        .append(e.getMessage())
-                        .append("\n");
-                continue;
-            }
-            int[] after = snapshot(world, at);
-            int changed = changedCells(before, after);
-            int air = 0;
-            int solid = 0;
-            int unreadable = 0;
-            for (int id : before) {
-                if (id < 0) {
-                    unreadable++;
-                } else if (id == 0) {
-                    air++;
-                } else {
-                    solid++;
-                }
-            }
-            sb.append("    region before: solid=")
-                    .append(solid)
-                    .append(" air=")
-                    .append(air)
-                    .append(" unreadable=")
-                    .append(unreadable)
-                    .append("\n");
-            sb.append("    pasted at ")
-                    .append(at.x)
-                    .append(" ")
-                    .append(at.y)
-                    .append(" ")
-                    .append(at.z)
-                    .append(" | CHANGED CELLS ")
-                    .append(changed)
-                    .append("\n");
-        }
-
-        sendText(context, sb.toString());
+        sb.append("  no ground in column x=0 z=0\n");
+        return null;
     }
-
-    // The Fire pillar prefab is 862 blocks spanning x -2..4, y 4..33, z -13..13 with anchor
-    // (1,21,4). An earlier +/-8 x 0..16 box caught 3 cells of it and read as a near-total no-op.
-    // Size the box from the prefab, generously, and under either anchor convention.
-    private static final int R_XZ = 20;
-    private static final int Y_LO = -30;
-    private static final int Y_HI = 40;
 
     /**
      * Snapshots every block id in a box around the paste point.
      *
-     * <p>An earlier version counted only <em>solid</em> blocks, which cannot see a paste that
-     * lands inside terrain: the prefab overwrites rock with rock and the count does not move. At
-     * one site the box was 63% solid and a successful paste read as {@code delta 0}. Compare ids
-     * cell by cell instead -- insensitive to how buried the site is.
+     * <p>Counting only <em>solid</em> blocks cannot see a paste that lands inside terrain: the
+     * prefab overwrites rock with rock and the count does not move. At one site the box was 63%
+     * solid and a successful paste read as zero. Compare ids cell by cell instead.
      */
     private int[] snapshot(World world, Vector3i at) {
         int span = 2 * R_XZ + 1;
@@ -230,16 +267,6 @@ public class PrefabPasteProbeCommand extends AbstractWorldCommand {
             }
         }
         return ids;
-    }
-
-    private int changedCells(int[] before, int[] after) {
-        int n = 0;
-        for (int i = 0; i < before.length; i++) {
-            if (before[i] != after[i]) {
-                n++;
-            }
-        }
-        return n;
     }
 
     private Integer read(World world, int x, int y, int z) {

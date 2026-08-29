@@ -21,7 +21,7 @@ element #2 force a breaking change if we omit it?*
 | A Circle is a self-crossing of a current | A **nexus** is the self-crossing. A **Circle** is a man-made structure that may stand at one. |
 | The saturated core (N12) is a legibility defect to fix | Legibility was never lost. The real problem is harvest competition, and Lightning's core is **null** — not by physics, but because it is the wounded element |
 | Crystals need authoring | Nine crystal rock families ship, in four sizes, glowing, harvestable and craftable |
-| World expression is "unblocked: particle emission works" | Block placement is confirmed by execution. Prefab paste is confirmed but **bounded by chunk residency** |
+| World expression is "unblocked: particle emission works" | Block **and** prefab placement confirmed by execution, anywhere in the world, with no player present |
 
 ---
 
@@ -104,9 +104,19 @@ and is not one.
 
 ### What we cannot claim
 
-We cannot make shipped monuments coincide with nexuses. That is worldgen, which is deferral #18.
-The design claims only that *the practice* exists, and that **the one Circle actually sited at a
-nexus is the one the player raises** — Act IV, already the design, needing no worldgen.
+We cannot make shipped monuments coincide with nexuses **at world-generation time**. That is
+deferral #18, and it is the only thing #18 constrains here.
+
+We *can* place a structure at a computed nexus at runtime, anywhere, with no player nearby (§9). So
+the workshop at the Grand Convergence — 512–2048 m from origin — is reachable. What it cannot be is
+*pre-generated*: it materialises when we place it, not when the world is made.
+
+That is the ordinary worldgen contract restated one layer up. Vanilla knows deterministically what
+a chunk will contain and materialises it on load; our network is the deterministic part and a
+`ChunkPreLoadProcessEvent` hook is the materialisation. The one difference to design for: real
+worldgen writes a chunk once, at generation, whereas a load hook fires on every load — so the write
+must be idempotent. Read the world for a sentinel and skip if the structure is already there, which
+also honours *state lives in placed objects, never in the field*.
 
 ---
 
@@ -302,7 +312,8 @@ Commits `5b63dfd` and `026ade4`.
 | Prefab lookup, including the 171 dormant monument prefabs | **Confirmed.** Resolves against a zip-backed FileSystem |
 | `PrefabBufferUtil.loadBuffer` | **Confirmed** |
 | `PrefabUtil.paste` writes blocks | **Confirmed near spawn, partial** |
-| Paste at arbitrary far-from-player coordinates | **Not available via the plain overload** |
+| Paste at arbitrary far-from-player coordinates | **Confirmed** — 862-block prefab written in full at 600 m with no player and chunks unloaded |
+| `ChunkPreLoadProcessEvent` (+ section / save / unload) | Present; the natural materialisation hook |
 | World particles at arbitrary positions | Confirmed 2026-08-27 (N3) |
 
 Three things to carry into implementation:
@@ -311,13 +322,21 @@ Three things to carry into implementation:
 check, and 0.6.1 has no `placeBlock` or `testPlaceBlock`. The `Support.Down: Full` rule the block
 asset declares is ours to enforce.
 
-**Prefab paste is silently bounded by chunk residency.** An 862-block prefab wrote 26, 3 and 51
-cells at three sites near spawn and exactly **0** at five sites further out — including two measured
-with a 119,351-cell box reporting `unreadable=0`, which rules out both scan size and unreadable
-regions. `PrefabUtil` exposes `loadPasteRegionIfInMemory` and `loadPasteRegionAsync` returning a
-`PasteRegion`, plus `paste` overloads taking one; they exist because the plain overload cannot do it
-for you. **A monument sited at a computed nexus far from any player would paste as rubble and return
-normally.** The `PasteRegion` path is untested — §11.
+**Use the 8-arg `paste` overload, with `(1, 4)`.** `PrefabUtil.paste` is overloaded, and the
+overloads do not behave alike. The 6-arg form — `(buffer, world, pos, rotation, random, store)` —
+writes only into chunks already resident and skips the rest without error. Measured at one distance
+in one run: the 862-block Fire pillar wrote **0** cells through it while the 27-block Druid circle
+wrote all **27**, the small prefab fitting inside chunks a neighbouring paste had just loaded. The
+8-arg form `(…, 1, 4, store)` — the arguments the shipped `PastePrefabEffect` passes, read from its
+bytecode — wrote **867** and **27** at the same sites, and the `PasteRegion` overload wrote **870**
+and **27**. `PasteRegion` is therefore optional, not required.
+
+> **This corrects a false finding.** An earlier version of this section stated that `paste` is
+> "silently bounded by chunk residency" and that remote placement was unavailable, citing eight
+> sites where a prefab wrote 0. Every one of those used the 6-arg overload. The claim was built on
+> null results plus an inference from the *existence* of `loadPasteRegionAsync` — reasoning from API
+> shape to runtime behaviour, which is the exact error the rule below exists to prevent. Commit
+> `026ade4`'s message carries the same wrong claim and stands as history.
 
 **Prefab names are the path under `Server/Prefabs/` with the `.prefab.json` suffix.** The bare name
 and a `Server/Prefabs/`-prefixed form both return `null`.
@@ -367,9 +386,12 @@ with this spec, or the next reader inherits the contradiction.
 - **N11** — the harvest and restoration economy. Its own spec.
 - **N12** — **resolved** (§6).
 - **N13 (new)** — White or Iridescent at the convergence (§7).
-- **N14 (new)** — does `PrefabUtil`'s `PasteRegion` path allow pasting at coordinates far from any
-  player? Gates whether a Circle can ever be placed programmatically at a nexus. Probe shape:
-  extend `/prefabprobe` to call `loadPasteRegionAsync` and paste with the returned region.
+- **~~N14~~ — closed 2026-08-29.** Remote prefab placement works; `PasteRegion` is optional. Use
+  the 8-arg overload (§9).
+- **N16 (new)** — which materialisation strategy for the workshop and Act IV's Circle: a
+  `ChunkPreLoadProcessEvent` hook (vanilla-like, arrives before the chunk is visible, must be
+  idempotent) or an explicit one-shot placement. Capability is not the constraint; this is a design
+  choice.
 - **N15 (new)** — `nexusRadius` needs a real derivation or an honest "provisional" label (§3).
 
 ---
