@@ -1,6 +1,6 @@
 # The six-element residue framework — essences, nexuses, and the Lightning null
 
-**Status: structure decided, numbers measured, one capability open.** This extends
+**Status: structure decided, numbers measured, capabilities verified.** This extends
 `2026-08-28-graded-nexuses-design.md` and `2026-08-28-residue-density-circle-peak-design.md`. It
 does not supersede either: the height profile, nexus grading by `|Δy|`, and the density-peak
 resolution all stand. It settles which six elements the framework serves, separates two ideas that
@@ -303,7 +303,7 @@ Still deliberately open. What changed is that the objection to opening it has be
 ## 9. What the engine actually allows
 
 Verified by execution on **0.6.1** (`Implementation-Revision-Id: 5097cd9e`), headless, this session.
-Commits `5b63dfd` and `026ade4`.
+Commits `5b63dfd`, `026ade4` and `21e2a07`.
 
 | Capability | Status |
 |---|---|
@@ -311,7 +311,7 @@ Commits `5b63dfd` and `026ade4`.
 | Placement persists across a full server restart | **Confirmed** across two boots |
 | Prefab lookup, including the 171 dormant monument prefabs | **Confirmed.** Resolves against a zip-backed FileSystem |
 | `PrefabBufferUtil.loadBuffer` | **Confirmed** |
-| `PrefabUtil.paste` writes blocks | **Confirmed near spawn, partial** |
+| `PrefabUtil.paste` writes blocks | **Confirmed.** Full prefab written; use the 8-arg overload (below) |
 | Paste at arbitrary far-from-player coordinates | **Confirmed** — 862-block prefab written in full at 600 m with no player and chunks unloaded |
 | `ChunkPreLoadProcessEvent` (+ section / save / unload) | Present; the natural materialisation hook |
 | World particles at arbitrary positions | Confirmed 2026-08-27 (N3) |
@@ -401,8 +401,8 @@ with this spec, or the next reader inherits the contradiction.
 Design conversation of 2026-08-29. Element taxonomy, spirit/monument comparison, crystal families
 and block-type detail read from the installed `Assets.zip` (0.6.1). Nexus-distance and nexus-quality
 figures from `.scratch/n12-scan/`, 500 seeds, two height calibrations. Capability findings from
-`/blockprobe` (`5b63dfd`) and `/prefabprobe` (`026ade4`), executed headless against a live 0.6.1
-server.
+`/blockprobe` (`5b63dfd`) and `/prefabprobe` (`026ade4`, corrected in `21e2a07`), executed headless
+against a live 0.6.1 server.
 
 The two decisions that shaped it — *the six are the essences* and *nexus and Circle are different
 things* — are the operator's, taken 2026-08-29.
