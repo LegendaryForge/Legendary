@@ -263,6 +263,12 @@ which remains unproven. It belongs in its own spec, with those two blockers as i
 One thing from the dig **is** used here: the beacons' `BeaconRadius: 10` / `SpawnRadius: 12` are the
 source of `circleRadius: 12.0` in §4.
 
+> **Superseded 2026-08-29.** This derivation does not survive the nexus/Circle split: a **nexus** is
+> the natural crossing, a **Circle** is a man-made structure that may stand at one, and a monument
+> beacon's `SpawnRadius` cannot size a natural feature's density peak. The constant is renamed
+> `nexusRadius` and re-derived as `influenceRadius / 2`, which is 12.0 at the current tuning — the
+> same number, now resting on the field rather than on a monument. See `2026-08-29-six-element-residue-framework-design.md` §3.
+
 ---
 
 ## 10. Provenance
