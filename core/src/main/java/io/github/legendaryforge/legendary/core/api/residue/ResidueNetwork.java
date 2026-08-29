@@ -23,8 +23,13 @@ public interface ResidueNetwork {
      */
     Optional<FlowVector> flowAt(double x, double z);
 
-    /** Circles — proper self-crossings of the network — whose positions lie within the bounds. */
-    List<WorldPoint2d> circlesWithin(double minX, double minZ, double maxX, double maxZ);
+    /**
+     * Nexuses — proper self-crossings of the network — whose positions lie within the bounds.
+     *
+     * <p>A nexus is the natural crossing this computes. A Circle is a man-made structure that may
+     * stand at one; the network knows nothing about those.
+     */
+    List<WorldPoint2d> nexusesWithin(double minX, double minZ, double maxX, double maxZ);
 
     /** The single point where every element's current meets. Identical for all elements in a world. */
     WorldPoint2d grandConvergence();

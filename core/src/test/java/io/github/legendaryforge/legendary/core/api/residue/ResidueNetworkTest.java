@@ -87,9 +87,9 @@ class ResidueNetworkTest {
     }
 
     @Test
-    void circlesWithin_areInsideTheBounds() {
+    void nexusesWithin_areInsideTheBounds() {
         ResidueNetwork n = new DefaultResidueNetwork(SEED, PARAMS);
-        List<WorldPoint2d> circles = n.circlesWithin(-5000.0, -5000.0, 5000.0, 5000.0);
+        List<WorldPoint2d> circles = n.nexusesWithin(-5000.0, -5000.0, 5000.0, 5000.0);
         for (WorldPoint2d p : circles) {
             assertTrue(p.x() >= -5000.0 && p.x() <= 5000.0, "x out of bounds: " + p);
             assertTrue(p.z() >= -5000.0 && p.z() <= 5000.0, "z out of bounds: " + p);
@@ -97,50 +97,50 @@ class ResidueNetworkTest {
     }
 
     @Test
-    void circlesWithin_emptyRegion_isEmpty() {
+    void nexusesWithin_emptyRegion_isEmpty() {
         ResidueNetwork n = new DefaultResidueNetwork(SEED, PARAMS);
-        assertTrue(n.circlesWithin(500_000.0, 500_000.0, 510_000.0, 510_000.0).isEmpty());
+        assertTrue(n.nexusesWithin(500_000.0, 500_000.0, 510_000.0, 510_000.0).isEmpty());
     }
 
     @Test
-    void circlesWithin_rejectsInvertedBounds() {
+    void nexusesWithin_rejectsInvertedBounds() {
         ResidueNetwork n = new DefaultResidueNetwork(SEED, PARAMS);
-        assertThrows(IllegalArgumentException.class, () -> n.circlesWithin(10.0, 0.0, 0.0, 10.0));
+        assertThrows(IllegalArgumentException.class, () -> n.nexusesWithin(10.0, 0.0, 0.0, 10.0));
     }
 
     @Test
-    void circlesWithin_rejectsInvertedBoundsOnZ() {
+    void nexusesWithin_rejectsInvertedBoundsOnZ() {
         // The existing inverted-bounds test only inverts X, leaving the Z half of the guard unexercised.
         ResidueNetwork n = new DefaultResidueNetwork(SEED, PARAMS);
-        assertThrows(IllegalArgumentException.class, () -> n.circlesWithin(0.0, 10.0, 10.0, 0.0));
+        assertThrows(IllegalArgumentException.class, () -> n.nexusesWithin(0.0, 10.0, 10.0, 0.0));
     }
 
     @Test
-    void circlesWithin_rejectsNonFiniteBounds() {
+    void nexusesWithin_rejectsNonFiniteBounds() {
         // NaN slipped through the inverted-bounds guard and produced an empty list -- a silent
         // wrong answer, where every other type in this package rejects non-finite input.
         ResidueNetwork n = new DefaultResidueNetwork(SEED, PARAMS);
-        assertThrows(IllegalArgumentException.class, () -> n.circlesWithin(Double.NaN, -100.0, 100.0, 100.0));
+        assertThrows(IllegalArgumentException.class, () -> n.nexusesWithin(Double.NaN, -100.0, 100.0, 100.0));
         assertThrows(
-                IllegalArgumentException.class, () -> n.circlesWithin(-100.0, -100.0, Double.POSITIVE_INFINITY, 100.0));
+                IllegalArgumentException.class, () -> n.nexusesWithin(-100.0, -100.0, Double.POSITIVE_INFINITY, 100.0));
     }
 
     @Test
-    void circlesWithin_filtersOnZIndependentlyOfX() {
+    void nexusesWithin_filtersOnZIndependentlyOfX() {
         // Every other box in this suite is X/Z-symmetric, so swapping maxZ for maxX in the filter
         // changed no result. This box is deliberately asymmetric.
         for (long seed = 0; seed < 20; seed++) {
             ResidueNetwork n = new DefaultResidueNetwork(seed, PARAMS);
-            List<WorldPoint2d> all = n.circlesWithin(-100_000.0, -100_000.0, 100_000.0, 100_000.0);
+            List<WorldPoint2d> all = n.nexusesWithin(-100_000.0, -100_000.0, 100_000.0, 100_000.0);
             if (all.isEmpty()) {
                 continue;
             }
             WorldPoint2d c = all.get(0);
             // A band that contains c in X but excludes it in Z.
-            List<WorldPoint2d> excludedByZ = n.circlesWithin(c.x() - 1.0, c.z() + 10.0, c.x() + 1.0, c.z() + 20.0);
+            List<WorldPoint2d> excludedByZ = n.nexusesWithin(c.x() - 1.0, c.z() + 10.0, c.x() + 1.0, c.z() + 20.0);
             assertTrue(excludedByZ.isEmpty(), "a crossing outside the Z band must be filtered out");
             // The same X band, with a Z band that does contain it.
-            List<WorldPoint2d> includedByZ = n.circlesWithin(c.x() - 1.0, c.z() - 1.0, c.x() + 1.0, c.z() + 1.0);
+            List<WorldPoint2d> includedByZ = n.nexusesWithin(c.x() - 1.0, c.z() - 1.0, c.x() + 1.0, c.z() + 1.0);
             assertTrue(includedByZ.contains(c), "a crossing inside both bands must be returned");
             return;
         }
@@ -148,15 +148,15 @@ class ResidueNetworkTest {
     }
 
     @Test
-    void circlesWithin_findsCrossings_forSomeSeed() {
-        // Guards against circlesWithin returning empty unconditionally. Crossing counts are
+    void nexusesWithin_findsCrossings_forSomeSeed() {
+        // Guards against nexusesWithin returning empty unconditionally. Crossing counts are
         // seed-dependent and low at these parameters -- some seeds legitimately yield zero -- so
         // this asserts existence across a scan rather than a count at one seed, which would be
         // brittle against any geometry change.
         int seedsWithCrossings = 0;
         for (long seed = 0; seed < 20; seed++) {
             ResidueNetwork n = new DefaultResidueNetwork(seed, PARAMS);
-            if (!n.circlesWithin(-100_000.0, -100_000.0, 100_000.0, 100_000.0).isEmpty()) {
+            if (!n.nexusesWithin(-100_000.0, -100_000.0, 100_000.0, 100_000.0).isEmpty()) {
                 seedsWithCrossings++;
             }
         }
@@ -164,12 +164,12 @@ class ResidueNetworkTest {
     }
 
     @Test
-    void circlesWithin_crossingLiesOnTheNetwork() {
+    void nexusesWithin_crossingLiesOnTheNetwork() {
         // A crossing is by construction a point on two segments, so density there must be maximal.
-        // This catches a circlesWithin that returns points unrelated to the geometry.
+        // This catches a nexusesWithin that returns points unrelated to the geometry.
         for (long seed = 0; seed < 20; seed++) {
             ResidueNetwork n = new DefaultResidueNetwork(seed, PARAMS);
-            List<WorldPoint2d> circles = n.circlesWithin(-100_000.0, -100_000.0, 100_000.0, 100_000.0);
+            List<WorldPoint2d> circles = n.nexusesWithin(-100_000.0, -100_000.0, 100_000.0, 100_000.0);
             if (!circles.isEmpty()) {
                 WorldPoint2d c = circles.get(0);
                 assertEquals(1.0, n.densityAt(c.x(), c.z()), 1e-6, "a crossing must lie on a current");
@@ -186,6 +186,6 @@ class ResidueNetworkTest {
         assertEquals(a.grandConvergence(), b.grandConvergence());
         assertEquals(a.densityAt(100.0, 200.0), b.densityAt(100.0, 200.0), 1e-12);
         assertEquals(
-                a.circlesWithin(-5000.0, -5000.0, 5000.0, 5000.0), b.circlesWithin(-5000.0, -5000.0, 5000.0, 5000.0));
+                a.nexusesWithin(-5000.0, -5000.0, 5000.0, 5000.0), b.nexusesWithin(-5000.0, -5000.0, 5000.0, 5000.0));
     }
 }

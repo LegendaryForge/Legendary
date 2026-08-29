@@ -2,7 +2,7 @@ package io.github.legendaryforge.legendary.core.internal.residue;
 
 import io.github.legendaryforge.legendary.core.api.residue.WorldPoint2d;
 
-/** Planar segment primitives shared by the density, flow and Circle queries. */
+/** Planar segment primitives shared by the density, flow and nexus queries. */
 final class SegmentMath {
 
     // Three epsilon thresholds for different purposes, all numerically 1e-9.
@@ -35,7 +35,7 @@ final class SegmentMath {
      * Proper crossing point of {@code a1a2} and {@code b1b2}, or {@code null} if they do not cross.
      *
      * <p>Endpoint touches are excluded on purpose: consecutive segments of one arm always share an
-     * endpoint, and counting those would report a Circle at every step.
+     * endpoint, and counting those would report a nexus at every step.
      */
     static WorldPoint2d intersection(WorldPoint2d a1, WorldPoint2d a2, WorldPoint2d b1, WorldPoint2d b2) {
         double ax = a2.x() - a1.x();

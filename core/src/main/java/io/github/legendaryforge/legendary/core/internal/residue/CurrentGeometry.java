@@ -13,7 +13,7 @@ import java.util.Objects;
  * <p>Each arm is a correlated random walk: the heading persists between steps and jitters by at
  * most {@link CurrentParameters#headingJitter()} radians. Persistence is what makes an arm snake
  * rather than scribble, and it is why arms wander back across themselves — those crossings are the
- * Circles.
+ * nexuses.
  */
 final class CurrentGeometry {
 
