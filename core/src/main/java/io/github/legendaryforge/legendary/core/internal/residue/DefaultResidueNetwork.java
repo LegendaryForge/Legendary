@@ -1,5 +1,6 @@
 package io.github.legendaryforge.legendary.core.internal.residue;
 
+import io.github.legendaryforge.legendary.core.api.id.ResourceId;
 import io.github.legendaryforge.legendary.core.api.residue.CurrentParameters;
 import io.github.legendaryforge.legendary.core.api.residue.FlowVector;
 import io.github.legendaryforge.legendary.core.api.residue.ResidueNetwork;
@@ -16,9 +17,14 @@ public final class DefaultResidueNetwork implements ResidueNetwork {
     private final CurrentGeometry geometry;
     private final double influenceRadius;
 
-    public DefaultResidueNetwork(long worldSeed, CurrentParameters parameters) {
+    /**
+     * @param elementId which element's current this is; required, and deliberately not defaulted —
+     *     an overload without it would restore the convention that nothing enforced
+     */
+    public DefaultResidueNetwork(long worldSeed, ResourceId elementId, CurrentParameters parameters) {
+        Objects.requireNonNull(elementId, "elementId");
         Objects.requireNonNull(parameters, "parameters");
-        this.geometry = new CurrentGeometry(worldSeed, parameters);
+        this.geometry = new CurrentGeometry(worldSeed, elementId, parameters);
         this.influenceRadius = parameters.influenceRadius();
     }
 
@@ -65,7 +71,7 @@ public final class DefaultResidueNetwork implements ResidueNetwork {
     }
 
     @Override
-    public List<WorldPoint2d> circlesWithin(double minX, double minZ, double maxX, double maxZ) {
+    public List<WorldPoint2d> nexusesWithin(double minX, double minZ, double maxX, double maxZ) {
         if (!Double.isFinite(minX) || !Double.isFinite(minZ) || !Double.isFinite(maxX) || !Double.isFinite(maxZ)) {
             throw new IllegalArgumentException(
                     "bounds must be finite: " + minX + "," + minZ + " to " + maxX + "," + maxZ);
