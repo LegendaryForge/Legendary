@@ -55,7 +55,8 @@ the decision it records, not for current state.
 **Specs** — `2026-08-24` monorepo consolidation · `2026-08-24` build conventions and CI ·
 `2026-08-25` Stormseeker narrative redesign · `2026-08-25` Act III residue literacy ·
 `2026-08-27` residue network · `2026-08-28` residue density Circle peak ·
-`2026-08-28` graded nexuses · `2026-08-29` six-element residue framework
+`2026-08-28` graded nexuses · `2026-08-29` six-element residue framework ·
+`2026-08-30` N9 all crossings are nexuses
 
 **Plans** — `2026-08-24` monorepo consolidation · `2026-08-24` build conventions and CI ·
 `2026-08-24` module boundary realignment · `2026-08-25` Stormseeker Act II the trace ·
