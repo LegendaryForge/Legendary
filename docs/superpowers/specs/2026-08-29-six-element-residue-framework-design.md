@@ -92,8 +92,15 @@ are its own tests:
 | Now | Becomes |
 |---|---|
 | `ResidueNetwork.circlesWithin(...)` | `nexusesWithin(...)` |
-| `CurrentParameters.circleRadius` | `nexusRadius` |
+| `CurrentParameters.circleRadius` | `nexusRadius()` — a **derived accessor, not a stored component** |
 | `CurrentParameters.circleWeight` | `nexusWeight` |
+
+> **Amended 2026-08-30.** The row above read `nexusRadius` without qualification, which reads as a
+> record component, while the reasoning immediately below says it must scale with `influenceRadius`
+> *"which a bare constant would not"* — and session 12 had already recorded it as derived. Two
+> readings of one decision, in one document, four lines apart. The implementation took the
+> reasoning; the table now says so. **Derived is the decision**, confirmed by the operator when the
+> PR surfaced the disagreement.
 
 ### And it breaks a constant's provenance
 
@@ -292,6 +299,44 @@ This is a property spanning two specs, which is the exact shape of the
 implements `nullRadius` owns proving this**, with a test asserting a nexus inside the null radius is
 still a local maximum of its neighbourhood.
 
+> ## ⚠️ Amended 2026-08-30 — the claim above was measured and is FALSE
+>
+> The assigned proof was attempted and **refuted**. Over 200 seeds, **5 of 56 nexuses inside the
+> null radius are not local maxima**, all within 29.1 m of the convergence. The mechanism is exact
+> rather than empirical: density under suppression is `(d/R) · base`, so stepping outward gains
+> survival at `1/R` while base falls at `nexusWeight/nexusRadius`, and density keeps *rising* while
+> `base > d · nexusWeight / nexusRadius`. At a nexus `base == 1`, giving
+>
+> > **`d < nexusRadius / nexusWeight`** = 40 m at the shipped tuning
+>
+> — a threshold that **does not involve `nullRadius`**, so no retuning of the null radius could have
+> fixed it. Such a nexus cannot be found by walking uphill, which is the navigation mechanic.
+>
+> An earlier version of the test **passed**: it swept 40 seeds and happened to contain no nexus
+> closer than 40 m. That is the vacuous pass this section's own assignment was written to prevent,
+> and it was caught only by measuring the distribution instead of trusting a green result.
+>
+> **Resolution: absorb, do not suppress.** A crossing inside `nullRadius` merges into the Grand
+> Convergence — which §7 already defines as the zero-separation limit nexus it belongs to — instead
+> of standing as its own. Implemented as `CurrentParameters.nexusAbsorptionRadius` in `:core`
+> (element-neutral, default 0, so the other five elements are untouched), applied to the single
+> crossing list that feeds **both** `densityAt` and `nexusesWithin`. Filtering the listing alone
+> would have left a density peak standing at a position the same network declines to call a nexus,
+> which is worse than the defect.
+>
+> **This costs nothing the design had not already priced.** The table above chose `nullRadius = 200`
+> from a *"worlds left with no nexus"* column that can only vary with the radius if nexuses inside
+> it do not count — so the 10.5% was already treated as lost. And it repays more than it costs:
+> with those crossings absorbed, **every nexus the network reports reads exactly 1.0**, so the
+> global reading of N6 is *restored* rather than conceded, and the concession in the paragraph above
+> no longer applies.
+>
+> Owned by `NullCoreResidueNetworkTest` (`everyNexus_isALocalMaximum`, `everyNexusReadsExactlyOne`)
+> and `NexusAbsorptionTest` in `:core`. The coupling between absorption and the density ramp is
+> enforced at construction: `NullCoreResidueNetwork` refuses a delegate whose core is unabsorbed,
+> and a test pins that the absorption radius reaches past the `nexusRadius / nexusWeight` threshold,
+> so a retune cannot silently reintroduce the broken band.
+
 ---
 
 ## 7. The Grand Convergence: an inert memory
@@ -408,7 +453,10 @@ with this spec, or the next reader inherits the contradiction.
 - **N1** — final crossing count against play data. Target `6×240` unchanged.
 - **N7** — the Z-filter regression hole. Untouched.
 - **N8** — downgraded, and `nullRadius = 200` keeps it closed at 0 of 500 seeds. Re-measure the
-  residual at the chosen parameters over a larger sample.
+  residual at the chosen parameters over a larger sample. *Amended 2026-08-30: the implementation
+  now matches the scan this figure came from. Absorption (§6) actually removes the inside-null
+  nexuses that the "worlds left with no nexus" column had already assumed were gone, so the residual
+  scan measures what ships rather than a stricter variant of it.*
 - **N9** — what happens at a cross-element crossing. Now affordable to answer (§8).
 - **N10** — is residue a regional feature by decision?
 - **N11** — the harvest and restoration economy. Its own spec.

@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 
 class CurrentGeometryTest {
 
-    private static final CurrentParameters PARAMS = new CurrentParameters(4, 50, 16.0, 0.35, 24.0);
+    private static final CurrentParameters PARAMS = new CurrentParameters(4, 50, 16.0, 0.35, 24.0, 0.3, 0.0);
     private static final ResourceId ELEMENT = ResourceId.of("test", "element");
 
     @Test
@@ -53,7 +53,7 @@ class CurrentGeometryTest {
 
     @Test
     void zeroJitter_producesStraightArms() {
-        CurrentParameters straight = new CurrentParameters(4, 20, 10.0, 0.0, 24.0);
+        CurrentParameters straight = new CurrentParameters(4, 20, 10.0, 0.0, 24.0, 0.3, 0.0);
         CurrentGeometry g = new CurrentGeometry(5L, ELEMENT, straight);
         for (List<WorldPoint2d> arm : g.arms()) {
             WorldPoint2d start = arm.get(0);

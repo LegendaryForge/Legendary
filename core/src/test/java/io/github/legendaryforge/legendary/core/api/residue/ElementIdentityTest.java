@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test;
  */
 class ElementIdentityTest {
 
-    private static final CurrentParameters PARAMS = new CurrentParameters(4, 80, 16.0, 0.35, 24.0);
+    private static final CurrentParameters PARAMS = new CurrentParameters(4, 80, 16.0, 0.35, 24.0, 0.3, 0.0);
     private static final long SEED = 20260827L;
 
     private static final ResourceId LIGHTNING = ResourceId.of("test", "lightning");

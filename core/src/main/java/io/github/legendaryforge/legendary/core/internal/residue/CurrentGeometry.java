@@ -23,6 +23,7 @@ final class CurrentGeometry {
 
     private final WorldPoint2d convergence;
     private final List<List<WorldPoint2d>> arms;
+    private final List<WorldPoint2d> crossings;
 
     CurrentGeometry(long worldSeed, ResourceId elementId, CurrentParameters parameters) {
         Objects.requireNonNull(elementId, "elementId");
@@ -42,6 +43,61 @@ final class CurrentGeometry {
             built.add(Collections.unmodifiableList(buildArm(elementSeed, headingOffset, parameters, arm)));
         }
         this.arms = Collections.unmodifiableList(built);
+        this.crossings = Collections.unmodifiableList(findCrossings(parameters.nexusAbsorptionRadius()));
+    }
+
+    /**
+     * Every proper self-crossing of the network, less those absorbed by the Grand Convergence.
+     *
+     * <p>Eager, not memoised. The crossing set is a pure function of the seed, element and
+     * parameters — it does not depend on any query — and {@code densityAt} now needs it, so every
+     * consumer pays for it regardless. Laziness would buy nothing except a thread-safety problem on
+     * a multithreaded server. Construction is O(segments squared).
+     *
+     * <p>Absorption is applied <strong>here</strong>, to the one list, rather than at either
+     * consumer. {@code densityAt} and {@code nexusesWithin} both read this field, so filtering it
+     * once is what makes it impossible for a density peak to stand at a position the same network
+     * declines to call a nexus. A filter applied at the listing alone would create exactly that
+     * inconsistency.
+     */
+    private List<WorldPoint2d> findCrossings(double absorptionRadius) {
+        List<WorldPoint2d> flat = new ArrayList<>();
+        for (List<WorldPoint2d> arm : arms) {
+            for (int i = 1; i < arm.size(); i++) {
+                flat.add(arm.get(i - 1));
+                flat.add(arm.get(i));
+            }
+        }
+        List<WorldPoint2d> found = new ArrayList<>();
+        for (int i = 0; i + 1 < flat.size(); i += 2) {
+            for (int j = i + 2; j + 1 < flat.size(); j += 2) {
+                WorldPoint2d hit = SegmentMath.intersection(flat.get(i), flat.get(i + 1), flat.get(j), flat.get(j + 1));
+                if (hit != null && !isAbsorbed(hit, absorptionRadius)) {
+                    found.add(hit);
+                }
+            }
+        }
+        return found;
+    }
+
+    /**
+     * Whether this crossing merges into the Grand Convergence rather than standing as its own nexus.
+     *
+     * <p>Arms leave the convergence only {@code 360/armCount} degrees apart and jitter bends them
+     * together before they separate, so the polyline crosses itself repeatedly on its way out. Those
+     * are one meeting resolved as several, and the convergence is already the zero-separation limit
+     * nexus they belong to.
+     */
+    private boolean isAbsorbed(WorldPoint2d hit, double absorptionRadius) {
+        if (absorptionRadius <= 0.0) {
+            return false;
+        }
+        return Math.hypot(hit.x() - convergence.x(), hit.z() - convergence.z()) < absorptionRadius;
+    }
+
+    /** Proper self-crossings of the network — the nexuses. Computed once, in the constructor. */
+    List<WorldPoint2d> crossings() {
+        return crossings;
     }
 
     private List<WorldPoint2d> buildArm(

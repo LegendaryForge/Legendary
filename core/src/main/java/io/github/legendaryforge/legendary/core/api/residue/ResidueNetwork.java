@@ -12,7 +12,13 @@ import java.util.Optional;
  */
 public interface ResidueNetwork {
 
-    /** Residue density in {@code [0,1]}: 1 on a current, falling to 0 at the influence radius. */
+    /**
+     * Residue density in {@code [0,1]}.
+     *
+     * <p><strong>1.0 only at a nexus</strong>; {@code 1 - nexusWeight} along ordinary current; 0
+     * beyond the influence radius. The range is unchanged deliberately — an additive bump would
+     * have pushed density above 1 and broken the documented interval.
+     */
     double densityAt(double x, double z);
 
     /**
