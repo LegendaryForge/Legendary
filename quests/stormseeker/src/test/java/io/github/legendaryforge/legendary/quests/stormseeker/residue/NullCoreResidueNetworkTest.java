@@ -14,31 +14,43 @@ import org.junit.jupiter.api.Test;
 /**
  * Owns the N6 interaction that the six-element design says nobody else owns.
  *
- * <p>N6 established that density is {@code 1.0} only at a nexus. Suppressing density inside the
- * null radius means nexuses there can no longer reach {@code 1.0} — so "walk uphill" must still
- * work even though "density 1.0 identifies a nexus" stops being globally true. That is a property
- * spanning two specs, and these tests are its only reviewer.
+ * <p>N6 established that density is {@code 1.0} only at a nexus. The design expected that
+ * suppressing density inside the null radius would cost the <em>global</em> reading of that — a
+ * nexus there could no longer reach 1.0 — while "walk uphill" survived because such a nexus
+ * "remains a local maximum". <strong>The second half was measured and found false</strong> for the
+ * innermost nexuses, so absorption replaced suppression for them: a crossing inside the null radius
+ * merges into the Grand Convergence instead of standing as its own nexus.
+ *
+ * <p>The result is stronger than the design asked for. Every nexus the network reports is a full
+ * peak, so the global reading of N6 is restored rather than conceded, and there is no band in which
+ * walking uphill fails.
  */
 class NullCoreResidueNetworkTest {
 
-    private static final CurrentParameters PARAMS = CurrentParameters.defaults();
+    /** Lightning's own parameters: the null core absorbs, so it must be built absorbing. */
+    private static final CurrentParameters PARAMS =
+            NullCoreResidueNetwork.lightningParameters(CurrentParameters.defaults());
+
+    /** The same current with an untouched core, for before/after comparison only. */
+    private static final CurrentParameters UNABSORBED = CurrentParameters.defaults();
+
     private static final ResourceId LIGHTNING = ResourceId.of("stormseeker", "lightning");
     private static final double R = NullCoreResidueNetwork.LIGHTNING_NULL_RADIUS;
     private static final double BOUND = 100_000.0;
 
-    private record Inside(long seed, ResidueNetwork net, WorldPoint2d nexus, double distance) {}
+    private record Near(long seed, ResidueNetwork net, WorldPoint2d nexus, double distance) {}
 
-    /** Every nexus that falls inside the null radius, across a seed sweep. */
-    private static List<Inside> nexusesInsideNullRadius(int seeds) {
-        List<Inside> found = new ArrayList<>();
+    /** Every nexus within {@code maxDistance} of the convergence, across a seed sweep. */
+    private static List<Near> nexusesNearConvergence(CurrentParameters params, int seeds, double maxDistance) {
+        List<Near> found = new ArrayList<>();
         for (long seed = 1; seed <= seeds; seed++) {
-            ResidueNetwork base = new DefaultResidueNetwork(seed, LIGHTNING, PARAMS);
-            ResidueNetwork net = NullCoreResidueNetwork.lightning(base);
+            ResidueNetwork base = new DefaultResidueNetwork(seed, LIGHTNING, params);
+            ResidueNetwork net = params.nexusAbsorptionRadius() > 0.0 ? NullCoreResidueNetwork.lightning(base) : base;
             WorldPoint2d c = net.grandConvergence();
             for (WorldPoint2d n : net.nexusesWithin(-BOUND, -BOUND, BOUND, BOUND)) {
                 double d = Math.hypot(n.x() - c.x(), n.z() - c.z());
-                if (d < R) {
-                    found.add(new Inside(seed, net, n, d));
+                if (d < maxDistance) {
+                    found.add(new Near(seed, net, n, d));
                 }
             }
         }
@@ -101,70 +113,97 @@ class NullCoreResidueNetworkTest {
     }
 
     @Test
-    void nexusesAreSuppressedNotDeleted() {
-        List<Inside> inside = nexusesInsideNullRadius(40);
-        assertFalse(inside.isEmpty(), "precondition: the sweep must find a nexus inside the null radius");
+    void nexusesInsideNullRadius_areAbsorbedIntoTheConvergence() {
+        // Non-vacuity first: without absorption this sweep finds nexuses in the null radius. An
+        // earlier version of this file's inner-band test passed against a sweep that happened to
+        // contain none, which is the failure this precondition exists to make impossible.
+        assertFalse(
+                nexusesNearConvergence(UNABSORBED, 40, R).isEmpty(),
+                "precondition: the unabsorbed current must put nexuses inside the null radius");
 
-        Inside first = inside.get(0);
         assertTrue(
-                first.net().densityAt(first.nexus().x(), first.nexus().z()) < 1.0,
-                "a nexus inside the null radius cannot reach 1.0 — the global N6 reading stops holding");
+                nexusesNearConvergence(PARAMS, 40, R).isEmpty(),
+                "every crossing inside the null radius merges into the Grand Convergence");
+    }
+
+    @Test
+    void absorptionDoesNotEmptyTheNetwork() {
+        List<Near> kept = nexusesNearConvergence(PARAMS, 40, BOUND);
+        assertFalse(kept.isEmpty(), "absorbing the core must leave the rest of the network intact");
     }
 
     /**
-     * The distance inside which suppression overwhelms the nexus peak.
+     * The distance inside which suppression would overwhelm the nexus peak — the reason absorption
+     * is necessary at all, and the reason it must reach at least this far.
      *
-     * <p>Derived, not fitted. Density is {@code (d/R) * base}. Stepping outward from a nexus,
-     * survival grows at {@code 1/R} while base falls at {@code nexusWeight / nexusRadius}, so
-     * density still <em>increases</em> while {@code base > d * nexusWeight / nexusRadius}. At a
-     * nexus {@code base == 1}, giving {@code d < nexusRadius / nexusWeight} — and note this
-     * threshold does not involve {@code nullRadius} at all.
+     * <p>Derived, not fitted. Density under suppression is {@code (d/R) * base}. Stepping outward
+     * from a nexus, survival grows at {@code 1/R} while base falls at
+     * {@code nexusWeight / nexusRadius}, so density still <em>increases</em> while
+     * {@code base > d * nexusWeight / nexusRadius}. At a nexus {@code base == 1}, giving
+     * {@code d < nexusRadius / nexusWeight} — and note this threshold does not involve
+     * {@code nullRadius} at all, which is why no retuning of the null radius could have fixed it.
      */
     private static final double PEAK_SURVIVES_BEYOND = PARAMS.nexusRadius() / PARAMS.nexusWeight();
 
+    /**
+     * The guard that keeps the fix correct under a retune. Absorption removes the broken band only
+     * while it reaches past the threshold above; raise {@code nexusWeight} or {@code influenceRadius}
+     * far enough and nexuses that are not local maxima reappear outside the absorbed core.
+     */
     @Test
-    void nexusesBeyondTheInnerBand_remainLocalMaxima() {
-        List<Inside> inside = nexusesInsideNullRadius(200);
-        List<Inside> outer = inside.stream()
-                .filter(i -> i.distance() >= PEAK_SURVIVES_BEYOND)
-                .toList();
-        assertFalse(outer.isEmpty(), "precondition: the sweep must find nexuses in the outer band");
-
-        List<String> failures = new ArrayList<>();
-        for (Inside i : outer) {
-            if (!isLocalMaximum(i.net(), i.nexus(), 1.0)) {
-                failures.add(String.format("seed %d, %.1f m", i.seed(), i.distance()));
-            }
-        }
-        assertTrue(failures.isEmpty(), "walk-uphill must still find these nexuses; failed for: " + failures);
+    void absorptionReachesPastTheThresholdWhereSuppressionBreaksThePeak() {
+        assertTrue(
+                R >= PEAK_SURVIVES_BEYOND,
+                "null radius " + R + " must cover the " + PEAK_SURVIVES_BEYOND
+                        + " m band in which a suppressed nexus is not a local maximum");
     }
 
     /**
-     * Pins the behaviour; does <strong>not</strong> bless it.
+     * The claim the six-element design assigned to this class, now true without a carve-out.
      *
-     * <p>The six-element design asserts that a nexus inside the null radius "remains a local
-     * maximum". Measured over 200 seeds, that is false for the innermost ones: 5 of 56 nexuses
-     * inside the null radius are not local maxima, all within 29.1 m of the convergence. Such a
-     * nexus cannot be found by walking uphill — the gradient leads away from it.
-     *
-     * <p>Left as measured rather than fixed, because every available fix is a design decision:
-     * suppress only the current term, drop these nexuses from {@code nexusesWithin} (which is what
-     * the design's own "10.5% of nexuses lost" accounting already implies), or accept the loss. At
-     * the shipped tuning this is roughly 1% of all nexuses.
+     * <p>Scoped to the band where survival varies, because beyond the null radius the property is
+     * plain N6 and {@code NexusPeakTest} in {@code :core} already owns it.
      */
     @Test
-    void nexusesVeryNearTheConvergence_areNotLocalMaxima() {
-        List<Inside> inside = nexusesInsideNullRadius(200);
-        List<Inside> inner =
-                inside.stream().filter(i -> i.distance() < PEAK_SURVIVES_BEYOND).toList();
-        assertFalse(inner.isEmpty(), "precondition: the sweep must find nexuses in the inner band");
+    void everyNexus_isALocalMaximum() {
+        List<Near> near = nexusesNearConvergence(PARAMS, 200, 2.0 * R);
+        assertFalse(near.isEmpty(), "precondition: the sweep must find nexuses near the convergence");
 
-        long broken = inner.stream()
-                .filter(i -> !isLocalMaximum(i.net(), i.nexus(), 1.0))
-                .count();
-        assertTrue(
-                broken > 0,
-                "expected the innermost nexuses to lose their peak; if this passes, the suppression "
-                        + "curve changed and the design's local-maximum claim may now hold outright");
+        List<String> failures = new ArrayList<>();
+        for (Near n : near) {
+            if (!isLocalMaximum(n.net(), n.nexus(), 1.0)) {
+                failures.add(String.format("seed %d, %.1f m", n.seed(), n.distance()));
+            }
+        }
+        assertTrue(failures.isEmpty(), "walk-uphill must find every nexus; failed for: " + failures);
+    }
+
+    /** The global reading of N6, restored rather than conceded. */
+    @Test
+    void everyNexusReadsExactlyOne() {
+        List<Near> near = nexusesNearConvergence(PARAMS, 40, 2.0 * R);
+        assertFalse(near.isEmpty(), "precondition: the sweep must find nexuses near the convergence");
+        for (Near n : near) {
+            assertEquals(1.0, n.net().densityAt(n.nexus().x(), n.nexus().z()), 1e-9, "seed " + n.seed());
+        }
+    }
+
+    /**
+     * The two halves of the wound are configured in different places, so the class refuses to be
+     * built half-configured rather than silently reintroducing the band it was written to remove.
+     */
+    @Test
+    void wrappingAnUnabsorbedDelegate_isRejected() {
+        long seed = firstSeedWithANexusInsideTheNullRadius();
+        ResidueNetwork unabsorbed = new DefaultResidueNetwork(seed, LIGHTNING, UNABSORBED);
+        IllegalArgumentException e =
+                assertThrows(IllegalArgumentException.class, () -> NullCoreResidueNetwork.lightning(unabsorbed));
+        assertTrue(e.getMessage().contains("withNexusAbsorptionRadius"), "the message must name the fix");
+    }
+
+    private static long firstSeedWithANexusInsideTheNullRadius() {
+        List<Near> found = nexusesNearConvergence(UNABSORBED, 40, R);
+        assertFalse(found.isEmpty(), "precondition: some seed must put a nexus inside the null radius");
+        return found.get(0).seed();
     }
 }
