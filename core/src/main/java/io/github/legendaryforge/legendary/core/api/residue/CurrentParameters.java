@@ -9,6 +9,8 @@ package io.github.legendaryforge.legendary.core.api.residue;
  * @param headingJitter maximum radians a heading may turn per step; 0 yields straight arms
  * @param influenceRadius world units beyond which density is 0 and flow is absent
  * @param nexusWeight share of density owned by nexus proximity; {@code 0 <= nexusWeight < 1}
+ * @param nexusAbsorptionRadius world units within which a crossing merges into the Grand
+ *     Convergence instead of counting as a nexus of its own; 0 absorbs nothing
  */
 public record CurrentParameters(
         int armCount,
@@ -16,7 +18,8 @@ public record CurrentParameters(
         double stepLength,
         double headingJitter,
         double influenceRadius,
-        double nexusWeight) {
+        double nexusWeight,
+        double nexusAbsorptionRadius) {
 
     public CurrentParameters {
         if (armCount <= 0) {
@@ -41,6 +44,13 @@ public record CurrentParameters(
         if (!(nexusWeight >= 0.0) || !(nexusWeight < 1.0)) {
             throw new IllegalArgumentException("nexusWeight must be in [0,1), got " + nexusWeight);
         }
+        // 0 is the element-neutral default and the identity: no crossing is absorbed. There is no
+        // upper bound to check, because absorbing every crossing is a legitimate configuration for
+        // a current that is meant to have no nexuses at all.
+        if (!(nexusAbsorptionRadius >= 0.0) || !Double.isFinite(nexusAbsorptionRadius)) {
+            throw new IllegalArgumentException(
+                    "nexusAbsorptionRadius must be non-negative and finite, got " + nexusAbsorptionRadius);
+        }
     }
 
     /**
@@ -57,11 +67,23 @@ public record CurrentParameters(
     }
 
     /**
+     * The same parameters with a different absorption radius.
+     *
+     * <p>Exists so a questline that suppresses density near the convergence can derive its
+     * parameters from a base set in one call, rather than restating the other six and risking a
+     * silent divergence between the suppressed network and the unsuppressed one it is compared to.
+     */
+    public CurrentParameters withNexusAbsorptionRadius(double radius) {
+        return new CurrentParameters(
+                armCount, stepsPerArm, stepLength, headingJitter, influenceRadius, nexusWeight, radius);
+    }
+
+    /**
      * Placeholder values that produce a visibly meandering, self-crossing network for tests and
      * development. These are NOT tuned content values — N1 of the design spec is explicit that the
      * real figure is set against play data, per element, in the questline module.
      */
     public static CurrentParameters defaults() {
-        return new CurrentParameters(4, 160, 16.0, 0.35, 24.0, 0.3);
+        return new CurrentParameters(4, 160, 16.0, 0.35, 24.0, 0.3, 0.0);
     }
 }

@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 class NexusPeakTest {
 
     private static final double WEIGHT = 0.3;
-    private static final CurrentParameters PARAMS = new CurrentParameters(4, 80, 16.0, 0.35, 24.0, WEIGHT);
+    private static final CurrentParameters PARAMS = new CurrentParameters(4, 80, 16.0, 0.35, 24.0, WEIGHT, 0.0);
     private static final ResourceId ELEMENT = ResourceId.of("test", "element");
     private static final long SEED = 1L;
     private static final double BOUND = 100_000.0;
@@ -102,7 +102,7 @@ class NexusPeakTest {
 
     @Test
     void nexusWeightZero_reproducesTheUnpeakedField() {
-        CurrentParameters flat = new CurrentParameters(4, 80, 16.0, 0.35, 24.0, 0.0);
+        CurrentParameters flat = new CurrentParameters(4, 80, 16.0, 0.35, 24.0, 0.0, 0.0);
         ResidueNetwork n = new DefaultResidueNetwork(SEED, ELEMENT, flat);
         List<WorldPoint2d> found = n.nexusesWithin(-BOUND, -BOUND, BOUND, BOUND);
         assertFalse(found.isEmpty(), "precondition: crossings still exist when the weight is zero");
@@ -116,7 +116,7 @@ class NexusPeakTest {
     @Test
     void networkWithNoCrossings_capsAtOneMinusNexusWeight() {
         // Zero jitter yields straight arms radiating from one point, which never cross.
-        CurrentParameters straight = new CurrentParameters(4, 80, 16.0, 0.0, 24.0, WEIGHT);
+        CurrentParameters straight = new CurrentParameters(4, 80, 16.0, 0.0, 24.0, WEIGHT, 0.0);
         ResidueNetwork n = new DefaultResidueNetwork(SEED, ELEMENT, straight);
 
         assertTrue(
