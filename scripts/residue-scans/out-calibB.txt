@@ -1,0 +1,65 @@
+=== N9 SCAN [calibration B] 6 elements x 6 arms x 240 steps | 40 seeds ===
+calibration: restore=0.010 maxPitch=0.50 pitchJitter=0.15 heightBand=96 influence=24
+VALIDATION crossing-height p5..p95: -192 .. 181  (spec reports -155 .. +158)
+
+1. SUPPLY — nexuses per world
+                                       median      p10      p90
+  same-element only (today)                63       49       75
+  all pairs, plan view (N9 ungated)       503      433      565
+  all pairs, |dy| < 12                     62       47       80
+  all pairs, |dy| < 24                     98       78      120
+  all pairs, |dy| < 48                    157      130      197
+  all pairs, |dy| < 96                    258      210      297
+  => N9 with the 24-gate is 1.56x today's supply
+
+2. GATE — worlds left with NO nexus (the completability check §4 raised)
+  |dy| < 12    : 0 of 40 (0.00%)
+  |dy| < 24    : 0 of 40 (0.00%)
+  |dy| < 48    : 0 of 40 (0.00%)
+  |dy| < 96    : 0 of 40 (0.00%)
+  |dy| median — cross-element 91.7, same-element 105.0
+  fraction of cross-element crossings under the 24 gate: 20.4%
+
+3. RATIO — under accumulation
+  the TWO crossing elements: n=3955  p10 0.500  median 0.506  p90 0.536  max 0.714
+    within 45-55% (effectively 1:1): 92.4%   >= 65% (about 2:1 or stronger): 1.0%
+  attenuate by EUCLIDEAN dist  p10 0.500  median 0.506  p90 0.536  max 0.714 | >=65%: 1.0%
+  attenuate by PATH LENGTH     p10 0.500  median 0.512  p90 0.699  max 0.959 | >=65%: 13.9%
+  dominant of ALL elements present: median 0.501  p90 0.529
+  elements present (>=5% share): median 2, p90 6, max 6
+
+4. RANGE — accumulated sums, for the normalisation decision
+  on an ordinary arm     median    2.32   p10    2.27   p90    2.34
+  at a gated nexus       median    4.66   p10    3.17   p90   13.24
+  at the convergence     median   47.91   p10   47.90   p90   47.93
+
+5. PILE-UP — elements threading one geode, by distance from the convergence
+  band                  n   median      max      >=3      >=4
+  0-100              1394        5        6    95.1%    80.7%
+  100-200             624        2        6    41.8%     8.0%
+  200-300             332        2        4    13.0%     1.5%
+  300-500             429        2        3     7.9%     0.0%
+  500-1000            715        2        3     5.2%     0.0%
+  1000-inf            461        2        3     0.9%     0.0%
+
+6. ABSORPTION — what a world-level absorption radius costs and buys
+  radius     nexuses/wd   vs today max elems       >=3       >=4
+  0                98.9      1.57x         6     43.1%     29.8%
+  100              64.0      1.02x         6     14.8%      2.1%
+  150              54.9      0.87x         4      9.0%      0.5%
+  200              48.4      0.77x         4      6.1%      0.3%
+  300              40.1      0.64x         3      4.7%      0.0%
+  400              33.8      0.54x         3      3.3%      0.0%
+  500              29.4      0.47x         3      3.5%      0.0%
+
+7. WILD DENSITY — nexuses per km^2 by distance from the convergence
+   (radial single-convergence model, NOT the N10 lattice)
+  band              today/km2 N9 gated/km2      ratio
+  0-200 m               52.12       401.47      7.70x
+  200-500 m             22.47        28.84      1.28x
+  500-1000 m             9.84         7.59      0.77x
+  1000-2000 m            1.75         1.12      0.64x
+  2000-3000 m            0.11         0.06      0.54x
+  3000-4000 m            0.00         0.00       NaNx
+
+SCAN_VERDICT: COMPLETE
