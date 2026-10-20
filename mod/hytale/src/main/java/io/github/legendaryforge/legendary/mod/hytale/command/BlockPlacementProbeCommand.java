@@ -89,11 +89,16 @@ public class BlockPlacementProbeCommand extends AbstractWorldCommand {
             sb.append("no connected player -- using headless fallback at x=0 z=0\n");
             Integer ground = null;
             int groundY = -1;
+            int unreadableHeights = 0;
             for (int y = 160; y >= 20; y--) {
                 Integer b = read(reader, 0, y, 0);
                 if (b == null) {
-                    sb.append("  getBlock THREW at y=").append(y).append(" -- column unreadable\n");
-                    break;
+                    // Not resident, not an error, and not necessarily the whole column -- a
+                    // section above the ground can be absent while the ground itself is loaded.
+                    // This used to say "THREW" and break, which was wrong on both counts once
+                    // reads became memory-only in 0.7.2.
+                    unreadableHeights++;
+                    continue;
                 }
                 if (b != 0) {
                     ground = b;
@@ -104,8 +109,13 @@ public class BlockPlacementProbeCommand extends AbstractWorldCommand {
             if (ground == null) {
                 sendText(
                         context,
-                        sb.append("  no solid block found in column x=0 z=0 (y 160..20);")
-                                .append(" chunk probably not loaded\n")
+                        sb.append("  no solid block found in column x=0 z=0 (y 160..20); ")
+                                .append(unreadableHeights)
+                                .append(" of 141 heights not resident")
+                                .append(
+                                        unreadableHeights > 0
+                                                ? " -- load the chunk first\n"
+                                                : " -- genuinely open sky\n")
                                 .toString());
                 return;
             }
@@ -186,8 +196,25 @@ public class BlockPlacementProbeCommand extends AbstractWorldCommand {
         sendText(context, sb.toString());
     }
 
+    /**
+     * Reads a block id, returning null when the position cannot be read.
+     *
+     * <p>The {@code hasStorageInMemory} guard is load-bearing and must not be removed as
+     * redundant. {@code SectionReader.getBlock} returns <strong>0 for a section that is not
+     * resident</strong> — it neither loads the section nor throws — so without this check an
+     * unloaded chunk is indistinguishable from air, and every caller here treats 0 as air.
+     * {@code hasStorageInMemory} consults the same {@code blockSectionAt()} lookup
+     * {@code getBlock} does, so the two cannot disagree.
+     *
+     * <p>This differs from the pre-0.7.2 {@code World.getBlock}, which loaded on demand. Caught by
+     * running /beamprobe on 2026-10-20: a headless column scan that found ground at y=107 in
+     * August reported "no ground" against an identical world.
+     */
     private Integer read(SectionReader reader, int x, int y, int z) {
         try {
+            if (!reader.hasStorageInMemory(x, y, z)) {
+                return null;
+            }
             return reader.getBlock(x, y, z);
         } catch (RuntimeException e) {
             return null;

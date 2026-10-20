@@ -363,8 +363,25 @@ public class PrefabPasteProbeCommand extends AbstractWorldCommand {
         return ids;
     }
 
+    /**
+     * Reads a block id, returning null when the position cannot be read.
+     *
+     * <p>The {@code hasStorageInMemory} guard is load-bearing and must not be removed as
+     * redundant. {@code SectionReader.getBlock} returns <strong>0 for a section that is not
+     * resident</strong> — it neither loads the section nor throws — so without this check an
+     * unloaded chunk is indistinguishable from air, and every caller here treats 0 as air.
+     * {@code hasStorageInMemory} consults the same {@code blockSectionAt()} lookup
+     * {@code getBlock} does, so the two cannot disagree.
+     *
+     * <p>This differs from the pre-0.7.2 {@code World.getBlock}, which loaded on demand. Caught by
+     * running /beamprobe on 2026-10-20: a headless column scan that found ground at y=107 in
+     * August reported "no ground" against an identical world.
+     */
     private Integer read(SectionReader reader, int x, int y, int z) {
         try {
+            if (!reader.hasStorageInMemory(x, y, z)) {
+                return null;
+            }
             return reader.getBlock(x, y, z);
         } catch (RuntimeException e) {
             return null;
