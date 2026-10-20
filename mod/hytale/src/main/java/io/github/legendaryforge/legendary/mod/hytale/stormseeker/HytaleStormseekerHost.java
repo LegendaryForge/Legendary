@@ -65,7 +65,7 @@ public final class HytaleStormseekerHost implements StormseekerHostRuntime {
                 if (ref == null || !ref.isValid()) {
                     continue;
                 }
-                TransformComponent transform = ref.getComponent(TransformComponent.getComponentType());
+                TransformComponent transform = ref.getComponentConcurrent(TransformComponent.getComponentType());
                 if (transform == null) {
                     continue;
                 }

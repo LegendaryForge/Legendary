@@ -17,9 +17,17 @@ public final class HytaleWeatherReader {
     /**
      * Returns the weather ID string for the player's current weather, or "unknown" if unavailable.
      */
+    /*
+     * getComponentConcurrent, not getComponent: 0.7.2 deprecated the latter. Its bytecode reads
+     * the `holder` field twice -- `getfield holder; ifnull; getfield holder` -- so a concurrent
+     * null between the check and the use is an NPE. The concurrent form reads each field once
+     * into a local, null-guards `entity` as well, and goes through Store.getComponentConcurrent.
+     * Same resolution order (holder first, then the entity's store); strictly safer. Do not
+     * "simplify" this back.
+     */
     public static String getWeatherId(PlayerRef playerRef) {
         try {
-            WeatherTracker tracker = playerRef.getComponent(WeatherTracker.getComponentType());
+            WeatherTracker tracker = playerRef.getComponentConcurrent(WeatherTracker.getComponentType());
             if (tracker == null) {
                 return "unknown";
             }
@@ -43,7 +51,7 @@ public final class HytaleWeatherReader {
      */
     public static int getWeatherIndex(PlayerRef playerRef) {
         try {
-            WeatherTracker tracker = playerRef.getComponent(WeatherTracker.getComponentType());
+            WeatherTracker tracker = playerRef.getComponentConcurrent(WeatherTracker.getComponentType());
             if (tracker == null) {
                 return -1;
             }

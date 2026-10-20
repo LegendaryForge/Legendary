@@ -75,7 +75,7 @@ public class StormseekerStartLineInteraction extends StartObjectiveInteraction {
             return;
         }
 
-        Player playerEntity = player.getComponent(Player.getComponentType());
+        Player playerEntity = player.getComponentConcurrent(Player.getComponentType());
         if (playerEntity == null) {
             return;
         }
