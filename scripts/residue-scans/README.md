@@ -25,17 +25,33 @@ Each run ends with `SCAN_VERDICT: COMPLETE`. **Read that line by name, not by po
 workspace has recorded five occasions where something appended output after a verdict and the reader
 saw the wrapper instead.
 
-## Why two calibrations, always
+## The calibration is now fixed — use `out-chosen.txt`
 
-The height profile in `2026-08-28-graded-nexuses-design.md` §3 uses `restore` and `maxPitch` and
-**states no value for either** — the document admits the gap itself. The two argument sets above
-bracket its reported `p5..p95` crossing-height span of −155..+158; neither reproduces it, so the
-true pair is a third value nobody wrote down.
+```bash
+java N9Scan.java 6 240 300 0.012 0.44 "chosen"    # → out-chosen.txt
+```
 
-Any `|Δy|`-derived figure is therefore calibration-dependent and must be reported for both until the
-height profile is implemented with its constants stated. Structural results — which mechanisms work,
-where the multi-element pile-up lives, that Euclidean attenuation cannot break the symmetry between
-two crossing arms — hold in both.
+**`restore = 0.012`, `maxPitch = 0.44`**, set 2026-10-20 **by decision**, because the original pair
+turned out to be unrecoverable. `out-calibA.txt` and `out-calibB.txt` are retained as the bracket
+that led there, not as live calibrations.
+
+Two reasons recovery failed, both established by sweeping this harness:
+
+1. **One observable, two parameters, flat ridge.** `restore` and `maxPitch` trade off, so six pairs
+   tie at the same error against the −155..+158 target and none reaches zero. Choosing on robustness
+   — interior of the ridge rather than a grid edge — is what picked `(0.012, 0.44)`.
+2. **The target came from a harness that no longer exists.** The −155..+158 span and the
+   −105..+107 / −200..+201 bracket all trace to `.scratch/n12-scan/`, which was **git-ignored and is
+   gone**. This harness is an independent reimplementation of the same unimplemented model and
+   disagrees by about 5%: A measures −102..100 here, B measures −189..186.
+
+> Note what that costs. Three numbers cited across three committed specs were produced by a
+> measurement git never tracked, and they cannot now be checked or re-derived. This directory exists
+> because of that lesson; see `Systems/Tooling/scratch_helpers_convention.md`.
+
+Structural results were never calibration-dependent and still hold — which mechanisms work, where
+the multi-element pile-up lives, and that Euclidean attenuation cannot break the symmetry between
+two crossing arms.
 
 ## Deliberately self-contained
 

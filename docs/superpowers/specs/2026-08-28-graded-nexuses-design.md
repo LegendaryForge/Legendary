@@ -57,13 +57,37 @@ pitch  = clamp(pitch, −maxPitch, +maxPitch)
 y     += sin(pitch) · stepLength
 ```
 
-> **Gap noted 2026-08-29.** The formula above uses `restore` and `maxPitch`, and neither is given a
-> value anywhere in this document — so the measurements in this section and in §7 **cannot be
-> reproduced** by a later reader. Re-deriving them was attempted: `restore 0.020 / maxPitch 0.35`
-> gives a p5–p95 crossing-height span of −105..+107 and `restore 0.010 / maxPitch 0.50` gives
-> −200..+201, bracketing the −155..+158 reported below. The true pair is unrecorded. State both
-> values when the height profile is implemented; until then treat every `|dy|` figure here as
-> calibration-dependent. Crossing **counts** and zero-crossing rates are unaffected — they are 2D.
+> **RESOLVED 2026-10-20 — by decision, not by recovery.** The calibration is
+> **`restore = 0.012`, `maxPitch = 0.44`**. Evidence: `scripts/residue-scans/out-chosen.txt`
+> (300 seeds), which measures a p5–p95 crossing-height span of **−157..154**.
+>
+> It is recorded as *chosen* because the original pair proved **unrecoverable**, for two independent
+> reasons established by sweeping `N9Scan.java`:
+>
+> 1. **The span cannot identify the pair.** `restore` and `maxPitch` trade off against each other —
+>    stronger restoring pull is compensated by steeper permitted pitch — so one observable constrains
+>    two parameters along a flat ridge. At 300 seeds, six distinct pairs tie at the same error
+>    against −155..+158: `(0.010, 0.40)`, `(0.010, 0.41)`, `(0.011, 0.43)`, `(0.012, 0.44)`,
+>    `(0.012, 0.45)`, `(0.013, 0.46)`. **Nothing reaches zero error.** It is a valley, not a minimum.
+> 2. **This document's own bracket figures do not reproduce.** `N9Scan.java` reproduces its committed
+>    outputs byte-for-byte, so it is deterministic and unchanged — but against it,
+>    `restore 0.020 / maxPitch 0.35` measures **−102..100**, not the −105..+107 claimed above, and
+>    `restore 0.010 / maxPitch 0.50` measures **−189..186**, not −200..+201. Both claims are wider
+>    than the harness produces and suspiciously symmetric where it is asymmetric. The figures in the
+>    superseded note came from an implementation that no longer exists, which means the −155..+158
+>    target does too.
+>
+> `(0.012, 0.44)` was selected on robustness: it sits in the **interior** of the ridge rather than on
+> a grid edge, so a small future implementation difference will not move the span far, and its mean
+> magnitude (155.5) is nearest the target's (156.5). Since all six candidates produce the same
+> observable, robustness is the only honest tiebreaker available.
+>
+> **State these values in `CurrentParameters` when the height profile is implemented.** Crossing
+> **counts** and zero-crossing rates were never affected — they are 2D.
+>
+> A caution for whoever reads the figures below: they were produced by the lost implementation and
+> **have not been re-measured** under the chosen calibration. Where this document and
+> `out-chosen.txt` disagree, the scan is the authority.
 
 `CurrentParameters` gains `pitchJitter` and `heightBand`. Measured across 300 seeds at
 `pitchJitter = 0.15`, `heightBand = 96`, current heights at crossings span roughly **−155 to +158**

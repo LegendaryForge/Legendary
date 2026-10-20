@@ -14,11 +14,13 @@ import com.hypixel.hytale.server.core.prefab.selection.buffer.PrefabBufferUtil;
 import com.hypixel.hytale.server.core.prefab.selection.buffer.impl.PrefabBuffer;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
+import com.hypixel.hytale.server.core.universe.world.accessor.SectionReader;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.PrefabUtil;
 import java.nio.file.Path;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import org.joml.Vector3d;
 import org.joml.Vector3i;
 
@@ -40,11 +42,21 @@ import org.joml.Vector3i;
  * <ul>
  *   <li><b>Plain</b> — the 8-arg overload the shipped {@code PastePrefabEffect} calls, with its
  *       {@code (1, 4)} arguments read from its bytecode. Expected to write nothing.
- *   <li><b>Region</b> — {@code loadPasteRegionAsync} first, awaited via
- *       {@code IWorldChunks.waitForFutureWithoutLock} (which exists precisely so the world thread
- *       can wait on its own futures without deadlocking), then the overload taking that
+ *   <li><b>Region</b> — {@code loadPasteRegionAsync} first, then the overload taking that
  *       {@code PasteRegion}.
  * </ul>
+ *
+ * <p><strong>Changed in 0.7.2 (Update 7 / Chapter I).</strong> {@code waitForFutureWithoutLock} —
+ * which existed precisely so the world thread could wait on its own futures without deadlocking —
+ * was <em>removed with no replacement</em>; a jar-wide search finds no reference to it and no
+ * successor. The engine composes instead, so this probe now does too: the three attempts run as a
+ * sequential {@link CompletableFuture} chain, each stage hopped back onto {@code world} (which is
+ * an {@link java.util.concurrent.Executor}) so pastes and snapshots stay on the world thread.
+ *
+ * <p>The practical consequence for a reader: <strong>{@code /prefabprobe} no longer prints when it
+ * returns.</strong> The command returns immediately and the report arrives as a later message. An
+ * empty console is a run in progress, not a failure — and if the chain stalls, the timeout prints a
+ * partial report rather than nothing at all.
  *
  * <p>If Region writes and Plain does not, remote placement is available and a structure can be
  * materialised anywhere. If neither writes, placement is bounded to loaded chunks and the design
@@ -73,6 +85,12 @@ public class PrefabPasteProbeCommand extends AbstractWorldCommand {
 
     private static final int PASTE_ARG_B = 4;
 
+    /** Matches the bound PrefabRemoveAction puts on the same call in the 0.7.2 jar. */
+    private static final int REGION_TIMEOUT_SECONDS = 30;
+
+    /** Six region awaits plus paste work; generous so a slow disk reports late, not never. */
+    private static final int CHAIN_TIMEOUT_SECONDS = 240;
+
     public PrefabPasteProbeCommand() {
         super("prefabprobe", "Compares plain vs PasteRegion prefab pasting far from any player");
     }
@@ -80,7 +98,7 @@ public class PrefabPasteProbeCommand extends AbstractWorldCommand {
     @Override
     protected void execute(CommandContext context, World world, Store<EntityStore> store) {
         StringBuilder sb = new StringBuilder();
-        sb.append("--- prefab paste probe (0.6.1) ---\n");
+        sb.append("--- prefab paste probe (0.7.2) ---\n");
 
         Vector3d origin = resolveOrigin(world, store, sb);
         if (origin == null) {
@@ -96,22 +114,70 @@ public class PrefabPasteProbeCommand extends AbstractWorldCommand {
         }
 
         String[] names = {FIRE_PILLAR, DRUID_CIRCLE};
+        int oy = (int) Math.floor(origin.y);
+
+        // Sequential async chain. REGION awaits a chunk-load future, so the whole run is now
+        // composed rather than executed inline -- see the 0.7.2 note in this class's Javadoc.
+        // Every stage is hopped back onto `world` (which is itself an Executor) because the paste
+        // and the snapshots must run on the world thread.
+        CompletableFuture<Void> chain = CompletableFuture.completedFuture(null);
         for (int i = 0; i < names.length; i++) {
-            PrefabBuffer buffer = load(prefabStore, names[i], sb);
-            if (buffer == null) {
-                continue;
-            }
-            int oy = (int) Math.floor(origin.y);
-            // Two sites, same distance band, neither touched by any earlier run.
-            attempt(world, store, sb, buffer, new Vector3i(FAR + 128 * i, oy, FAR + 128), "PLAIN ", "PLAIN");
-            attempt(world, store, sb, buffer, new Vector3i(FAR + 128 * i, oy, FAR + 192), "REGION", "REGION");
-            attempt(world, store, sb, buffer, new Vector3i(FAR + 128 * i, oy, FAR + 256), "LEGACY", "LEGACY");
+            final int idx = i;
+            chain = chain.thenComposeAsync(
+                    v -> {
+                        PrefabBuffer buffer = load(prefabStore, names[idx], sb);
+                        if (buffer == null) {
+                            return CompletableFuture.completedFuture(null);
+                        }
+                        // Two sites, same distance band, neither touched by any earlier run.
+                        return attempt(
+                                        world,
+                                        store,
+                                        sb,
+                                        buffer,
+                                        new Vector3i(FAR + 128 * idx, oy, FAR + 128),
+                                        "PLAIN ",
+                                        "PLAIN")
+                                .thenComposeAsync(
+                                        a -> attempt(
+                                                world,
+                                                store,
+                                                sb,
+                                                buffer,
+                                                new Vector3i(FAR + 128 * idx, oy, FAR + 192),
+                                                "REGION",
+                                                "REGION"),
+                                        world)
+                                .thenComposeAsync(
+                                        b -> attempt(
+                                                world,
+                                                store,
+                                                sb,
+                                                buffer,
+                                                new Vector3i(FAR + 128 * idx, oy, FAR + 256),
+                                                "LEGACY",
+                                                "LEGACY"),
+                                        world);
+                    },
+                    world);
         }
 
-        sendText(context, sb.toString());
+        chain.orTimeout(CHAIN_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                .whenCompleteAsync(
+                        (v, t) -> {
+                            if (t != null) {
+                                sb.append("\n!! chain did not complete: ")
+                                        .append(t.getClass().getSimpleName())
+                                        .append(": ")
+                                        .append(t.getMessage())
+                                        .append("\n");
+                            }
+                            sendText(context, sb.toString());
+                        },
+                        world);
     }
 
-    private void attempt(
+    private CompletableFuture<Void> attempt(
             World world,
             Store<EntityStore> store,
             StringBuilder sb,
@@ -142,26 +208,43 @@ public class PrefabPasteProbeCommand extends AbstractWorldCommand {
 
         try {
             if ("REGION".equals(mode)) {
-                CompletableFuture<PrefabUtil.PasteRegion> future = PrefabUtil.loadPasteRegionAsync(
-                        buffer.newAccess(), world, at, PrefabRotation.ROTATION_0, PASTE_ARG_B);
-                PrefabUtil.PasteRegion region = world.waitForFutureWithoutLock(future);
-                sb.append(" | region=").append(region == null ? "null" : "ok");
-                if (region == null) {
-                    sb.append("\n");
-                    return;
-                }
-                PrefabUtil.paste(
-                        buffer.newAccess(),
-                        world,
-                        at,
-                        Rotation.None,
-                        new Random(1L),
-                        PASTE_ARG_A,
-                        PASTE_ARG_B,
-                        region,
-                        PrefabUtil.NOOP_BLOCK_ENTITY_CONSUMER,
-                        PrefabUtil.NOOP_ENTITY_CONSUMER,
-                        store);
+                // 0.7.2 removed World.waitForFutureWithoutLock, which this probe used to block the
+                // world thread on its own chunk-load future. Nothing replaces it -- the engine
+                // composes instead. Pattern copied from PrefabRemoveAction: hop back onto `world`
+                // for the paste, with the same 30s bound it uses.
+                return PrefabUtil.loadPasteRegionAsync(
+                                buffer.newAccess(), world, at, PrefabRotation.ROTATION_0, PASTE_ARG_B)
+                        .orTimeout(REGION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                        .thenAcceptAsync(
+                                region -> {
+                                    sb.append(" | region=").append(region == null ? "null" : "ok");
+                                    if (region == null) {
+                                        sb.append("\n");
+                                        return;
+                                    }
+                                    PrefabUtil.paste(
+                                            buffer.newAccess(),
+                                            world,
+                                            at,
+                                            Rotation.None,
+                                            new Random(1L),
+                                            PASTE_ARG_A,
+                                            PASTE_ARG_B,
+                                            region,
+                                            PrefabUtil.NOOP_BLOCK_ENTITY_CONSUMER,
+                                            PrefabUtil.NOOP_ENTITY_CONSUMER,
+                                            store);
+                                    finish(world, sb, at, before);
+                                },
+                                world)
+                        .exceptionally(t -> {
+                            sb.append(" | THREW ")
+                                    .append(t.getClass().getSimpleName())
+                                    .append(": ")
+                                    .append(t.getMessage())
+                                    .append("\n");
+                            return null;
+                        });
             } else if ("LEGACY".equals(mode)) {
                 // The 6-arg overload every earlier run used, at a distance the 8-arg form handles
                 // fine. Isolates the overload as the variable, rather than distance or residency.
@@ -176,9 +259,15 @@ public class PrefabPasteProbeCommand extends AbstractWorldCommand {
                     .append(": ")
                     .append(e.getMessage())
                     .append("\n");
-            return;
+            return CompletableFuture.completedFuture(null);
         }
 
+        finish(world, sb, at, before);
+        return CompletableFuture.completedFuture(null);
+    }
+
+    /** Re-snapshots the box and reports how many cells differ from {@code before}. */
+    private void finish(World world, StringBuilder sb, Vector3i at, int[] before) {
         int[] after = snapshot(world, at);
         int changed = 0;
         for (int i = 0; i < before.length; i++) {
@@ -233,8 +322,9 @@ public class PrefabPasteProbeCommand extends AbstractWorldCommand {
             }
         }
         sb.append("no connected player -- headless fallback at x=0 z=0\n");
+        SectionReader reader = new SectionReader(world.getChunkStore());
         for (int y = 160; y >= 20; y--) {
-            Integer b = read(world, 0, y, 0);
+            Integer b = read(reader, 0, y, 0);
             if (b == null) {
                 break;
             }
@@ -255,13 +345,17 @@ public class PrefabPasteProbeCommand extends AbstractWorldCommand {
      * solid and a successful paste read as zero. Compare ids cell by cell instead.
      */
     private int[] snapshot(World world, Vector3i at) {
+        // Constructed per snapshot rather than cached on the command: a REGION attempt loads
+        // sections between the before- and after-reads, and a fresh reader removes any question
+        // about whether a cached one observes them.
+        SectionReader reader = new SectionReader(world.getChunkStore());
         int span = 2 * R_XZ + 1;
         int[] ids = new int[span * span * (Y_HI - Y_LO + 1)];
         int i = 0;
         for (int dx = -R_XZ; dx <= R_XZ; dx++) {
             for (int dz = -R_XZ; dz <= R_XZ; dz++) {
                 for (int dy = Y_LO; dy <= Y_HI; dy++) {
-                    Integer b = read(world, at.x + dx, at.y + dy, at.z + dz);
+                    Integer b = read(reader, at.x + dx, at.y + dy, at.z + dz);
                     ids[i++] = b == null ? -1 : b;
                 }
             }
@@ -269,9 +363,26 @@ public class PrefabPasteProbeCommand extends AbstractWorldCommand {
         return ids;
     }
 
-    private Integer read(World world, int x, int y, int z) {
+    /**
+     * Reads a block id, returning null when the position cannot be read.
+     *
+     * <p>The {@code hasStorageInMemory} guard is load-bearing and must not be removed as
+     * redundant. {@code SectionReader.getBlock} returns <strong>0 for a section that is not
+     * resident</strong> — it neither loads the section nor throws — so without this check an
+     * unloaded chunk is indistinguishable from air, and every caller here treats 0 as air.
+     * {@code hasStorageInMemory} consults the same {@code blockSectionAt()} lookup
+     * {@code getBlock} does, so the two cannot disagree.
+     *
+     * <p>This differs from the pre-0.7.2 {@code World.getBlock}, which loaded on demand. Caught by
+     * running /beamprobe on 2026-10-20: a headless column scan that found ground at y=107 in
+     * August reported "no ground" against an identical world.
+     */
+    private Integer read(SectionReader reader, int x, int y, int z) {
         try {
-            return world.getBlock(x, y, z);
+            if (!reader.hasStorageInMemory(x, y, z)) {
+                return null;
+            }
+            return reader.getBlock(x, y, z);
         } catch (RuntimeException e) {
             return null;
         }

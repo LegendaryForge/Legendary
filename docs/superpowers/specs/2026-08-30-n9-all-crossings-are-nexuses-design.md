@@ -266,29 +266,49 @@ unabsorbed — enforces this once absorption moves to `ResidueField`, and must m
 
 ---
 
-## 8. Blocker — the height calibration is unrecorded
+## 8. Blocker — RESOLVED 2026-10-20, and the answer changes two conclusions
 
-`2026-08-28-graded-nexuses-design.md` §3 gives the height-profile formula in terms of `restore` and
-`maxPitch` and **states no value for either**, a gap that document already admits:
+The height calibration is **`restore = 0.012`, `maxPitch = 0.44`**, fixed by decision because it
+proved unrecoverable. Full reasoning in `2026-08-28-graded-nexuses-design.md` §3; evidence in
+`scripts/residue-scans/out-chosen.txt` (300 seeds). The short version: the span is one observable
+against two trading-off parameters, six pairs tie at the same error, and this document's own bracket
+figures do not reproduce against the committed harness.
 
-> *"neither is given a value anywhere in this document — so the measurements in this section and in
-> §7 cannot be reproduced by a later reader."*
+The provisional table below is kept because the *measured* answer falls between its two columns and
+is more interesting than either:
 
-Under N9 that stops being a reproducibility annoyance and becomes **load-bearing for tuning.**
-Whether N9 delivers half again as many nexuses or slightly fewer than today depends entirely on
-which calibration is real:
+| absorption 150 | calib A (0.020 / 0.35) | calib B (0.010 / 0.50) | **chosen (0.012 / 0.44)** |
+|---|---|---|---|
+| supply vs today | 1.49x | 0.87x | **1.03x** |
 
-| absorption 150 | calib A (`restore` 0.020, `maxPitch` 0.35) | calib B (`restore` 0.010, `maxPitch` 0.50) |
+**N9 at absorption 150 is a wash.** Not half again as many nexuses, not slightly fewer — 64.1 per
+world against today's 62, which is inside run-to-run noise. The `|dy|` gate and world-level
+absorption together consume the entire gain that the ungated plan-view figure (494) suggests. §1's
+framing of "abundance is what pays for the gate" does not survive this: at absorption 150 there is
+no surplus left to pay with.
+
+**The wild-density decay is worse than §7 states**, and this is the more serious correction:
+
+| band | §7 reported | measured at chosen calibration |
 |---|---|---|
-| supply vs today | **1.49x** | **0.87x** |
+| 0–200 m | 8.2x | 8.15x |
+| 200–500 m | 1.8x | **1.41x** |
+| 1–2 km | 1.4x | **0.85x** |
 
-The two bracket the spec's reported `p5..p95` span of −155..+158 (A measures −102..98, B measures
-−192..181) and neither reproduces it, so the true pair is a third value.
+Beyond roughly 500 m N9 is **not a gain but a loss** — 0.88x at 500–1000 m and 0.85x at 1–2 km.
+The N10 "wild availability" problem is therefore strictly harder than this document claimed, and the
+claim that the 1.4x figure was a *lower bound* was wrong in the wrong direction.
 
-> **The height profile must be implemented, with both constants stated, before any N9 parameter is
-> tuned.** Every supply figure in this document is provisional until then. The structural results —
-> which mechanisms work, where the pile-up lives, that Euclidean attenuation cannot produce ratios —
-> hold in both calibrations and are not affected.
+> **What this unblocks and what it does not.** Numeric tuning may now proceed, in the stated order:
+> height profile implemented with these constants, then `ResidueField`, then parameters. What it does
+> **not** do is rescue the supply story — a world-level absorption radius of 150 and a 24-unit `|dy|`
+> gate cannot both stand if N9 is meant to increase supply. That is a design decision, not a tuning
+> one, and it is now the open question at the top of this document rather than the calibration.
+>
+> The structural results are unaffected and still hold: which mechanisms work, where the pile-up
+> lives, and that Euclidean attenuation cannot break the symmetry between two crossing arms
+> (confirmed again in `out-chosen.txt` §3 — Euclidean is identical to no attenuation to three
+> decimals, 0.506 median in both).
 
 ---
 

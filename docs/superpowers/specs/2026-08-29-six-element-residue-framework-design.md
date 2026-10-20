@@ -254,6 +254,20 @@ calibrations were run to bracket the spec's reported −155..+158 crossing-heigh
 
 Every structural conclusion holds in both.
 
+> **Superseded 2026-10-20 — and these two spans are the ones that could not be reproduced.** The
+> calibration is now fixed at `restore = 0.012`, `maxPitch = 0.44` (graded-nexus §3). Against the
+> committed `scripts/residue-scans/N9Scan.java`, A measures **−102..100** and B measures
+> **−189..186**, not the spans above.
+>
+> The reason is visible from here, and it is the useful part: this scan ran in
+> **`.scratch/n12-scan/`**, which was **git-ignored and no longer exists**, while `N9Scan.java` is an
+> *independent* reimplementation of the same designed-but-unimplemented height profile. Two
+> good-faith reconstructions of an unimplemented model disagree by ~5% on the span, and only one of
+> them survived — so the figures above cannot be re-derived and cannot be checked.
+>
+> This is the Scratch Helpers Convention earning its keep in the negative: the measurement that
+> produced three numbers cited across three committed specs lived in a directory git never tracked.
+
 **Nexuses cluster near the convergence, contrary to expectation.** Adjacent arms leave only 60°
 apart and `headingJitter` bends them together before they separate:
 
@@ -441,8 +455,10 @@ with this spec, or the next reader inherits the contradiction.
    up."* True of the six-element union, false for a per-element reader (§6).
 3. **`2026-08-28-residue-density-circle-peak-design.md` §9** derives `circleRadius: 12.0` from
    Elemental Circle beacon radii. That derivation does not survive the nexus/Circle split (§3).
-4. **`2026-08-28-graded-nexuses-design.md` §3** gives the height-profile formula without stating
-   `restore` or `maxPitch`, so its own measurements cannot be reproduced. Record the two values.
+4. ~~**`2026-08-28-graded-nexuses-design.md` §3** gives the height-profile formula without stating
+   `restore` or `maxPitch`, so its own measurements cannot be reproduced. Record the two values.~~
+   **RESOLVED 2026-10-20:** fixed at `restore = 0.012`, `maxPitch = 0.44` by decision, the original
+   pair being unrecoverable. See graded-nexus §3 and `scripts/residue-scans/out-chosen.txt`.
 5. **Everywhere the element list appears** as Earth/Fire/Frost/Poison/Sand/Storm, it is the monument
    set, not the essences (§2).
 
