@@ -11,6 +11,13 @@
 #   ./drive-blockspoofprobe-client.sh 1800
 set -uo pipefail
 
+# A write to the console FIFO after the server has exited raises SIGPIPE, which
+# terminates the shell outright -- so the driver died before printing either verdict
+# line. An absent verdict is a FAILURE, not a pass, and a driver that goes silent
+# exactly when the server dies early cannot report the case you most need reported.
+# Ignoring PIPE turns that into an ordinary failed write, which send_console handles.
+trap '' PIPE
+
 # The harness directory stays OUT of git: it holds auth.enc and generated
 # universe/ data. Only this driver is tracked. Override with HYTALE_TEST_SERVER.
 SERVER_DIR="${HYTALE_TEST_SERVER:-$(cd "$(dirname "$0")/../../.scratch/hytale-server" && pwd)}"
@@ -23,6 +30,7 @@ cd "$SERVER_DIR"
 GAME="$HOME/.var/app/com.hypixel.HytaleLauncher/data/Hytale/install/release/package/game/latest"
 JAVA="$HOME/.gradle/jdks/jetbrains_s_r_o_-25-amd64-linux.2/bin/java"
 HOLD_SECONDS="${1:-900}"
+PROBE_TIME="${HYTALE_PROBE_TIME-midday}"
 
 if ss -lun 2>/dev/null | grep -q ':5520'; then
   echo "  !! Something is already listening on 5520 -- probably a server you started by hand."
@@ -42,6 +50,16 @@ pid=$!
 exec 3>"$fifo"
 
 cleanup() { exec 3>&- 2>/dev/null; kill "$pid" 2>/dev/null; wait "$pid" 2>/dev/null; rm -f "$fifo"; }
+
+# Every console write goes through here. Returns non-zero rather than killing the
+# driver when the server is already gone, so the verdict lines below always print.
+send_console() {
+  if ! kill -0 "$pid" 2>/dev/null; then
+    echo "  (server already exited -- '$1' not sent)"
+    return 1
+  fi
+  echo "$1" >&3 2>/dev/null || { echo "  (console write failed -- server gone)"; return 1; }
+}
 
 auth_remedy() {
   echo ""
@@ -66,7 +84,7 @@ fi
 if grep -q -e 'Failed to restore session from stored credentials' \
            -e 'No valid OAuth tokens to create game session' "$out"; then
   auth_remedy
-  echo "stop" >&3; sleep 10; cleanup
+  send_console stop; sleep 10; cleanup
   echo "DRIVER_VERDICT: ABORTED (server auth unavailable -- client cannot join)"
   exit 1
 fi
@@ -87,7 +105,7 @@ echo "  JOINED=$joined after ${i}s"
 if [ "$refused" = yes ]; then
   echo "  A client reached the server and was REFUSED at login."
   auth_remedy
-  echo "stop" >&3; sleep 10; cleanup
+  send_console stop; sleep 10; cleanup
   echo "DRIVER_VERDICT: ABORTED (client refused: serverAuthUnavailable)"
   exit 1
 fi
@@ -95,15 +113,27 @@ fi
 if [ "$joined" != yes ]; then
   echo "  No player joined. Tests 4 and 5 would report SKIPPED and test 5 is the whole point,"
   echo "  so the probe was not run. Use drive-blockspoofprobe.sh for the headless subset."
-  echo "stop" >&3; sleep 15; cleanup
+  send_console stop; sleep 15; cleanup
   echo "DRIVER_VERDICT: ABORTED (no client)"
   exit 1
+fi
+
+# Daylight BEFORE the spoof, never after. Test 5 is a visual comparison of three
+# blocks, and `time set` re-rolls every environment's forecast -- which can trigger a
+# client relight and clear the illusion. On 2026-10-20 this was sent AFTER the probe:
+# the reading became ambiguous between "spoofing broke" and "the time change broke it",
+# and the run had to be re-fired. Ordering it here makes the lighting a reproducible
+# precondition rather than an ad-hoc console write. Set HYTALE_PROBE_TIME= (empty) to
+# leave the world clock alone, or to dusk/midnight/<hour> for a different condition.
+if [ -n "$PROBE_TIME" ]; then
+  send_console "time set $PROBE_TIME"
+  sleep 3
 fi
 
 # Let the join settle so the player's own chunks are resident -- the probe writes into
 # the section at the player's position and reports NOT_RESIDENT rather than guessing.
 sleep 6
-echo "blockspoofprobe" >&3
+send_console blockspoofprobe
 sleep 12
 
 echo ""
@@ -117,17 +147,22 @@ echo "  everything it can see. What matters is what YOU see."
 echo "  If the illusion is lost and you want it back, re-run this driver -- this"
 echo "  console is script-driven, so you cannot type into it yourself."
 echo "============================================================"
+held_full=yes
 for ((t=HOLD_SECONDS; t>0; t-=60)); do
   sleep $(( t < 60 ? t : 60 ))
-  kill -0 "$pid" 2>/dev/null || { echo "  server exited during hold"; break; }
+  kill -0 "$pid" 2>/dev/null || { echo "  server exited during hold"; held_full=no; break; }
   [ $((t-60)) -gt 0 ] && echo "  ... $((t-60))s left"
 done
 
-echo "stop" >&3
+send_console stop
 sleep 20
 cleanup
 
 echo ""
 grep -o 'BLOCK_SPOOF_VERDICT: [A-Z]*' "$out" | tail -1 \
   || echo "BLOCK_SPOOF_VERDICT: ABSENT (probe never printed -- that is a failure, not a pass)"
-echo "DRIVER_VERDICT: COMPLETE"
+if [ "$held_full" = yes ]; then
+  echo "DRIVER_VERDICT: COMPLETE"
+else
+  echo "DRIVER_VERDICT: COMPLETE (hold ended early -- server exited before the window closed)"
+fi
