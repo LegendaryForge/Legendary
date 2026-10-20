@@ -29,6 +29,8 @@ executing, not by reading.
 
 | Driver | Probe | Last run green | Against |
 |---|---|---|---|
+| `drive-blockspoofprobe-client.sh` | `/blockspoofprobe` | 2026-10-20 (partial) | 0.7.2 |
+| `drive-blockspoofprobe.sh` | `/blockspoofprobe` (headless subset) | 2026-10-20 | 0.7.2 |
 | `drive-weatheroverrideprobe-client.sh` | `/weatheroverrideprobe` | 2026-10-20 | 0.7.2 |
 | `drive-weatheroverrideprobe.sh` | `/weatheroverrideprobe` (headless; expects SKIPPED) | 2026-10-20 | 0.7.2 |
 | `drive-beamprobe.sh` | `/beamprobe` | 2026-10-20 | 0.7.2 |
@@ -52,7 +54,14 @@ Most probes answer headless. Two classes do not:
   accepted a beam; only a client can confirm it was drawn.
 
 `drive-weatheroverrideprobe-client.sh` waits for `Player joined:` and fires the
-probe itself, so there is no window to mistime. It fires from the **console**, not
+probe itself, so there is no window to mistime.
+
+`drive-blockspoofprobe-client.sh` is the exception to the fire-and-stop shape: it
+runs the probe and then **holds the server open** (default 900s, overridable as
+`$1`) because that probe's decisive test is a list of things only a human can
+observe — does the spoofed block render, does it survive a neighbour change, a
+chunk reload, a relog. Nothing is measured during the hold, and the probe says so
+rather than implying its silence is a result. It fires from the **console**, not
 chat: probe output runs to ~60 lines and `context.sendMessage` goes to whoever
 issued the command, which in a chat box is unreadable.
 
