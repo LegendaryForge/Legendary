@@ -9,7 +9,11 @@ import com.hypixel.hytale.server.core.command.system.CommandContext;
 import com.hypixel.hytale.server.core.command.system.basecommands.AbstractWorldCommand;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
+import com.hypixel.hytale.server.core.universe.world.SetBlockSettings;
 import com.hypixel.hytale.server.core.universe.world.World;
+import com.hypixel.hytale.server.core.universe.world.accessor.SectionReader;
+import com.hypixel.hytale.server.core.universe.world.chunk.BlockOperations;
+import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import org.joml.Vector3d;
 
@@ -26,12 +30,21 @@ import org.joml.Vector3d;
  * <p>The alternative path is worldgen, which is deferral #18 and blocked, so a negative result
  * here is a design constraint rather than a bug.
  *
- * <p>Written against 0.6.1 signatures read from the installed jar, NOT from
- * {@code docs/integration/hytale-capability-audit.md}, whose row for this capability names
- * {@code world.accessor.BlockAccessor} with {@code placeBlock} / {@code testPlaceBlock} and eight
- * {@code setBlock} overloads. That class does not exist in 0.6.1. The block API lives on
- * {@code IChunkAccessorSync}, which {@link World} implements, and it has two {@code setBlock}
- * overloads and no {@code placeBlock}.
+ * <p><strong>Rewritten for 0.7.2 (Update 7 / Chapter I).</strong> Every block accessor this probe
+ * used was removed from {@link World}, because cubic worlds made an unbounded Y range the norm and
+ * the flat {@code World.getBlock(x,y,z)} facade encoded a bounded column. Reads now go through
+ * {@code SectionReader}; writes go through the static {@code BlockOperations.setBlock}, reached via
+ * {@code ChunkStore.getChunkSectionReferenceAtBlock}. {@code IChunkAccessorSync}, named by the
+ * previous version of this comment, no longer exists.
+ *
+ * <p>The signatures here were read off the 0.7.2 jar and the argument shape off real engine call
+ * sites ({@code PlaceBlockEffect}, {@code ReplaceBlockTypeEffect}, {@code FallingBlock}), not from
+ * the Update 7 patch notes, which name a {@code ChunkStore.getChunkSectionReferenceAtBlock()} that
+ * is in fact declared one level up on {@code ChunkGrid}.
+ *
+ * <p>What this probe can no longer answer by itself: the old {@code breakBlock} produced drops and
+ * fired break effects. Removal is now an {@code EMPTY} write, which does neither -- so a GREEN
+ * result here proves placement and removal, and says nothing about harvesting.
  *
  * <p>Ids are shipped block items with an embedded {@code BlockType}, taken from
  * {@code Server/Item/Items/Rock/Crystal/}. Each reports independently so one bad id cannot be read
@@ -54,7 +67,8 @@ public class BlockPlacementProbeCommand extends AbstractWorldCommand {
     @Override
     protected void execute(CommandContext context, World world, Store<EntityStore> store) {
         StringBuilder sb = new StringBuilder();
-        sb.append("--- block placement probe (0.6.1) ---\n");
+        sb.append("--- block placement probe (0.7.2) ---\n");
+        SectionReader reader = new SectionReader(world.getChunkStore());
 
         Vector3d origin = null;
         for (PlayerRef playerRef : world.getPlayerRefs()) {
@@ -76,7 +90,7 @@ public class BlockPlacementProbeCommand extends AbstractWorldCommand {
             Integer ground = null;
             int groundY = -1;
             for (int y = 160; y >= 20; y--) {
-                Integer b = read(world, 0, y, 0);
+                Integer b = read(reader, 0, y, 0);
                 if (b == null) {
                     sb.append("  getBlock THREW at y=").append(y).append(" -- column unreadable\n");
                     break;
@@ -124,12 +138,13 @@ public class BlockPlacementProbeCommand extends AbstractWorldCommand {
                 int y = oy + dy;
                 sb.append(String.format("  (%d %d %d) ", x, y, z));
 
-                Integer before = read(world, x, y, z);
+                Integer before = read(reader, x, y, z);
                 sb.append("before=").append(before == null ? "THREW" : before);
 
                 String setErr = null;
+                Boolean setOk = null;
                 try {
-                    world.setBlock(x, y, z, id);
+                    setOk = place(world, x, y, z, id);
                 } catch (RuntimeException e) {
                     setErr = e.getClass().getSimpleName() + ": " + e.getMessage();
                 }
@@ -137,10 +152,11 @@ public class BlockPlacementProbeCommand extends AbstractWorldCommand {
                     sb.append(" | setBlock THREW ").append(setErr).append("\n");
                     continue;
                 }
+                sb.append(" | setBlock=").append(setOk);
 
-                Integer after = read(world, x, y, z);
+                Integer after = read(reader, x, y, z);
                 sb.append(" | after=").append(after == null ? "THREW" : after);
-                sb.append(" | type=").append(typeId(world, x, y, z));
+                sb.append(" | type=").append(typeId(reader, x, y, z));
                 boolean changed = before != null && after != null && !before.equals(after);
                 sb.append(changed ? " | CHANGED" : " | no-change");
                 sb.append("\n");
@@ -150,7 +166,7 @@ public class BlockPlacementProbeCommand extends AbstractWorldCommand {
         // Break the first placement and confirm the world reports it gone.
         int bx = (int) Math.floor(origin.x + radius);
         int bz = (int) Math.floor(origin.z);
-        sb.append("\nbreakBlock at (")
+        sb.append("\nremove (EMPTY write) at (")
                 .append(bx)
                 .append(" ")
                 .append(oy + 1)
@@ -158,8 +174,8 @@ public class BlockPlacementProbeCommand extends AbstractWorldCommand {
                 .append(bz)
                 .append("): ");
         try {
-            boolean broke = world.breakBlock(bx, oy + 1, bz, 0);
-            sb.append("returned ").append(broke).append(" | now=").append(read(world, bx, oy + 1, bz));
+            boolean broke = removeBlock(world, bx, oy + 1, bz);
+            sb.append("returned ").append(broke).append(" | now=").append(read(reader, bx, oy + 1, bz));
         } catch (RuntimeException e) {
             sb.append("THREW ")
                     .append(e.getClass().getSimpleName())
@@ -170,21 +186,56 @@ public class BlockPlacementProbeCommand extends AbstractWorldCommand {
         sendText(context, sb.toString());
     }
 
-    private Integer read(World world, int x, int y, int z) {
+    private Integer read(SectionReader reader, int x, int y, int z) {
         try {
-            return world.getBlock(x, y, z);
+            return reader.getBlock(x, y, z);
         } catch (RuntimeException e) {
             return null;
         }
     }
 
-    private String typeId(World world, int x, int y, int z) {
+    private String typeId(SectionReader reader, int x, int y, int z) {
         try {
-            BlockType type = world.getBlockType(x, y, z);
+            BlockType type = BlockType.getAssetMap().getAsset(reader.getBlock(x, y, z));
             return type == null ? "null" : String.valueOf(type.getId());
         } catch (RuntimeException e) {
             return "THREW " + e.getClass().getSimpleName();
         }
+    }
+
+    /** Places {@code id} at the position, returning what {@code BlockOperations} reports. */
+    private boolean place(World world, int x, int y, int z, String id) {
+        int blockId = BlockType.getAssetMap().getIndex(id);
+        BlockType type = blockId < 0 ? null : BlockType.getAssetMap().getAsset(blockId);
+        if (type == null) {
+            throw new IllegalArgumentException("unknown block id " + id);
+        }
+        return write(world, x, y, z, blockId, type);
+    }
+
+    /**
+     * Raw removal, NOT a harvest. The engine removes a block by writing {@code EMPTY} over it --
+     * see {@code ReplaceBlockTypeEffect} -- so no drops are produced and no break effects fire.
+     * {@code World.breakBlock}, which this replaces, is gone; the drop-producing path is
+     * {@code BlockHarvestUtils.performBlockBreak}, which needs an acting entity this probe has no
+     * reason to invent.
+     */
+    private boolean removeBlock(World world, int x, int y, int z) {
+        return write(world, x, y, z, BlockType.EMPTY_ID, BlockType.EMPTY);
+    }
+
+    private boolean write(World world, int x, int y, int z, int blockId, BlockType type) {
+        ChunkStore chunkStore = world.getChunkStore();
+        Ref<ChunkStore> sectionRef = chunkStore.getChunkSectionReferenceAtBlock(x, y, z);
+        if (sectionRef == null || !sectionRef.isValid()) {
+            throw new IllegalStateException("no loaded section at " + x + " " + y + " " + z);
+        }
+        // Argument shape read off PlaceBlockEffect / ReplaceBlockTypeEffect call sites in the
+        // 0.7.2 jar: (store, sectionRef, x, y, z, blockId, type, rotationIndex, ?, settings).
+        // The second-to-last int is 0 in every engine call site inspected and is NOT identified
+        // here -- it is passed as the engine passes it rather than given a name we cannot verify.
+        return BlockOperations.setBlock(
+                chunkStore, sectionRef, x, y, z, blockId, type, 0, 0, SetBlockSettings.PERFORM_BLOCK_UPDATE);
     }
 
     private void sendText(CommandContext context, String text) {

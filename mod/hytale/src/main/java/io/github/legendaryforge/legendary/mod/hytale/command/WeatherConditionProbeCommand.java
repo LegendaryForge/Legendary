@@ -3,6 +3,7 @@ package io.github.legendaryforge.legendary.mod.hytale.command;
 import com.hypixel.hytale.builtin.weather.resources.WeatherResource;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.math.util.MathUtil;
 import com.hypixel.hytale.protocol.FormattedMessage;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.asset.type.environment.config.Environment;
@@ -12,11 +13,11 @@ import com.hypixel.hytale.server.core.command.system.basecommands.AbstractWorldC
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
-import com.hypixel.hytale.server.core.universe.world.chunk.BlockChunk;
-import com.hypixel.hytale.server.core.universe.world.chunk.section.ChunkSection;
+import com.hypixel.hytale.server.core.universe.world.chunk.section.EnvironmentSection;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
+import org.joml.Vector3d;
 
 /**
  * Debug command: {@code /weatherprobe [--world=?]}
@@ -29,19 +30,29 @@ import it.unimi.dsi.fastutil.ints.Int2IntMap;
  *
  * <pre>
  *   sectionRef = transform.getSectionRef()             // false if null or invalid
- *   section    = chunkStore[sectionRef] as ChunkSection
- *   columnRef  = section.getChunkColumnReference()     // false if null or invalid
- *   env        = blockChunk.getEnvironment(pos)        // environment index at the MARKER's position
+ *   envSection = chunkStore[sectionRef] as EnvironmentSection
+ *   env        = envSection.get(floor(x), floor(y), floor(z))  // index at the MARKER's position
  *   index      = weatherResource.getWeatherIndexForEnvironment(env)
  *   return Arrays.binarySearch(weatherIndexes, index) >= 0
  * </pre>
  *
- * <p><strong>Changed in 0.6.1.</strong> The first hop was {@code transform.getChunkRef()} returning a
- * ref resolvable directly as a {@link BlockChunk}. 0.6.1 renamed it {@code getSectionRef()} and
- * inserted a {@link ChunkSection} between the two, so the ref must now be resolved as a section and
- * its {@code getChunkColumnReference()} followed to reach the {@code BlockChunk}. The rename alone
- * compiles; resolving the section ref as a {@code BlockChunk} would yield null and read as "player
- * is not in a loaded chunk" rather than as a mistake.
+ * <p><strong>Changed in 0.7.2 (Update 7 / Chapter I).</strong> The chain got <em>shorter</em>. The
+ * {@code ChunkSection} -> {@code getChunkColumnReference()} -> {@code BlockChunk} hops are gone;
+ * the section ref now resolves directly to an {@code EnvironmentSection}, read with floored integer
+ * coordinates rather than a {@code Vector3d}. {@code BlockChunk.getEnvironment(Vector3d)} was
+ * removed outright, so this one failed loudly at compile time rather than silently.
+ *
+ * <p>Re-derived from {@code WeatherTriggerCondition.isConditionMet} bytecode in the 0.7.2 jar, not
+ * from the previous version of this comment. Note that {@code SectionReader.getEnvironment(x,y,z)}
+ * would also return an environment index and is the ergonomic choice elsewhere — it is deliberately
+ * <em>not</em> used here, because this probe's only value is reproducing the condition's own path.
+ * A parallel path that agrees today can diverge later without anything failing.
+ *
+ * <p><strong>Changed in 0.6.1</strong> (retained as history). The first hop was
+ * {@code transform.getChunkRef()} returning a ref resolvable directly as a {@code BlockChunk}.
+ * 0.6.1 renamed it {@code getSectionRef()} and inserted a {@code ChunkSection} between the two.
+ * The rename alone compiled; resolving the section ref as a {@code BlockChunk} would yield null and
+ * read as "player is not in a loaded chunk" rather than as a mistake.
  *
  * <p>Two traps this exists to make visible. {@code environmentWeather} carries a
  * {@code defaultReturnValue} of {@link Integer#MIN_VALUE}, so an absent environment key yields a
@@ -135,27 +146,14 @@ public class WeatherConditionProbeCommand extends AbstractWorldCommand {
         }
 
         Store<ChunkStore> chunkStore = world.getChunkStore().getStore();
-        ChunkSection section = chunkStore.getComponent(sectionRef, ChunkSection.getComponentType());
-        if (section == null) {
-            sb.append("ChunkSection ABSENT\n");
+        EnvironmentSection envSection = chunkStore.getComponent(sectionRef, EnvironmentSection.getComponentType());
+        if (envSection == null) {
+            sb.append("EnvironmentSection ABSENT\n");
             return;
         }
 
-        Ref<ChunkStore> columnRef = section.getChunkColumnReference();
-        if (columnRef == null || !columnRef.isValid()) {
-            sb.append("columnRef ")
-                    .append(columnRef == null ? "null" : "INVALID")
-                    .append(" -- condition returns false here, before weather is consulted\n");
-            return;
-        }
-
-        BlockChunk chunk = chunkStore.getComponent(columnRef, BlockChunk.getComponentType());
-        if (chunk == null) {
-            sb.append("BlockChunk ABSENT\n");
-            return;
-        }
-
-        int env = chunk.getEnvironment(transform.getPosition());
+        Vector3d pos = transform.getPosition();
+        int env = envSection.get(MathUtil.floor(pos.x), MathUtil.floor(pos.y), MathUtil.floor(pos.z));
         int resolved = weather.getWeatherIndexForEnvironment(env);
         sb.append("env ").append(env).append(" (").append(environmentName(env)).append(") -> ");
         if (resolved == Integer.MIN_VALUE) {
