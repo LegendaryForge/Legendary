@@ -207,13 +207,83 @@ leyline question — they are labels on sound mechanics, not load-bearing world 
    under `Rain`, `Zone2_Sand_Storm` puts it under `Zone2`. Read tags, handle both shapes.
 2. Its javadoc claims storms are IDs containing `"storm"` **or `"thunder"`**; `isStorm()` checks
    only `"storm"`. `isThunderStorm()` does match `Zone2_Thunder_Storm`, so it works — **but only in
-   Zone 2**, which is a design constraint nobody wrote down, not a bug.
+   Zone 2**.
+
+   > **Corrected 2026-10-20: the Zone-2-only limit is our matcher, not the game.** This entry read
+   > "a design constraint nobody wrote down, not a bug." It is a bug, and it is defect #1 above
+   > wearing a different hat.
+   >
+   > **Thunder is produced by exactly one asset in the game**,
+   > `Server/Audio/AmbienceFX/Ambience/Global/Weather/Emit_Rainstorm_Thunder.json`, and it is gated
+   > on a **tag**, not a name:
+   >
+   > ```
+   > Conditions: WeatherTagPattern { Op: Equals, Tag: "Rain=Storm" }
+   >             Shelter: [Open, Partial, Sheltered]
+   > Sounds:     SFX_Global_Weather_Thunder, every 3–10s, radius 5–20
+   > ```
+   >
+   > Six storm-gated ambience assets exist; that is the only one carrying a sound event. So thunder
+   > follows `Rain=Storm`, which means **`Zone1_Storm` and `Zone4_Swamp_Storm` are thunderstorms
+   > too**:
+   >
+   > | Weather | Tags | `Rain=Storm` | Thunder |
+   > |---|---|---|---|
+   > | `Zone2_Thunder_Storm` | `Zone2:[Thunderstorm]`, `Rain:[Storm]` | yes | **yes** |
+   > | `Zone4_Swamp_Storm` | `Zone4:[Swamp,Storm]`, `Rain:[Storm]` | yes | **yes** |
+   > | `Zone1_Storm` | `Zone1:[]`, `Rain:[Storm]` | yes | **yes** |
+   > | `Zone3_Snow_Storm` | `Zone3:[]`, `Snow:[Storm]` | no | no — snow ambience only |
+   >
+   > **The `Zone2=Thunderstorm` tag is decorative.** The string "Thunderstorm" appears in exactly
+   > one of the 36,534 JSON assets in `Assets.zip` — the weather asset that defines it. Nothing
+   > consumes it. All three rain storms additionally share an identical
+   > `Particle: {SystemId: "Rain_Heavy", OvergroundOnly: true}`, so `Zone2_Thunder_Storm` differs
+   > from `Zone4_Swamp_Storm` only in sky/cloud/fog colour ramps and a tag no system reads.
+   >
+   > Thunder is **audio only** — no lightning entity (the capability audit found zero matching
+   > classes) and no flash field in any weather asset. The strike itself stays ours to supply, which
+   > is what §4b already assumed.
 
 **Re-examine the skip path against storm rarity.** `Zone1_Storm` carries `Weight: 1` against
 `Zone1_Sunny`'s `52`. Storms are ~1.5% of forecast rolls. A design where Phases 1→2→3 must
 complete "within a single storm" is gated on a rare event, and the skip path — walk onto a plate
 during any storm and attune — becomes the *likely* first contact rather than the exception. That
 was already the sharpest open design question; the weights make it sharper.
+
+> **Measured 2026-10-20 across all 134 shipped environments — rarity is a placement property, and
+> Zone 1 is the worst case in the game.** Share of hourly forecast rolls landing on a storm,
+> aggregated over each environment's 24 hourly `WeatherForecasts` blocks:
+>
+> | Environment | Storm share | Storm | Thunder (`Rain=Storm`) |
+> |---|---|---|---|
+> | `Env_Zone4_Crucible` | **50.0%** | `Zone4_Swamp_Storm` | **yes** |
+> | `Env_Zone3_Glacial_Henges` | **50.0%** | `Zone3_Snow_Storm` | no |
+> | `Env_Zone3_Glacial` | 15.0% | `Zone3_Snow_Storm` | no |
+> | `Env_Zone2` | 5.3% | `Zone2_Thunder_Storm` | yes |
+> | `Env_Zone2_Deserts`, `Zone2_Overground` | 2.5% | `Zone2_Sand_Storm` | yes |
+> | `Env_Zone1_Plains` | 1.6% | `Zone1_Storm` | yes |
+> | `Env_Zone1` | 1.4% | `Zone1_Storm` | yes |
+> | `Zone1_Overground` | 1.0% | `Zone1_Storm` | yes |
+>
+> Nine of 134 environments can roll a storm at all, and the 1.4% figure above confirms this entry's
+> ~1.5% estimate by a different route.
+>
+> **This changes the conclusion rather than reinforcing it.** The paragraph above treats rarity as
+> an argument for `setForcedWeather` ("a climax should probably not be hostage to a ~1.5% roll").
+> It need not be: `Env_Zone4_Crucible` is a **50%-per-hour thunderstorm** environment, so siting a
+> storm-gated beat there makes storms ordinary with **weather completely unmodified** — which keeps
+> §4b's locality property instead of trading it away.
+>
+> The irony worth recording: `Env_Zone3_Glacial_Henges` is a standing-stone biome
+> (`Boreal1_Henges` ships `_Dolmen`, `_Ruins`, `_Crystal`, `_Ice` assignments, plus a
+> `Portals_Henges` structure and a `PortalKey_Henges` item) and so fits the Circle imagery best of
+> any environment in the game — but it is the one 50% environment **without** thunder, being
+> `Snow=Storm`. Thunder-and-frequency is Crucible; circles-and-frequency is the henges. That is a
+> real trade and should be made deliberately rather than inherited from Zone 1 placement.
+>
+> Method note: computed from `Server/Environments/**/*.json` in `Assets.zip`, summing
+> `WeatherForecasts[hour][].Weight` per weather id over the per-hour total. Re-derive after any
+> launcher update — these are shipped asset weights and the game updates every 2–6 weeks.
 
 ---
 
