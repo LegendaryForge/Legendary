@@ -15,6 +15,7 @@ import io.github.legendaryforge.legendary.mod.hytale.command.StormseekerAdvanceC
 import io.github.legendaryforge.legendary.mod.hytale.command.StormseekerStatusCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.StormseekerTrialCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.WeatherConditionProbeCommand;
+import io.github.legendaryforge.legendary.mod.hytale.command.WeatherOverrideProbeCommand;
 import io.github.legendaryforge.legendary.mod.hytale.stormseeker.HytaleStormseekerHost;
 import io.github.legendaryforge.legendary.mod.hytale.stormseeker.StormseekerStartLineInteraction;
 import io.github.legendaryforge.legendary.mod.hytale.stormseeker.StormseekerTickSystem;
@@ -68,6 +69,7 @@ public class LegendaryHytalePlugin extends JavaPlugin {
         getCommandRegistry().registerCommand(new StormseekerAdvanceCommand(stormseekerHost));
         getCommandRegistry().registerCommand(new StormseekerTrialCommand(stormseekerHost));
         getCommandRegistry().registerCommand(new WeatherConditionProbeCommand());
+        getCommandRegistry().registerCommand(new WeatherOverrideProbeCommand());
         getCommandRegistry().registerCommand(new ResidueParticleProbeCommand());
         getCommandRegistry().registerCommand(new BlockPlacementProbeCommand());
         getCommandRegistry().registerCommand(new PrefabPasteProbeCommand());
