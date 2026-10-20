@@ -20,3 +20,8 @@ __pycache__/
 # scratch helpers live here, not /tmp, so they survive a reboot). Promote to
 # scripts/ with a commit once one is used in a second session.
 .scratch/
+
+# Superpowers plugin working state (brainstorm/, sdd/). Local tooling output,
+# not project content, and it has shown up untracked on every `git status`
+# since session 13.
+.superpowers/
