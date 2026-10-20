@@ -8,6 +8,7 @@ import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import io.github.legendaryforge.legendary.mod.hytale.command.BeamProbeCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.BlockPlacementProbeCommand;
+import io.github.legendaryforge.legendary.mod.hytale.command.PointStoreProbeCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.PrefabPasteProbeCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.ResidueParticleProbeCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.StormseekerAdvanceCommand;
@@ -71,10 +72,11 @@ public class LegendaryHytalePlugin extends JavaPlugin {
         getCommandRegistry().registerCommand(new BlockPlacementProbeCommand());
         getCommandRegistry().registerCommand(new PrefabPasteProbeCommand());
         getCommandRegistry().registerCommand(new BeamProbeCommand());
+        getCommandRegistry().registerCommand(new PointStoreProbeCommand());
         getLogger()
                 .atInfo()
                 .log(
-                        "Commands registered: /stormseeker, /ss-advance, /ss-trial, /weatherprobe, /residueprobe, /blockprobe, /prefabprobe, /beamprobe");
+                        "Commands registered: /stormseeker, /ss-advance, /ss-trial, /weatherprobe, /residueprobe, /blockprobe, /prefabprobe, /beamprobe, /pointprobe");
     }
 
     private void onPlayerConnect(PlayerConnectEvent event) {
