@@ -53,8 +53,39 @@ bash .scratch/hytale-server/run-server.sh
 ```
 
 `auth.enc` and `permissions.json` are kept deliberately — they carry cached server credentials and
-`hytale:Admin`, so **no `/auth login device` and no `/op` is needed**. A fresh server directory
-starts unprivileged, and the resulting permission refusal **reads exactly like a syntax error**.
+`hytale:Admin`, so no `/op` is needed. A fresh server directory starts unprivileged, and the
+resulting permission refusal **reads exactly like a syntax error**.
+
+> **`auth.enc` expires, and this paragraph used to say `/auth login device` was never needed.**
+> Corrected 2026-10-20. The server authenticates against Hytale's OAuth service **on its own
+> behalf**, and a stored *refresh* token has a finite life — the one written on 2026-08-29 was
+> rejected 52 days later with `invalid_grant` / *"The refresh token expired."* So the server boots,
+> binds the port, accepts the QUIC connection and validates the **client's** identity token, then
+> refuses the login with `client.general.disconnect.serverAuthUnavailable` because it has no session
+> token of its own to request an auth grant with.
+>
+> **The failure presents as the client's, and it is the server's.** From the client it is an
+> ordinary connection failure. The only places it is visible are `[OAuthClient] Token refresh
+> failed` near boot and `SEVERE [HandshakeHandler] Server session token not available` at each
+> login attempt.
+>
+> **It is invisible to a headless probe**, which is why it went unnoticed: server auth is consulted
+> only at a *client* login, so `/beamprobe` and `/pointprobe` both ran green that same day with the
+> identical two failure lines in their logs. The first probe needing a client is the first that can
+> see it.
+>
+> Remedy — run the server interactively (a FIFO-driven console cannot approve a browser code):
+>
+> ```
+> bash .scratch/hytale-server/run-server.sh
+> /auth login device     # approve the printed code in a browser
+> /auth status           # expect an authenticated session
+> stop
+> ```
+>
+> That rewrites `auth.enc` and persists until the next expiry.
+> `drive-weatheroverrideprobe-client.sh` now fails fast on this rather than waiting out its
+> join timeout.
 
 ### Boot flags that do not do what they look like
 
