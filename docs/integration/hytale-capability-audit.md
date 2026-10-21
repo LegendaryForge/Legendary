@@ -13,6 +13,15 @@
 > `2026.02.06-aa1b071c2` and lived only in the archived `LegendaryHytale` repository. Hytale
 > changed versioning scheme between that build and this one; treat the February audit as history.
 
+> **SUPERSEDED AS THE ENGINE REFERENCE — added 2026-10-21.** This audited `0.5.9` and has not been
+> re-run since; the game is now `0.7.2`, and §6's own *Re-audit checklist* was never executed for
+> `0.6.1` or `0.7.2`. At least one row (`BlockAccessor`) is known wrong for `0.6.1`.
+>
+> **New engine findings go to [`hytale-engine-api.md`](hytale-engine-api.md)**, a living per-row
+> reference with build stamps and evidence tiers. This document is retained as the `0.5.9` snapshot
+> and as the record of how the February unknowns were resolved — read it as history, and re-verify any
+> row before relying on it.
+
 ---
 
 ## Why this document exists

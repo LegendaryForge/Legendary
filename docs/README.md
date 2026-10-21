@@ -28,6 +28,7 @@ ships every 2–6 weeks. Re-verify by executing, not by reading, after any launc
 
 | Document | Verified against | What it is |
 |---|---|---|
+| [hytale-engine-api.md](integration/hytale-engine-api.md) | Server `0.7.2`, **living** | **The accreting engine API reference — start here.** Per-row build stamps and evidence tiers (measured / compiled / javap / asset). The other three integration docs are dated snapshots; this one is updated a row at a time. |
 | [hytale-status.md](integration/hytale-status.md) | Sources compiling in `mod/hytale/`, 2026-08-24 | Server API package structure and consumption. Written from imports that currently compile, not from JAR inspection. |
 | [hytale-asset-packs.md](integration/hytale-asset-packs.md) | Server `0.5.9`, by running | How a mod ships content as JSON. Verified with a probe plugin, not inferred from class names. |
 | [hytale-capability-audit.md](integration/hytale-capability-audit.md) | Server `0.5.9`, `javap` | Engine capability audit. **Unreliable per row** — signature inspection is a hypothesis; at least one row (`BlockAccessor`) is wrong for 0.6.1. |

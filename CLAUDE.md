@@ -213,6 +213,19 @@ guarantees a *new* module cannot go dark undeclared. **It does not detect Hytale
 That class of failure — the `Vector3d` package move that went unnoticed for ~6 months, the
 game auto-updating to a Java 25 jar — can only be caught by compiling against the real jar.
 
+**What we know about the engine goes in one place.** `docs/integration/hytale-engine-api.md` is the
+living API reference — per-row build stamps and evidence tiers (**measured** / **compiled** /
+**javap** / **asset**), updated a row at a time. Read it before investigating an engine capability,
+and add to it when you establish one. The other three `docs/integration/` files are dated snapshots:
+`hytale-capability-audit.md` is `0.5.9` with a known-wrong row and an un-run re-audit checklist, and
+`live-server-testing.md` is `0.6.1` operating notes.
+
+Created 2026-10-21 because engine findings had been accumulating **inside design specs and the lore
+brief** instead — surfaces that get superseded (four residue specs were bannered as superseded that
+same day) or that are stamped for a different purpose. An API fact outlives the design that
+discovered it, so it needs a home that is not that design. If you verify something about the engine
+while doing something else, that is the normal case and this is where it goes.
+
 **That observation point now exists, outside this repo.** `agent/health_check.py` has a
 `Hytale: API drift` row that runs `:mod:hytale:compileJava --no-daemon` on this machine at
 session-init (added 2026-08-24; ~6s cold, ~0.5s when the jar has not changed). Because
