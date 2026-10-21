@@ -17,7 +17,7 @@ import java.util.OptionalInt;
  * and environments, resolvable only through its own asset maps. Those ids are Hytale's, and a
  * module that cannot import Hytale cannot interpret them — so resolution happens in the adapter and
  * this port speaks already-resolved names. That also keeps the scoring rules readable as data
- * ({@code Fluid_Lava}, {@code Env_Zone4_Volcanoes}) rather than as magic numbers.
+ * ({@code Lava_Source}, {@code Env_Zone4_Volcanoes}) rather than as magic numbers.
  *
  * <p><strong>Everything is bounded to loaded chunks.</strong> §9 questions 1 and 2 of the terrain
  * derivation design resolved to "positionally readable, for loaded chunks only" — and a headless
@@ -36,7 +36,7 @@ public interface TerrainSample {
      */
     boolean isLoaded(int x, int y, int z);
 
-    /** Resolved fluid id at this position, e.g. {@code Fluid_Lava}; empty when none or unloaded. */
+    /** Resolved fluid id at this position, e.g. {@code Lava_Source}; empty when none or unloaded. */
     Optional<String> fluidAt(int x, int y, int z);
 
     /** Resolved environment id, e.g. {@code Env_Zone4_Volcanoes}; empty when unresolved or unloaded. */
