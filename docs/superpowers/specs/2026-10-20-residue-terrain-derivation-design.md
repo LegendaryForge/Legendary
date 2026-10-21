@@ -128,6 +128,60 @@ crossing detection is no longer what generates nexuses.
 emergent line-crossings become *bonus* nexuses, variable per world, the thing exploration rewards. The
 crossing mathematics already exists, so this costs nothing to retain.
 
+### How candidate sites are found — the lattice proposes, terrain disposes [proposed]
+
+"Place nexuses at terrain sites whose character matches an element" leaves open *how the sites are
+found*. Scanning the world for lava is the obvious reading and it is expensive — §9 question 6.
+
+**A jittered lattice generates the candidates; terrain scores, selects and types them.** Hash a
+candidate position per cell from `(worldSeed, cellX, cellZ)` with jitter, then examine a bounded
+neighbourhood of each candidate and ask what it is: lava nearby → Fire; river → Water; exposed height
+→ Wind; and so on. A candidate matching two elements is a mixed nexus. A candidate matching none
+yields nothing.
+
+This is worth stating explicitly because it is the salvaged half of a direction that was otherwise
+discarded. Before the terrain-derivation idea, the proposal on the table was a **lattice of
+convergences** — tile the single-convergence star so it covers an unbounded world. That was rejected
+as the wrong layer: it fixed the mechanism's reach while leaving residue an invisible mathematical
+field that would happily site a Fire nexus in a snowfield. But the lattice was never wrong as a
+*mechanism*, only as an *answer*, and demoting it from network-generator to **candidate-generator**
+keeps what it was good at:
+
+| property | contributed by |
+|---|---|
+| no region is empty by construction — the original extent problem | the lattice |
+| supply density, and therefore N8 completability | the lattice's cell size |
+| element coherence — a Fire nexus is where fire things are | the terrain |
+| legibility — the site explains itself to a player | the terrain |
+| bounded cost — score N candidates, do not scan a world | the lattice |
+
+Note what the lattice does **not** do here: it has no geometric role. Nothing grows from it, arms do
+not radiate from it, it is not a convergence. It only proposes locations. That distinction is the
+whole difference between this and the rejected version.
+
+**It also gives the cell size a referent**, which the discarded model's parameters never had. Cell
+size is "how far should a player walk between nexuses" — a play-feel question with an answer, rather
+than a free number fitted to a figure from a deleted harness.
+
+**Three honest consequences.**
+
+- **Candidates can come up empty**, which reintroduces supply variance — the thing placement was meant
+  to eliminate. Mitigations are a widening search radius per candidate, or a fallback element for
+  otherwise-unqualified sites, or accepting sparser coverage in homogeneous terrain. Undecided.
+- **The lattice becomes the mixed-nexus dial too.** How often a candidate's neighbourhood contains two
+  elements is a function of cell size against biome scale, so one parameter now controls both total
+  supply and mixed-nexus frequency. They may need decoupling.
+- **It does not resolve §9 questions 1 and 2.** Scoring still reads terrain, so whether that can
+  happen on demand or must happen at generation time is unchanged. What this bounds is the *cost* of
+  the read, not its availability.
+
+Determinism survives intact: the lattice is seed-hashed and the terrain is itself seed-determined, so
+the whole derivation is reproducible and identical for every player — which R1 requires.
+
+Worth checking before building: V2's own positions pipeline is exactly this shape
+(`SquareGrid2d → Jitter3d → Scaler → Offset`), so there may be machinery to reuse rather than
+reimplement. [jar]
+
 ---
 
 ## 5. Per-element derivation [proposed]
@@ -315,8 +369,10 @@ mathematics is wasted.
    loop being a window rather than a chore.
 5. **Roster decision.** Rune roster or essence roster. Cheap until questline #2, then not. Blocks §3,
    §5, and `:core`'s element identity.
-6. **Does placement need a terrain scan, and at what cost?** Finding "a lava site" means examining
-   terrain over an area. Generation-time makes this free; runtime does not.
+6. **Does placement need a terrain scan, and at what cost?** **Partly answered — see §4's
+   "lattice proposes, terrain disposes".** A jittered lattice bounds the work to scoring N candidate
+   neighbourhoods rather than scanning a world. What remains open is the empty-candidate case, and
+   whether cell size can control supply and mixed-nexus frequency independently.
 7. **Supply targets under placement.** N1's `6×240` and N8's `nullRadius` were fitted to the walk model
    and do not transfer.
 
