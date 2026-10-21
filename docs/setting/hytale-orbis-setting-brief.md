@@ -11,7 +11,19 @@
 > **[gap]** — something the game does *not* contain, verified by exhaustive search. These are
 > opportunities, and they are marked because a gap is a claim like any other.
 >
-> Compiled 2026-08-24 against game build 0.5.9.
+> Compiled 2026-08-24 against game build **0.5.9**. **Partially re-verified 2026-10-21 against
+> 0.7.2** — §3's magic hierarchy and vocabulary check were re-measured and corrected, and §6's
+> Elemental Circle gap was re-confirmed. **Everything else in this document is still 0.5.9-verified
+> and has not been audited against 0.7.2.**
+>
+> **An `[asset]` claim carries a build, and this document did not say so.** It opens by calling itself
+> "durable … it describes a fictional setting, not an API, so it decays slowly", and separates itself
+> from the fast-decaying capability audit. That split is right about the *fiction* and wrong about the
+> *verification*: the `[asset]` tier decays at the game's pace, and the game auto-updates without
+> notice. The cost was concrete — §3 asserted "There are no *runes*", true of 0.5.9 and false of 0.7.2,
+> which shipped an entire runestone system. A later design argued a roster against runes partly because
+> this document said runes did not exist. Read any untagged-as-re-verified `[asset]` or `[gap]` claim
+> below as *"true of 0.5.9"*, and re-measure before building on it.
 
 ---
 
@@ -94,7 +106,8 @@ Two things are packed in there: arcane sits *below* Avatar power, and its practi
 **Arcanists** are a named historical group who "once sought the aid of more industrial diggers to
 locate rich pockets deep underground" (`Rock_Gem_Emerald`) — they had a society and a labour market.
 
-**Essences** are the game's elemental substance system. Seven exist: [asset]
+**Essences** are the game's elemental substance system. **Six kinds, seven items** — Life ships a
+Concentrated variant: [asset, re-verified 0.7.2]
 
 | Essence | Item id |
 |---|---|
@@ -105,9 +118,73 @@ locate rich pockets deep underground" (`Rock_Gem_Emerald`) — they had a societ
 | Essence of the Void | `Ingredient_Void_Essence` |
 | Essence of Water | `Ingredient_Water_Essence` |
 
-**There is no Air or Wind essence.** [gap] Lightning is the storm element.
+**The essence *items* include no Air or Wind.** [gap, holds in 0.7.2] Lightning is the storm element
+among them. But do not read that as the world having no Wind element — it has one, and the gap is in the
+item roster rather than in the cosmology. See *"Four rosters"* below.
 
-Essence lore treats magic as something that *accumulates in living things*:
+#### Essence, element, rune — three layers, and the game defines the third itself
+
+**Corrected 2026-10-21.** This section used to end *"There are no **runes**"* [gap]. That was true of
+0.5.9 and is false of 0.7.2: `server.lang` now carries **54** occurrences of *rune*, an entire
+`Server/Item/Items/Rune/` tree, a crafting bench category *"Runestones"*, and a station called the
+**Runebinder's Lattice**. [asset, 0.7.2]
+
+The game supplies its own definition, and it is the most useful lore sentence found so far for this
+project:
+
+> *"Runebinders once sought to mimic Avatar powers through the use of Runes — a form of **harnessed
+> symbolical energy imprinted upon stone**."* — `customUI.abilityBenchIntro.bullet1` [asset, 0.7.2]
+
+Every word there places runes **below** essence:
+
+- ***symbolical*** — a rune signifies; it is not the thing it names. The wikis say the same
+  ("natural forces are *represented by* runes") but this is first-party.
+- ***harnessed*** — captured and directed, therefore derivative of something that existed first.
+- ***imprinted upon stone*** — an artifact somebody made.
+- ***sought to mimic Avatar powers*** — mortal craft imitating higher power, which is **exactly** the
+  framing §3 already records for the arcane arts (*"the closest mere mortals have ever come to achieving
+  Avatar powers. Had they mastered them sooner, perhaps they would not have been so easily swayed"*).
+  Runebinding is another instance of the hubris theme, not a separate magic system.
+
+So the hierarchy is:
+
+| Layer | What it is | Who owns it |
+|---|---|---|
+| **Essence** | world-substance — *"five magic essences that compose life on Orbis"* | Orbis / Gaia |
+| **Element** | the natural force it expresses | the world |
+| **Rune** | harnessed symbolical energy imprinted on stone, to mimic Avatar power | **mortals** |
+
+**For questline writing this is the useful part:** a rune is a thing a character *makes*, and making
+one is an act of imitation with a cautionary history attached. An essence is a thing the world *is*.
+A story about runes is a story about ambition; a story about essence is a story about place.
+
+#### Four rosters, no two identical
+
+The single most load-bearing fact in this section, and the reason a roster argument went wrong twice:
+**Hytale ships at least four overlapping elemental taxonomies.** [asset, 0.7.2]
+
+| Roster | Members | Keyed to |
+|---|---|---|
+| **Cosmological essences** | Fire, Water, Lightning, Wind, Earth | Gaia's five pearls — *"compose life on Orbis"* |
+| **Essence items** | Fire, Ice, Life, Lightning, Void, Water | what a player can carry |
+| **Ability elements** | Earth, Fire, Lightning, Water, Wind | `DamageCause` — exactly these five, verified exhaustively |
+| **Elemental Circles** | Earth, Fire, Frost, Poison, Sand | monument prefabs (§6) |
+
+No two are the same list. Poison and Sand are circles but not essences; Ice and Life are items but not
+cosmological; Wind and Earth are cosmological but not items. **So "which elements does Hytale have" has
+no single answer from the jar — only "keyed to what".** When the assets offer four answers, lore is the
+only thing that can adjudicate, which is why `CLAUDE.md` § "Lore first" puts it above the jar.
+
+For the residue network's use of this, see
+`../superpowers/specs/2026-10-20-residue-terrain-derivation-design.md` §3.
+
+Essence lore treats magic as something that *accumulates in living things* — and the drop tables agree,
+which makes this an economy and not only a theme. Essences come from creatures and crops, never from
+ground: Fire has **20** NPC drop tables (Emberwulf, Firesteel golem, Burnt and Incandescent skeletons,
+Magma slug/snail), Ice **12**, Void **12**, Life **1** plus 64 crop tables — and **Lightning has 1**
+while **Water has none at all**. [asset, 0.7.2] The full consequence for terrain-derived residue is
+worked through in `../superpowers/specs/2026-10-20-residue-terrain-derivation-design.md` §5
+*"Terrain is the first arrow of a two-arrow chain"*.
 
 > *"Even fish have a natural affinity for magic. As water filters through their gills, the
 > concentration grows."* — `Ingredient_Water_Essence`
@@ -116,10 +193,33 @@ Essence lore treats magic as something that *accumulates in living things*:
 > enough concentrations, perhaps it could even bring forth sentience where it was absent before."*
 > — `Ingredient_Life_Essence`
 
-**Vocabulary check.** Hytale does not use the words *leyline*, *resonator*, *sigil*, or *attune* —
-zero occurrences across 10,235 lines of `server.lang`. [gap] It does use: *crystal* (89), *storm*
-(45), *essence* (17), *arcane*/*arcanist* (3 each), *thunder* and *lightning* (2 each). There are
-no *runes*.
+**Vocabulary check — re-measured 2026-10-21 against 0.7.2.** `server.lang` is now **11,507** lines,
+up from 10,235, and two of the original verdicts have flipped. [asset, 0.7.2]
+
+| Word | 0.5.9 | 0.7.2 | |
+|---|---|---|---|
+| *leyline* | 0 | **0** | still ours to use |
+| *resonator* | 0 | **0** | still ours to use |
+| *attune* | 0 | **0** | still ours to use |
+| *sigil* | 0 | **2** | **taken** — `Ingredient_Enkindled_Resource` is the "Enkindled Sigil" |
+| *rune* | 0 | **54** | **taken** — the runestone system |
+| *crystal* | 89 | 85 | theirs |
+| *storm* | 45 | 46 | theirs |
+| *essence* | 17 | 11 | theirs |
+| *arcanist* | 3 | 5 | theirs |
+| *arcane* | 3 | 2 | theirs |
+| *lightning* | 2 | 4 | theirs |
+| *thunder* | 2 | 2 | theirs |
+
+**Three words remain unclaimed**, down from five. A `[gap]` on vocabulary is the fastest-decaying claim
+in this document, because each release can take a word, and nothing warns us — we find out by reading a
+design that used it.
+
+**One collision to watch, not yet a problem:** *lattice*. 0.7.2 names a player-facing station the
+**Runebinder's Lattice**, and the residue design's candidate generator is also called a lattice (that
+spec's §4, *"the lattice proposes, terrain disposes"*). Ours is internal geometry and theirs is a
+building, so nothing breaks today — but the word is no longer neutral, and any player-facing residue
+text should avoid it.
 
 ---
 
@@ -192,9 +292,17 @@ Elemental Circles are unique monuments where elementals gather. Shipped variants
 
 > **Earth** (whose prefabs are named *Druid_Circles*) · **Fire** · **Frost** · **Poison** · **Sand**
 
-**There is no Air, Thunder, or Storm circle.** [gap] The monument family exists, the naming
-convention exists, the spawn-beacon convention exists — and the storm element, alone among the
-elements with both an essence and a spirit, has no circle.
+**There is no Air, Thunder, or Storm circle.** [gap, **re-verified 2026-10-21 against 0.7.2** — the
+shipped variants are still exactly these five] The monument family exists, the naming convention exists,
+the spawn-beacon convention exists — and the storm element, alone among the elements with both an
+essence and a spirit, has no circle. Two releases on, it is still the mod's opening.
+
+**Note what this roster is, though.** Earth, Fire, Frost, Poison, Sand is the **fourth** of the four
+elemental taxonomies catalogued in §3, and the least cosmological of them: Poison and Sand are not
+essences in any sense, Frost stands where the cosmology puts Water, and Water, Lightning and Wind have
+no circle at all. So a Storm Circle would not be "completing the set" — there is no set. It would be
+asserting that the storm element deserves a monument, which is a claim the fiction has to earn rather
+than inherit.
 
 **Wind architecture already exists** to build one from: a full `Temple_Wind` decorative block set
 (candles, chandelier, chest, door with open/close animations), the `Furniture_Temple_Wind_Statue_Gaia`

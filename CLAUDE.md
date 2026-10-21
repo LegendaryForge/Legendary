@@ -241,7 +241,11 @@ Three corollaries, each of which has already been got wrong once:
 1. **A jar read can tell you a list exists. It cannot tell you the list answers your question.**
    `Server/Abilities/Elements/` ships exactly five files matching the five Gaia elements — and they are
    `{"DamageCause": "X"}` damage types. That corroboration was treated as settling a roster question and
-   it settled nothing. Asset agreement is necessary and nowhere near sufficient.
+   it settled nothing. Asset agreement is necessary and nowhere near sufficient. The sharpest form of
+   this: the game ships **four** overlapping elemental rosters and no two are the same list, so the jar
+   cannot answer *"which elements does Hytale have"* at all — only *"keyed to what"*. They are tabulated
+   in `docs/setting/hytale-orbis-setting-brief.md` §3 *"Four rosters, no two identical"*; read it before
+   any design keys to an element.
 2. **First-party lore outranks community wikis.** A concept-art title on Hytale.com or a `server.lang`
    description is primary; a fandom page restating it is a report, and wiki pages disagree in ways that
    change conclusions — `hytalewiki.org`'s Element page omits the essence framing entirely, which is

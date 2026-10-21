@@ -32,8 +32,16 @@ appeared anywhere in the Stormseeker documents. The prose in `archive/narrative.
 been applied as a ban on all text — stricter than the tradition it imitates. Hytale's own
 "archaeology" method is not text-free; it is **text placed in objects instead of quest logs**.
 
-The vocabulary was invented rather than canon-native. `leyline`, `resonator`, `sigil` and `attune`
-have **zero occurrences in `server.lang`**; `storm` has 45, `essence` 17, `spirit` 5.
+The vocabulary was invented rather than canon-native. `leyline`, `resonator` and `attune` have **zero
+occurrences in `server.lang`**; `storm` has 46, `essence` 11, `spirit` 8.
+
+> **Re-measured 2026-10-21 against build 0.7.2**, and one word changed sides. `sigil` **no longer has
+> zero occurrences** — 0.7.2 ships the *"Enkindled Sigil"* (`Ingredient_Enkindled_Resource`), so it is
+> now a **colliding** word rather than an invented one, which is a different and worse problem: an
+> invented word merely sounds foreign, a colliding one asserts a connection to content we do not
+> control. The counts above are the 0.7.2 figures (previously 45 / 17 / 5 against 0.5.9); the drift is
+> small and the conclusion unchanged. Vocabulary `[gap]` claims decay every release — see the table in
+> `../setting/hytale-orbis-setting-brief.md` §3.
 
 ### Phases → Acts
 
@@ -109,7 +117,8 @@ This reconciles three pieces of shipped canon that otherwise sit unconnected:
 - *"The elementals born from its lingering traces still wander the lands"* — they wander because
   there is nowhere to gather. They are not free spirits; they are **unhoused**.
 - **Storm alone has an essence and a spirit and no Elemental Circle.** Earth, Fire, Frost, Poison and
-  Sand all have one. Not an oversight in the world: a wound in it.
+  Sand all have one. Not an oversight in the world: a wound in it. **Re-verified 2026-10-21 against
+  0.7.2** — `Elemental_Circles/` still enumerates exactly those five, two releases on.
 
 It places Orbis's central theme — advanced civilisations, hubris, self-caused downfall — at the
 centre rather than in the set dressing.
@@ -227,6 +236,11 @@ You cannot rebuild what you do not understand. The storm has been saying the sam
   them before ever meeting this questline.
 - `Spirit_Thunder` matters here: it is the **only source of Essence of Lightning in the game**. The
   builders *harvested* the unhoused. The player needs another way to be given what they took.
+  **Independently confirmed 2026-10-21** by an exhaustive sweep of `Server/Drops/NPCs` on 0.7.2: of the
+  46 drop tables that yield an essence, Lightning appears in exactly **one** — `Drop_Spirit_Thunder` —
+  against 20 for Fire and 12 each for Ice and Void. The scarcity this act's whole premise rests on is
+  real, measured, and the most lopsided in the game. (Water has **zero** sources, which is a separate
+  oddity; see `../setting/hytale-orbis-setting-brief.md` §3.)
 
 **This act gates residue cores** (see *Materials*, Class C). Learning to read residue is what makes
 a core visible, so the one irreversible act in the questline becomes available only to a player who

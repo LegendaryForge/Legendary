@@ -118,7 +118,15 @@ of essence on first-party evidence alone.
 | **Shipped essence items** — 0.7.2 [jar] | ✓ | ✓ | ✓ | | | ✓ | ✓ | ✓ |
 | **`:core` today** | ✓ | ✓ | ✓ | | | ✓ | ✓ | ✓ |
 
-They overlap on **three**. So `:core` is not wrong by accident — it matches the shipped item roster
+They overlap on **three**. And these are only two of **four** overlapping elemental taxonomies the game
+ships — the ability `DamageCause` list (`Earth, Fire, Lightning, Water, Wind`, exhaustive across all
+shipped JSON) and the Elemental Circle monuments (`Earth, Fire, Frost, Poison, Sand`) are the other two,
+and no two of the four are the same list. All four are tabulated with what each is keyed to in
+`../../setting/hytale-orbis-setting-brief.md` §3 *"Four rosters, no two identical"*. **That is why this
+question was got wrong twice: the jar does not answer "which elements does Hytale have", only "keyed to
+what".**
+
+So `:core` is not wrong by accident — it matches the shipped item roster
 exactly. It diverges from the **cosmological** one, and the earlier "four right" figure came from
 comparing against the six *elements* (Void included) rather than the five *essences* (Void excluded,
 because Void is neither Gaia's nor native to Orbis).

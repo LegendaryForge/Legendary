@@ -1,5 +1,20 @@
 # The six-element residue framework — essences, nexuses, and the Lightning null
 
+> ## ⚠️ SUPERSEDED IN DIRECTION — read `2026-10-20-residue-terrain-derivation-design.md` first
+>
+> **Added 2026-10-21.** The status line below reads as current and is not. The direction changed in
+> discussion on 2026-10-20 and **nothing was retired**, so this document's own framing was the only
+> thing a reader saw. That is the exact failure this repo has recorded twice before: a stale
+> orientation doc front-loads a wrong model before anything can contradict it.
+>
+> **Specifically superseded:** the roster's **membership**, twice over. Its six elements came from the shipped essence *items* (Fire, Ice, Life, Lightning, Void, Water); the recommendation is now the **cosmological five** — Fire, Water, Lightning, Wind, Earth — with Void handled separately as an incursion. Its essence **vocabulary is vindicated**, not rejected: *essence* is the lore's own word for this layer and the API keeps it. Ice and Life retire; Wind and Earth arrive.
+>
+> **What is still good here:** the measurements, and the reasoning about why each choice was made.
+> Those are a record of how the design got where it is. The *conclusions* are superseded.
+>
+> It is kept rather than deleted because it is the record of what was believed and when. Do not build
+> on it without reading the newer document's §11, which lists exactly what survives.
+
 **Status: structure decided, numbers measured, capabilities verified.** This extends
 `2026-08-28-graded-nexuses-design.md` and `2026-08-28-residue-density-circle-peak-design.md`. It
 does not supersede either: the height profile, nexus grading by `|Δy|`, and the density-peak
