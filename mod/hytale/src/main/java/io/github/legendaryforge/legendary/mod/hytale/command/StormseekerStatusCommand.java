@@ -9,8 +9,11 @@ import com.hypixel.hytale.server.core.command.system.basecommands.AbstractPlayer
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import io.github.legendaryforge.legendary.core.api.weather.WeatherGate;
+import io.github.legendaryforge.legendary.core.api.weather.WeatherId;
+import io.github.legendaryforge.legendary.core.api.weather.WeatherKinds;
 import io.github.legendaryforge.legendary.mod.hytale.stormseeker.HytaleStormseekerHost;
-import io.github.legendaryforge.legendary.mod.hytale.stormseeker.HytaleWeatherReader;
+import io.github.legendaryforge.legendary.mod.hytale.weather.HytaleWeatherBackend;
 import io.github.legendaryforge.legendary.quests.stormseeker.quest.StormseekerProgress;
 import io.github.legendaryforge.legendary.quests.stormseeker.trial.flowing.FlowingTrialSessionStep;
 import io.github.legendaryforge.legendary.quests.stormseeker.trial.flowing.MotionSample;
@@ -23,10 +26,15 @@ import io.github.legendaryforge.legendary.quests.stormseeker.trial.flowing.Motio
 public class StormseekerStatusCommand extends AbstractPlayerCommand {
 
     private final HytaleStormseekerHost host;
+    private final WeatherGate weatherGate;
+    private final HytaleWeatherBackend weatherBackend;
 
-    public StormseekerStatusCommand(HytaleStormseekerHost host) {
+    public StormseekerStatusCommand(
+            HytaleStormseekerHost host, WeatherGate weatherGate, HytaleWeatherBackend weatherBackend) {
         super("stormseeker", "Shows Stormseeker quest debug info");
         this.host = host;
+        this.weatherGate = weatherGate;
+        this.weatherBackend = weatherBackend;
     }
 
     @Override
@@ -61,15 +69,17 @@ public class StormseekerStatusCommand extends AbstractPlayerCommand {
         }
 
         // Weather
-        String weatherId = HytaleWeatherReader.getWeatherId(playerRef);
-        int weatherIndex = HytaleWeatherReader.getWeatherIndex(playerRef);
-        boolean isStorm = HytaleWeatherReader.isStorm(playerRef);
+        // Through the port. The raw index comes from the adapter directly because core
+        // deliberately holds no asset-map ordinal -- it is debug output, not a contract.
+        var subject = new io.github.legendaryforge.legendary.core.api.questline.runtime.PlayerRef(playerId);
+        var weather = weatherGate.effective(subject);
         sb.append("Weather: ")
-                .append(weatherId)
+                .append(weather.map(WeatherId::value).orElse("unavailable"))
                 .append(" (index=")
-                .append(weatherIndex)
+                .append(weatherBackend.rawIndex(playerId))
                 .append(")");
-        sb.append(isStorm ? " [STORM]" : "").append("\n");
+        sb.append(weather.map(WeatherKinds::isStorm).orElse(false) ? " [STORM]" : "")
+                .append("\n");
 
         // Flowing Trial
         FlowingTrialSessionStep flowStep = host.lastFlowingStep(playerId);

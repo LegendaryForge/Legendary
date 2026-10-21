@@ -84,7 +84,8 @@ public class LegendaryHytalePlugin extends JavaPlugin {
         getEventRegistry().registerGlobal(PlayerDisconnectEvent.class, this::onPlayerDisconnect);
         getLogger().atInfo().log("Player event listeners registered.");
 
-        getCommandRegistry().registerCommand(new StormseekerStatusCommand(stormseekerHost));
+        getCommandRegistry()
+                .registerCommand(new StormseekerStatusCommand(stormseekerHost, weatherGate, weatherBackend));
         getCommandRegistry().registerCommand(new StormseekerAdvanceCommand(stormseekerHost));
         getCommandRegistry().registerCommand(new StormseekerTrialCommand(stormseekerHost));
         getCommandRegistry().registerCommand(new WeatherConditionProbeCommand());
