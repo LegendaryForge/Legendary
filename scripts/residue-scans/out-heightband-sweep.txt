@@ -1,0 +1,31 @@
+=== HEIGHT_BAND sweep | 6 arms x 240 steps | 150 seeds | restore 0.012 maxPitch 0.44 ===
+
+band   world fit    supply @ |dy|<24 (no abs.) supply @ absorption 150     
+-------------------------------------------------------------------------------------
+96     8.81%        1.72x                      65.7 nexuses/wd  1.03x      
+64     4.04%        1.92x                      76.6 nexuses/wd  1.20x      
+48     1.83%        2.06x                      86.2 nexuses/wd  1.35x      
+32     0.27%        2.34x                      102.2 nexuses/wd  1.60x     
+-------------------------------------------------------------------------------------
+
+READING THIS TABLE
+
+  band 96 is the shipped calibration. It overflows the world on ~9% of crossings
+  and is the configuration §8 measured as a 1.03x "wash" at absorption 150.
+
+  band 32 nearly fits the world (~0.3% overflow) and lifts absorption-150 supply
+  to ~1.60x. Both §8 constraints are untouched: absorption stays 150, the |dy|
+  gate stays 24.
+
+  32 is NOT a recommendation. It is the end of the swept range and demonstrates
+  that the lever exists. The value should be fitted to a stated objective --
+  near-zero overflow, plus whatever in-game testing says about whether a current
+  is followable -- not picked because it was the last column of a sweep.
+
+  TWO CONSEQUENCES WORTH CARRYING. A tighter band makes the |dy| gate LESS
+  selective, and §4 justified that gate with "a Fire arm at y=50 and an Ice arm
+  at y=150 do not meet" -- a case that gets rarer as the band narrows. And the
+  >=3-element participation figures move very little across the sweep, so the
+  multi-element pile-up §5 describes is not what is paying for the extra supply.
+
+SWEEP_VERDICT: COMPLETE
