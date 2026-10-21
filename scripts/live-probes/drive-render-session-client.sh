@@ -153,19 +153,39 @@ fi
 # result and prove nothing.
 sleep 8
 
-echo ""
-echo "  --- rank 3: /beamprobe (client attached) ---"
-echo "beamprobe" >&3
-sleep 12
+# ORDER MATTERS, AND THE FIRST VERSION GOT IT WRONG.
+#
+# /beamprobe spawns its holders with a 60s lifetime so it cleans up after itself.
+# The original ordering fired it FIRST, then ran both marker probes (~51s of
+# sequence), so the beams expired within seconds of the hold beginning -- i.e. the
+# 15-minute window that exists purely so a human can look at them did not overlap
+# their lifetime at all. On the first live run (2026-10-20) they were gone before
+# the operator could check, and the render answer was recovered only because they
+# had glanced east earlier by chance.
+#
+# So the marker probes go first: markers are PERSISTENT state on the player, so
+# nothing about them decays while the beams are being looked at. /beamprobe fires
+# LAST, immediately before the hold, giving its 60s the best overlap available.
+#
+# A 60s lifetime is still shorter than the hold. That is deliberate rather than
+# unfixed: raising it would leave holder entities in the world for the operator to
+# clean up, and the probe's self-cleaning property is worth more than a longer
+# look. Re-issue `beamprobe` on the console during the hold for another 60s.
 
 echo "  --- rank 4: /markerprobe (run 1 of 2 -- registers the provider) ---"
 echo "markerprobe" >&3
 sleep 12
 
-# The read-back. The provider needs at least one map tick to publish.
+# The read-back. The provider needs at least one map tick to publish. Measured:
+# run 1 reports contains=false, run 2 reports contains=true.
 echo "  --- rank 4: /markerprobe (run 2 of 2 -- publication read-back) ---"
 sleep 15
 echo "markerprobe" >&3
+sleep 12
+
+echo ""
+echo "  --- rank 3: /beamprobe (client attached, fired last -- 60s lifetime) ---"
+echo "beamprobe" >&3
 sleep 12
 
 cat <<EOF
@@ -174,23 +194,35 @@ cat <<EOF
   HOLDING THE SERVER OPEN FOR ${HOLD}s -- NOTHING IS MEASURED NOW.
   Everything below is a question only you can answer.
 
-  rank 3 -- beams (§8 open questions 2 and 3)
-    [ ] Do any beams DRAW?  Look near your spawn position; the probe
-        places them at small +x/+z offsets from where you stood.
+  rank 3 -- beams.  LOOK NOW: 60s LIFETIME, fired just before this.
+    [ ] Do any beams DRAW?  Look ~2 blocks +x of where you stood and
+        1 block up, spread about 8 blocks across z, running ~10 blocks
+        further east.
     [ ] The probe prints a holder VALID/null per test. A VALID holder
         with nothing drawn is a DIFFERENT failure from a null holder --
         report which one you see, per test name.
-    [ ] Does the force-loaded-chunk test still report null with you
-        connected?  If it now reports VALID, the headless result was an
-        artifact and §8 question 2 is closed.
+    [ ] Expired already?  Type \`beamprobe\` on the console for another 60s.
 
-  rank 4 -- map marker (§5.4)
+    ANSWERED 2026-10-20 (both, so these are regression checks now):
+      q2 -- spawn returning null in a force-loaded chunk was a HEADLESS
+            ARTIFACT. Client attached: 5 VALID / 0 null.
+      q3 -- beams DO render. The 'Basic' asset draws as a chain of blue
+            X billboards forming a line, not a smooth beam.
+
+  rank 4 -- map marker (§5.4).  No hurry: persistent player state.
     [ ] Open the world map. Is there a Campfire icon about 24 blocks
         +x of where you stood, named "Legendary marker probe"?
     [ ] It is deliberately a Campfire and deliberately NOT anything
         residue-shaped, so it cannot be confused with a real feature.
     [ ] If the server said revealed=true and no icon appears, that is
         the finding: the gate works and publication does not.
+
+    ANSWERED 2026-10-20: the marker renders, correctly named.
+
+  STILL OPEN, and this probe cannot answer it: /beamprobe renders only
+  the FIRST asset that resolves, which is 'Basic'. Chain, Fire and Rope
+  have never been seen. Which of the four reads as a residue CURRENT is
+  an aesthetic question needing all four drawn side by side.
 
   Type 'stop' is NOT needed -- this exits on its own.
   ============================================================
