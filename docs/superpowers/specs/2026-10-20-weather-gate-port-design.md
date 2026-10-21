@@ -89,6 +89,7 @@ the adapter.** The `0` sentinel is reported as a resolution *status*, not as a n
 | `WeatherGate` | interface | `effective(PlayerRef)`, `unoverridden(PlayerRef)`, both `Optional<WeatherId>` |
 | `PlayerWeatherController` | interface | `claim`, `release`, `holder`, `forget` |
 | `WeatherClaimResult` / `WeatherClaimStatus` | record + enum | follows `ActivationAttemptResult`/`Status` and `GateDecision` precedent, not a bare boolean |
+| `WeatherReleaseStatus` | `enum { RELEASED, NOT_HELD, REFUSED_NOT_OWNER, SUBJECT_UNAVAILABLE }` | release has its own outcomes; reusing claim statuses would read wrongly (`GRANTED` for a release) |
 | `WeatherKinds` | static predicates | `isStorm(WeatherId)`, `isThunderStorm(WeatherId)` |
 | `WeatherResolution` | `enum { OK, UNKNOWN, SENTINEL }` | how the adapter reports an id's resolution without exposing the ordinal |
 | `WeatherBackend` | interface, host-implemented | SPI; `api` is where host-implemented interfaces already live (`ActivePlayerProvider`) |
@@ -153,7 +154,9 @@ supports one override per player.
 | current owner equals `owner` | `UPDATED` |
 | current owner differs | `REFUSED_HELD` (names the holder) |
 
-`release(subject, owner)` refuses anyone but the recorded owner.
+`release(subject, owner)` returns a `WeatherReleaseStatus` and refuses anyone but the recorded
+owner. A release by the true owner whose subject has since lost its tracker still drops the registry
+entry, so a departed player cannot strand an owner.
 
 ### Why arbitration cannot be left to the engine
 
