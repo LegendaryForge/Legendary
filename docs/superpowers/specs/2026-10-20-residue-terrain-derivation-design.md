@@ -334,6 +334,14 @@ separates `CLASS_COLLIDES` from `CLASS_OPAQUE` — a walkable top distinct from 
 
 ### Terrain is the first arrow of a two-arrow chain
 
+> **⚠️ DECIDED 2026-10-21 — this subsection is no longer a proposal.** The upstream framing below was
+> adopted; see [`2026-10-21-residue-two-arrow-chain-decision.md`](2026-10-21-residue-two-arrow-chain-decision.md),
+> which is the authority on it. That document also records the outlier tension it accepts, and
+> **defers** the question of whether derivation keys on environment ids or terrain features — a
+> mechanism question this decision deliberately does not settle. The rest of §5, and the rest of this
+> document, remain PROPOSED.
+
+
 **The game does not put essence in the ground. It puts essence in living things.** Every shipped
 description locates it that way: Fire *"lingers in the creatures that dwell amid the desolated volcanic
 regions"*, Lightning's *"elementals born from its lingering traces still wander the lands"*, Water's
@@ -365,7 +373,7 @@ derivation will therefore site Lightning and Water residue across large regions 
 game places no essence creatures at all. Our field would be making a claim about the world that the
 world's own content does not corroborate, for two of the five roster members.
 
-**Proposed resolution: put residue upstream of the creatures rather than beside them.** [proposed]
+**Resolution: put residue upstream of the creatures rather than beside them.** [decided 2026-10-21]
 Residue is the **field**; essence items are what the field's creatures yield. Terrain shapes residue,
 residue explains why those creatures live there, creatures drop the items the player collects:
 
@@ -644,11 +652,14 @@ mathematics is wasted.
    authorise** — verified 2026-10-21: the roster is not in the code at all, `elementId` is an opaque
    `ResourceId`, and every construction is in a test. So this is a documentation and content decision
    with no code cost and **no deadline**; the "cheap until questline #2, then not" framing was wrong.
-   **Precondition added 2026-10-21:** settle §5's *"Terrain is the first arrow of a two-arrow chain"*
-   first. The game sources essence from creatures, not ground, and two roster members (Lightning, Water)
-   have almost no creature sourcing at all — so what the derived field *means* has to be decided before
-   the roster it is keyed to is baked into the API. It is a fiction decision, costs no mechanism change,
-   and is cheap now in exactly the way the roster is.
+   **Precondition DISCHARGED 2026-10-21** — §5's
+   *"Terrain is the first arrow of a two-arrow chain"* is decided (upstream framing adopted; see
+   [`2026-10-21-residue-two-arrow-chain-decision.md`](2026-10-21-residue-two-arrow-chain-decision.md)).
+   It had been added because the game sources essence from creatures, not ground, and two roster
+   members (Lightning, Water) have almost no creature sourcing at all — so what the derived field
+   *means* had to be fixed before the roster it is keyed to. That is now settled, which leaves the
+   roster decision unblocked and unchanged in character: documentation and content, no code cost, no
+   deadline.
 6. **Does placement need a terrain scan, and at what cost?** **Partly answered — see §4's
    "lattice proposes, terrain disposes".** A jittered lattice bounds the work to scoring N candidate
    neighbourhoods rather than scanning a world. What remains open is the empty-candidate case, and
