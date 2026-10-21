@@ -1,5 +1,20 @@
 # Residue as a network — currents, Circles, and the needle
 
+> ## ⚠️ SUPERSEDED IN DIRECTION — read `2026-10-20-residue-terrain-derivation-design.md` first
+>
+> **Added 2026-10-21.** The status line below reads as current and is not. The direction changed in
+> discussion on 2026-10-20 and **nothing was retired**, so this document's own framing was the only
+> thing a reader saw. That is the exact failure this repo has recorded twice before: a stale
+> orientation doc front-loads a wrong model before anything can contradict it.
+>
+> **Specifically superseded:** §2's single-convergence seeded-walk generation model. One convergence per world yields **zero nexuses beyond ~3 km** — measured, in `scripts/residue-scans/out-chosen.txt` §7 — so the convergence-star premise retires rather than being retuned.
+>
+> **What is still good here:** the measurements, and the reasoning about why each choice was made.
+> Those are a record of how the design got where it is. The *conclusions* are superseded.
+>
+> It is kept rather than deleted because it is the record of what was believed and when. Do not build
+> on it without reading the newer document's §11, which lists exactly what survives.
+
 **Status: structure decided, numbers open.** This supersedes the geometry of
 `2026-08-25-act-iii-residue-literacy-design.md` while keeping its principles. The open items at
 the end are tuning values, not unresolved structure — which is the difference between this

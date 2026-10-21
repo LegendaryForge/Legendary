@@ -44,7 +44,7 @@ ships every 2–6 weeks. Re-verify by executing, not by reading, after any launc
 
 | Document | What it is |
 |---|---|
-| [hytale-orbis-setting-brief.md](setting/hytale-orbis-setting-brief.md) | Orbis — enough of Hytale's world to write a questline *inside* it rather than beside it. Durable: it describes a fictional setting, not an API. |
+| [hytale-orbis-setting-brief.md](setting/hytale-orbis-setting-brief.md) | Orbis — enough of Hytale's world to write a questline *inside* it rather than beside it. The **fiction** is durable; its `[asset]` and `[gap]` verifications are **not** — they carry a build, and were taken against 0.5.9 (§3 and §6 re-verified against 0.7.2 on 2026-10-21). Re-measure before building on an unstamped claim. |
 
 ## Specs and plans (`superpowers/`)
 

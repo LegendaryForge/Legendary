@@ -1,5 +1,20 @@
 # N9 — all crossings are nexuses
 
+> ## ⚠️ SUPERSEDED IN DIRECTION — read `2026-10-20-residue-terrain-derivation-design.md` first
+>
+> **Added 2026-10-21.** The status line below reads as current and is not. The direction changed in
+> discussion on 2026-10-20 and **nothing was retired**, so this document's own framing was the only
+> thing a reader saw. That is the exact failure this repo has recorded twice before: a stale
+> orientation doc front-loads a wrong model before anything can contradict it.
+>
+> **Specifically superseded:** §1's crossing-as-nexus definition is demoted — nexuses are now placed at terrain sites and lines drawn between them, so a crossing is not what makes a nexus. §8's supply arithmetic and §10's wild-availability problem are both moot, since extent is no longer bounded. Its supply premise was already refuted by its own calibration.
+>
+> **What is still good here:** the measurements, and the reasoning about why each choice was made.
+> Those are a record of how the design got where it is. The *conclusions* are superseded.
+>
+> It is kept rather than deleted because it is the record of what was believed and when. Do not build
+> on it without reading the newer document's §11, which lists exactly what survives.
+
 **Status: decided 2026-08-30.** Closes N9, open since `2026-08-27-residue-network-design.md` §2
 excluded cross-element crossings *"until someone can name what happens at one."*
 
