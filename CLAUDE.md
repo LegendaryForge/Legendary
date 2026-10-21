@@ -334,8 +334,18 @@ Three facts from the new document that are easy to re-derive wrongly:
   Lightning, Void, Water). §3 of the new document recommends the **cosmological five** instead —
   Fire, Water, Lightning, Wind, Earth, with Void handled separately as an incursion — keeping the word
   *essence* and changing only the membership. **Recommended, not decided, not implemented.**
-  **Lightning is in every roster, so Stormseeker is unaffected.** Element identity is a `:core`
-  constructor argument with one consumer, so changing it is cheap until questline #2.
+  **Lightning is in every roster, so Stormseeker is unaffected.**
+- **The roster is NOT in `:core`, and this bullet said otherwise until 2026-10-21.** It read *"element
+  identity is a `:core` constructor argument with one consumer, so changing it is cheap until questline
+  #2"*, and the specs said the roster was *"baked into `:core`'s API"*. Verified by reading the code:
+  `elementId` is an opaque `ResourceId` — **no enum, no list, no validation, no default** — and every
+  `DefaultResidueNetwork(seed, elementId, params)` call in the repository is **in a test**. There are
+  **zero** production consumers, not one: `NullCoreResidueNetwork` in `quests/stormseeker` is a
+  decorator over an injected delegate and supplies no id. So the roster decision has **no code cost
+  and no deadline** — "cheap now, breaking after questline #2" was predicated on a roster that does
+  not exist in code. It is a documentation and future-content decision, and can be made whenever.
+  This is the heuristic two sections below applied to residue instead of the questline framework:
+  **grep the call sites; if the only callers are its own tests, it is a design, not a mechanism.**
 - **Void is an incursion, not a darkness.** Not native to Orbis, no reachable destination, modelled
   by the engine as a staged invasion event. A "Void = night and underground dark" idea was
   considered and **dropped**; do not re-propose it.

@@ -162,9 +162,34 @@ rather than the rune layer. The API keeps the word **essence**. Drop Ice and Lif
 **This does not affect Stormseeker.** Lightning is in the cosmological roster, the shipped roster, and
 the abilities tree. The questline under construction is untouched.
 
-**But it is cheap now and expensive later.** Element identity became a first-class constructor argument
-in `f8a26be`, so the roster is baked into `:core`'s API — with exactly one consumer today. N9 §9 already
-names this window: *"the last window before questline #2."*
+**It is cheap now, and it is cheap later too — this paragraph was wrong.** [measured 2026-10-21]
+
+It read: *"Element identity became a first-class constructor argument in `f8a26be`, so the roster is
+baked into `:core`'s API — with exactly one consumer today. N9 §9 already names this window: the last
+window before questline #2."* The first clause is true and **the inference from it is backwards**:
+making identity a *parameter* is the opposite of baking a roster in — it makes the roster the caller's
+business.
+
+Read off the code rather than recalled:
+
+- `elementId` is an opaque `ResourceId`. **No enum, no list, no validation, no default.** There is
+  nothing in `:core` that knows how many elements exist or what they are named.
+- **Every** `DefaultResidueNetwork(seed, elementId, params)` construction in the repository is **in a
+  test**, and the only element names in any source file are `ResourceId.of("test", "lightning"|"fire"|
+  "water")` inside `ElementIdentityTest`.
+- Production consumers: **zero**, not one. `NullCoreResidueNetwork` in `quests/stormseeker` is the only
+  production residue class outside `:core`, and it is a decorator over an injected `ResidueNetwork`
+  delegate — it never constructs one and never supplies an id.
+
+So the roster carries **no code cost and no deadline.** Nothing breaks whenever it is decided, before
+or after questline #2. That removes the urgency this section claimed, and it does not weaken the
+recommendation — it just means the recommendation can be adopted as documentation and content without
+an API change.
+
+**Why it went unnoticed:** `CLAUDE.md` already states the heuristic that would have caught it — *"before
+building on any extension point here, grep its call sites. If the only callers are its own tests, it is
+a design, not a mechanism."* It is written there about the questline framework. The residue network has
+the same shape, and nobody applied it.
 
 ### What the first version got wrong, and why it is worth recording
 
@@ -615,8 +640,10 @@ mathematics is wasted.
 5. **Roster decision.** **Narrowed 2026-10-21, not closed.** No longer "rune roster or essence
    roster" — that was a false pair (§3: runes are notation, not a taxonomy). The vocabulary is settled as
    *essence*; what remains is **which essence roster** — Gaia's cosmological five, or the six shipped as
-   items. §3 recommends the former and gives the mechanical reason. What is still open is the authorised
-   change to `:core`'s element identity. Cheap until questline #2, then not.
+   items. §3 recommends the former and gives the mechanical reason. **There is no `:core` change to
+   authorise** — verified 2026-10-21: the roster is not in the code at all, `elementId` is an opaque
+   `ResourceId`, and every construction is in a test. So this is a documentation and content decision
+   with no code cost and **no deadline**; the "cheap until questline #2, then not" framing was wrong.
    **Precondition added 2026-10-21:** settle §5's *"Terrain is the first arrow of a two-arrow chain"*
    first. The game sources essence from creatures, not ground, and two roster members (Lightning, Water)
    have almost no creature sourcing at all — so what the derived field *means* has to be decided before
