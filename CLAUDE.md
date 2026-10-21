@@ -4,58 +4,55 @@ This file orients Claude Code sessions working in the Hytale project tree. The
 workspace-level `~/Workspace/CLAUDE.md` covers the broader environment (MCP servers,
 agent loop, Observation Protocol, Deferral Discipline).
 
-> ## Launch Hytale sessions from this directory
+> ## One directory, and it is the repository root
 >
-> `~/Workspace/Projects/Hytale/Legendary` — the directory this file is in.
->
-> Claude Code auto-loads `CLAUDE.md` from the working directory and every **ancestor** of it.
-> A `CLAUDE.md` sitting in a *subdirectory* is **not** in context at session start. Measured
-> 2026-10-21 with a two-run probe, one variable changed: launched from a parent directory only
-> the parent's file was in context; launched from the child, both were.
->
-> **This file is nonetheless loaded from either directory**, because
-> `Projects/Hytale/CLAUDE.md` contains the line `@Legendary/CLAUDE.md` and a CLAUDE.md
-> **import** does reach a subdirectory even though auto-load will not. Probe-measured the same
-> day, one variable changed: with that line the child's token is in context, without it absent.
-> A second probe confirmed the loader **dedupes** — launched from here the file appears once,
-> not twice — so the import costs a correctly-launched session nothing.
->
-> **What a mislaunch still costs is git context, and only that.** Starting here points the
-> harness's git context at **this** repository; starting one level up points it at the
-> *workspace* repo, which every branch, commit, PR and merge instruction below would then be
-> wrong about. Read-only work is fine from either directory. The check is a command:
+> `~/Workspace/Projects/Hytale` — the directory this file is in, and the git repository root.
 >
 > ```bash
-> git rev-parse --show-toplevel     # must print …/Projects/Hytale/Legendary
+> git rev-parse --show-toplevel     # must print …/Projects/Hytale
 > ```
 >
-> **The stub's old guard is gone, and must not be reinstated.** It asked whether this file's H1
-> was in context — a sound signal while a mislaunch meant the file was absent, and a false
-> all-clear now that the import makes the heading present either way. A guard returning the
-> same answer in the good and bad cases is worse than none, which was the original failure here
-> in the opposite direction. The git toplevel replaced it because it still differs, and because
-> it is read off a command rather than introspected from the absence of something never seen.
+> **Until 2026-10-21 this was two directories, and that was the defect.** The repository sat at
+> `Projects/Hytale/Legendary` while `Projects/Hytale` — named after the project, and the directory
+> the operator's shell history actually held — resolved git to the *workspace* repo. Three
+> iterations of a launch guard were written, all on 2026-10-21, each improving detection; sessions
+> 19, 20 and 21 began from the wrong directory regardless, because every guard is read **after**
+> the wrong command has already run, and the wrong command lives in fish history where no document
+> can reach it. The fourth fix moved the repository instead, so the recalled command became correct
+> and the condition stopped existing.
+>
+> **Do not reintroduce a launch guard here.** There is nothing left to guard: the natural launch
+> directory and the repository root are the same path. A guard whose condition cannot occur is read
+> as a live hazard by the next session and costs it the time to disprove — which is the mistake the
+> third iteration made in the opposite direction. The `@Legendary/CLAUDE.md` import stub in the
+> parent directory is deleted for the same reason.
+>
+> Design: `docs/superpowers/specs/2026-10-21-hytale-git-context-structural-fix-design.md`.
 
-> **Until 2026-10-21 this file lived at `Projects/Hytale/CLAUDE.md` and was tracked by no
-> repository.** The workspace repo ignores `Projects/` wholesale (`.gitignore:11`) and
-> `Legendary` began one directory below, so the project's highest-traffic orientation document
-> sat in the gap between the two repos with no history, no diff and no recovery path — for the
-> two months it held load-bearing content, an `rm` or a bad edit would have been unrecoverable,
-> and `git status` in either enclosing repo reported a clean tree throughout. Filed as
-> the 2026-08-29 `#debt` entry in the vault's `GameDev/Hytale/Hytale_Observations.md`.
-> It is now versioned with the code it describes, so a guard added to `check` and the guards
-> table below can change in one commit.
+> **This file has been at `Projects/Hytale/CLAUDE.md` twice, and only the second time is safe.**
+> Before 2026-10-21 it sat at that exact path tracked by **no repository at all**: the workspace repo
+> ignores `Projects/` wholesale (`.gitignore:11`) and `Legendary` began one directory below, so the
+> project's highest-traffic orientation document fell into the gap between two repos with no history,
+> no diff and no recovery path. For the two months it held load-bearing content an `rm` or a bad edit
+> would have been unrecoverable, and `git status` in either enclosing repo reported a clean tree
+> throughout. Filed as the 2026-08-29 `#debt` entry in the vault's
+> `GameDev/Hytale/Hytale_Observations.md`.
+>
+> It is back at the same path and now tracked, because what moved was the **repository boundary**,
+> not the file. That is the distinction worth keeping: the path was never the problem, and relocating
+> the file (2026-10-21, PR #113) fixed the tracking while leaving the mislaunch untouched. Only
+> moving the boundary fixed both.
 
 ---
 
 ## Project overview
 
-**One repository, one Gradle multi-project build.** `Projects/Hytale/Legendary` is the
-sole active repository. **Trunk is `main`**; it is the only long-lived branch, and it is
-protected. Work happens on short-lived branches cut from `main` and deleted on merge.
+**One repository, one Gradle multi-project build.** `Projects/Hytale` is the sole active
+repository, and it is the repository root — see the section above. **Trunk is `main`**; it is
+the only long-lived branch, and it is protected. Work happens on short-lived branches cut from `main` and deleted on merge.
 
 ```
-Legendary/
+Hytale/
 ├── core/                 engine-agnostic foundation: primitives, encounter framework,
 │                         questline framework (SPI, registry, objectives, runtime seams)
 ├── quests/stormseeker/   one questline; depends on core and nothing else
@@ -100,9 +97,13 @@ feature branch, with `LegendaryCore` reaching `Legendary` through a vendored sub
 **None of that is true now.** The four other repos were absorbed into `Legendary` and are
 **archived (read-only) on GitHub**; the submodule and `vendor/` directory are deleted.
 
-Their **local working copies still sit under `Projects/Hytale/`** and are redundant with
-the monorepo. They are the only local copies of that history, so deleting them is an
-operator decision that has not been made. Do not read them as current state.
+Their **local working copies were deleted 2026-10-21** (operator decision, taken when the
+repository relocated — they could not remain as nested untracked repos inside a repository
+root). Everything in them was verified reachable from a remote first, with one exception:
+`LegendaryContent`'s `stash@{0}` belonged to no branch and was pushed nowhere, so it is
+preserved as a git bundle at
+`Knowledge/MainVault/GameDev/Hytale/legendarycontent-stash-2026-02-08.bundle` in the
+workspace repo — restored into a fresh repo and diffed before the deletion.
 
 Documents written before 2026-08-24 describe the five-repo world and are wrong about
 structure even where they remain useful about intent.
@@ -323,7 +324,7 @@ its own tests, it is a design, not a mechanism.
 
 ## Residue network: direction changed, old specs not retired
 
-**Read `Legendary/docs/superpowers/specs/2026-10-20-residue-terrain-derivation-design.md` before any
+**Read `docs/superpowers/specs/2026-10-20-residue-terrain-derivation-design.md` before any
 residue work.** The three committed residue specs (`2026-08-27-residue-network-design.md`,
 `2026-08-29-six-element-residue-framework-design.md`,
 `2026-08-30-n9-all-crossings-are-nexuses-design.md`) describe a **single-convergence seeded-walk**
@@ -397,7 +398,12 @@ building on it:
 
 ---
 
-*Last updated: 2026-10-21 (second change that day) — added § "Lore first" and corrected the
+*Last updated: 2026-10-21 (third change that day) — the repository moved from
+`Projects/Hytale/Legendary` to `Projects/Hytale`, so the launch directory and the repository root
+are the same path and the mislaunch condition no longer exists. The launch blockquote was deleted
+rather than reworded, the four archived working copies were deleted (one stash bundled first), and
+the History section's claim that they still exist locally was corrected. Earlier 2026-10-21 (second
+change that day) — added § "Lore first" and corrected the
 residue Roster bullet, which had argued the roster against runes and claimed the jar settled it
 without a lore source; both were wrong. Earlier 2026-10-21 — moved into this repository from `Projects/Hytale/CLAUDE.md`,
 where nothing version-controlled it; added the launch-directory section above, whose claim about
