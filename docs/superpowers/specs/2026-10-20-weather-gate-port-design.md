@@ -101,8 +101,12 @@ behaviour.
 
 | Type | Notes |
 |---|---|
-| `DefaultWeatherGate` | thin: delegates to the backend; exists so the id mapping has one home |
-| `DefaultPlayerWeatherController` | owns the claim registry and every rule below |
+| `OverrideRegistry` | owner **and** claimed weather per subject; shared by the gate and the controller |
+| `DefaultWeatherGate` | `effective` = registry's claim if held, else the backend's unoverridden |
+| `DefaultPlayerWeatherController` | the only writer to the registry; owns every rule below |
+
+The registry is shared because the engine has no override getter — see §6. Without it the gate
+cannot answer `effective()` at all.
 
 ### `mod/hytale/.../mod/hytale/weather/`
 
@@ -192,15 +196,52 @@ who may set the override.
 
 ```java
 boolean hasTracker(PlayerRef subject);
-Optional<WeatherId> effectiveWeather(PlayerRef subject);
 Optional<WeatherId> unoverriddenWeather(PlayerRef subject);
 WeatherResolution resolve(WeatherId weather);   // OK | UNKNOWN | SENTINEL
 boolean applyOverride(PlayerRef subject, WeatherId weather);
 boolean clearOverride(PlayerRef subject);
+void onTick(Object worldStore);                 // adapter-typed; see below
 ```
 
 `resolve` is what keeps the ordinal inside the adapter while still letting `core` reject the
 sentinel. No method on this interface mentions an index.
+
+### `effectiveWeather` was removed, because it cannot be implemented
+
+**This interface originally carried `effectiveWeather(PlayerRef)`. It was removed 2026-10-20 after
+`javap` and `/weatherportprobe` established that the adapter cannot answer it.**
+
+`WeatherTracker` exposes `setOverrideWeatherIndex` and `clearOverrideWeatherIndex` but **no
+getter**. The only readable per-player value is `getWeatherIndex()` — the send-log this port is
+already forbidden from using. `WeatherResource.getEffectiveWeatherIndex(int)` exists but is
+*world* effective weather (forced-or-environment), not per-player; that matches §5.1's bytecode
+note and does not help here.
+
+So **`WeatherGate.effective()` is computed by `core`**: the claimed `WeatherId` from the port's own
+registry if one is held, otherwise `unoverriddenWeather` from the backend. This is sound because
+the port owns every legitimate claim — it is blind only to a caller using the engine's unchecked
+setters directly, which is exactly what the port exists to prevent.
+
+**Consequence: the gate and the controller are not independent.** They share an `OverrideRegistry`
+holding owner *and* claimed weather per subject. The engine's missing getter makes `core`-side
+bookkeeping load-bearing for **reads**, not only for refusals — which strengthens the §2 argument
+for keeping arbitration in `core` rather than weakening it.
+
+### Why the SPI has `onTick`
+
+`resolveUnoverriddenWeatherIndex` needs a `WeatherResource`, a `TransformComponent` and a
+`ComponentAccessor<EntityStore>` — all reachable only from a `Store<EntityStore>`. **`PluginBase`
+and `JavaPlugin` expose no route to one**; `TickingSystem.tick(float, int, Store)` does. So the
+adapter is fed its store from the tick system and caches it.
+
+Measured by `/weatherportprobe` before being designed in: the `Store` is the **same instance**
+across invocations, still answers `getResource`, and the `WeatherResource` beside it is stable too.
+Verified within one boot and across two invocations; **not** verified across a world unload, which
+is the remaining way this could bite.
+
+`onTick` takes `Object` rather than `Store<EntityStore>` because `core` cannot name the engine type
+(`checkNoPlatformImports`). The adapter casts. This is the one place the port pays for the boundary,
+and it is confined to a single method the only implementer already types correctly.
 
 ---
 
@@ -248,6 +289,27 @@ assessment §5.1:
 | `PlayerRef.getReference()` is a cached, stable instance | adapter may re-derive the claimant `Ref` |
 | a stale owner cannot strand an override | `forget` covers only *our* registry, not the engine's |
 
+Added 2026-10-20 from `javap` plus `/weatherportprobe`, after three guessed signatures in an
+earlier draft of this document were all wrong:
+
+| Fact | Consequence here |
+|---|---|
+| `WeatherTracker` has **no** override getter | `effectiveWeather` removed from the SPI; the gate computes it (§6) |
+| `getEffectiveWeatherIndex(int)` is on `WeatherResource` and is world-scoped | does not serve a per-player read |
+| `resolveUnoverriddenWeatherIndex(WeatherResource, TransformComponent, ComponentAccessor)` | the adapter needs a `Store`, hence `onTick` (§6) |
+| `WeatherTracker.getEnvironmentId()` — not `getEnvironmentIndex()` | corrected call name |
+| `PluginBase`/`JavaPlugin` expose no `Store` | the store must come from the tick system |
+| `Store` and `WeatherResource` are the same instance across invocations | the adapter may cache both |
+| `IndexedLookupTableAssetMap.getIndex(missing)` returns `Integer.MIN_VALUE` | `UNKNOWN` is distinguishable from `SENTINEL`, so `resolve` works as designed |
+| index 0 holds a real asset whose id is `"Unknown"`, and it round-trips | a caller passing `WeatherId("Unknown")` correctly resolves to `SENTINEL` |
+| `getIndex(K)` exists | no linear scan over the asset map |
+
+**Still unverified, and it needs a client:** that no public read path returns a claimed override
+index, that `resolveUnoverriddenWeatherIndex` is unaffected by an active override, and that the
+unoverridden reading moves when world weather is forced (its own instrument check).
+`/weatherportprobe` test 3 covers all three and reports `SKIP` headless — which is no run, not a
+degraded one.
+
 ---
 
 ## 9. Open questions
@@ -255,8 +317,15 @@ assessment §5.1:
 1. **Does `WeatherGate` need a "would be" read for a subject with no tracker?** Currently
    `Optional.empty()` conflates "no tracker" with "no weather". The controller distinguishes them
    via `SUBJECT_UNAVAILABLE`; the gate does not. Left as-is until a consumer needs the difference.
-2. **Should `harness` own the fake backend** so questline modules can reuse it, rather than `core`'s
-   test sources? Defer to the first questline that needs it.
+2. ~~**Should `harness` own the fake backend?**~~ **RESOLVED 2026-10-20 by precedent:** yes. Test
+   sources are not shared between modules here, and `harness` already owns
+   `RecordingStormseekerHostRuntime`. `core` keeps a `FakeWeatherBackend` for unit tests; `harness`
+   keeps a `RecordingWeatherBackend` that also records call order, which a consumer-side test wants.
+   No `java-test-fixtures` plugin is introduced.
+4. **Does a cached `Store` survive a world unload/reload?** `/weatherportprobe` test 2 measured
+   instance stability across invocations within one boot, which is what the adapter needs
+   moment-to-moment, but not across a world lifecycle event. If a world can be unloaded while the
+   plugin lives, the cache needs invalidation. Unknown whether this server ever does that.
 3. **§4 remains the operator's decision** and is unaffected by this port, but whichever mechanism
    wins will consume `WeatherGate`. If per-player spoof is chosen, the spoof's re-send policy and
    this port's claim lifecycle both key on the same player-leave hook.
