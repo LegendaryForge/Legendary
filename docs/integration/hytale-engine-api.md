@@ -1,0 +1,178 @@
+# Hytale Engine API — living reference
+
+> **This is the accreting reference. The other integration documents are dated snapshots.**
+>
+> `hytale-capability-audit.md` audited build `0.5.9` on 2026-08-24 and has not been re-run since;
+> the game is now `0.7.2`, and its own §6 *Re-audit checklist* was never executed for `0.6.1` or
+> `0.7.2`. `docs/README.md` already warns that it is "unreliable per row". That document stays as
+> history. **New findings land here**, one row at a time, each stamped with the build it was
+> established against and how.
+>
+> **Why a living file rather than another audit.** A wholesale re-audit is a day of work that goes
+> stale in 2–6 weeks, so it does not get re-run — which is exactly what happened twice. A per-row
+> file can be updated by whoever happens to verify one row, which is the only cadence that matches
+> how these facts are actually discovered: as a side effect of needing them.
+
+**Evidence tiers.** Every entry carries one. They are not interchangeable:
+
+| Tier | Means | Trust |
+|---|---|---|
+| **[measured]** | executed against a running server, output recorded | strongest |
+| **[compiled]** | our code calls it and `:mod:hytale:compileJava` resolves it against the real jar | strong — proves existence and shape, not behaviour |
+| **[javap]** | signature read, never called | **a hypothesis** |
+| **[asset]** | read out of `Assets.zip` | strong for structure, says nothing about runtime |
+
+The project's standing method rule is that a signature is a hypothesis and a probe is confirmation.
+A `[javap]` row has not been confirmed. Do not design on one without saying so.
+
+---
+
+## Positional terrain reads
+
+**Established 2026-10-21 against `0.7.2`.** These are the signals the residue network's terrain
+derivation would key on — see `../superpowers/specs/2026-10-20-residue-terrain-derivation-design.md`
+§5 and §9.
+
+### `SectionReader` — arbitrary-coordinate reads
+
+`com.hypixel.hytale.server.core.universe.world.accessor.SectionReader`, constructed from
+`world.getChunkStore()`. [compiled]
+
+| Method | Returns | Notes |
+|---|---|---|
+| `getEnvironment(x, y, z)` | `int` | environment index; resolve a name via `Environment.getAssetMap().getAsset(i)` |
+| `getBlock(x, y, z)` | `int` | |
+| `getFluidId(x, y, z)` / `getWorldFluidId(x, y, z)` | `int` | |
+| `getSupportValue(x, y, z)` | `int` | |
+| `hasStorageInMemory(x, y, z)` | `boolean` | **the loaded/unloaded discriminator** |
+| `sectionAt(x, y, z)` | `Ref<ChunkStore>` | coordinate → section ref |
+| `canHoldY(y)` | `boolean` | the engine's own world-height predicate |
+| `supportsCubicSections()` | `boolean` | V1 / V2 generator shape |
+
+This is the **ergonomic positional read**, and it is not entity-anchored. Note the contrast with
+`WeatherConditionProbeCommand`, which reads environment via `transform.getSectionRef()` — that proves
+"anywhere inside the section a player occupies", which is a narrower claim and was briefly mistaken
+for the general one.
+
+### Measured runtime values
+
+From `/signalprobe` on a headless `0.7.2` server, 2026-10-21
+(`.scratch/hytale-server/signalprobe-run.log`): [measured]
+
+```
+supportsCubicSections: false            (V1 column shape)
+canHoldY: y-1=false y0=true y160=true y319=true y320=false y400=false
+loaded survey at y=64, offsets 0..4096: all out
+absent case at 2,000,000: hasStorageInMemory=false, sectionAt null/invalid
+```
+
+Three facts worth keeping:
+
+1. **The world is 320 blocks tall and starts at y=0**, confirmed by the engine's own predicate rather
+   than inferred from `EnvironmentSection[10] × 32`. `y319` true with `y320` false, and `y-1` false.
+2. **`supportsCubicSections()` is `false`** — the V1 column shape is still live. This is a **better
+   observation point than the boot-log line** that `[[Workspace_Deferrals]]` #18 currently watches for
+   the V1→V2 handover, because it is a direct runtime read rather than a string match on startup
+   output.
+3. **A headless server holds no chunk region at all** — nothing loaded at any surveyed offset. So the
+   practical bound on "on-demand derivation works in loaded chunks" is that with no player connected
+   the bound is **empty**. Derivation cannot pre-compute a region before a player arrives.
+
+### Sky light
+
+`BlockSection` (`…world.chunk.section.BlockSection`) is a `Component<ChunkStore>`: [compiled]
+
+| Method | Returns |
+|---|---|
+| `getGlobalLight()` / `getLocalLight()` | `ChunkLightData` |
+| `hasGlobalLight()` / `hasLocalLight()` | `boolean` |
+
+`ChunkLightData` carries **four** 4-bit channels — `RED_CHANNEL`, `GREEN_CHANNEL`, `BLUE_CHANNEL`,
+`SKY_CHANNEL` — with `MAX_VALUE` and: [compiled]
+
+- `getSkyLight(int x, int y, int z)` → `byte` — **public.**
+- `getBlockLight(x, y, z)` → `short` (all channels packed), plus per-channel RGB getters.
+
+> **Two unknowns, both still open.** Whether these take world or section-local coordinates — the
+> accessors appear to mask internally, since `EnvironmentSection.get` works with world coordinates,
+> but "appear to" is not verified. And **which of global/local carries sky**, which matters because
+> §5's whole argument for sky light is that it is deterministic and immune to a player lighting a
+> cave — a claim that can only hold for one of the two. `/signalprobe` reads both forms and both
+> sources side by side; it needs **a connected client**, because a headless server loads nothing.
+
+The engine also ships `/lighting get <pos>` (`LightingGetCommand`), an independent positional read
+worth comparing against.
+
+### Environment, the other access paths
+
+- `EnvironmentChunk` — `Component<ChunkStore>`, with `sliceToSection(int)`. [javap]
+- `EnvironmentColumn` — `get(y)` → environment id, `getMin`/`getMax`, `MIN`/`MAX`. [javap]
+- `EnvironmentSection.get(x, y, z)` → `int` — what `WeatherConditionProbeCommand` uses. [compiled]
+- `EnvironmentProvider.evaluate(Context)` → `int`, where `Context` holds **only** an
+  `org.joml.Vector3i`. A pure function of position, so it would answer for *unloaded* coordinates.
+  **But it lives in `builtin/hytalegenerator` (998 classes), and `HytaleWorldGenProvider` — the
+  generator this world actually runs — references that package zero times.** [javap] So it is not
+  reachable for the live world today, and becomes reachable if/when deferral #18's handover happens.
+
+---
+
+## Creature placement — the engine's own spatial predicate
+
+**Established 2026-10-21 against `0.7.2`.** [javap] + [asset]
+
+`com.hypixel.hytale.server.spawning.assets.spawns.config.NPCSpawn`:
+
+| Method | Returns |
+|---|---|
+| `getEnvironments()` / `getEnvironmentIds()` | `String[]` / `IntSet` |
+| `getLightRange(LightType)` | `double[]` |
+| `getDayTimeRange()` / `getMoonPhaseRange()` | `double[]` / `int[]` |
+| `getNPCs()` | `RoleSpawnParameters[]` |
+
+`RoleSpawnParameters` adds `getSpawnBlockSet()`, `getSpawnBlockSetIndex()`, `getSpawnFluidTagIndex()`,
+`getWeight()`, `getFlockDefinitionId()`.
+
+`LightType` is an enum: `Light`, **`SkyLight`**, `Sunlight`, `RedLight`, `GreenLight`, `BlueLight`.
+
+So the engine places creatures by
+
+```
+environment  ×  sky-light range  ×  block set  ×  time of day / moon phase
+```
+
+which is the **same three spatial inputs** a terrain-derived residue field would use. That is why
+residue keyed to those signals agrees with creature placement by construction. Worked through in the
+residue spec §5.
+
+### Asset schema for placement
+
+- `Server/NPC/Spawn/**` — 523 files. Shape: `{"Environments": [...], "NPCs": [{"Id", "Weight",
+  "SpawnBlockSet"}], "DayTimeRange": [...]}`. [asset]
+- `Server/Drops/NPCs/**` — 290 files; what each creature yields. [asset]
+- `Server/Environments/**` — 134 files; keys observed are `Tags`, `Parent`, `WeatherForecasts`,
+  `SpawnDensity` (a **scalar**, not a creature list), `WaterTint`. [asset]
+- `Server/Abilities/Elements/*.json` — five files, each `{"DamageCause": "X"}`. `DamageCause` values
+  across **all** shipped JSON are exhaustively `Fire, Earth, Lightning, Water, Wind`. [asset]
+
+> **Do not read an asset list as a taxonomy.** The game ships four partially-overlapping elemental
+> rosters and no two are the same list, so the assets cannot answer "which elements does Hytale have"
+> — only "keyed to what". Catalogued in `../setting/hytale-orbis-setting-brief.md` §3, and the trap is
+> written up in `../../CLAUDE.md` § "Lore first".
+
+---
+
+## How to add a row
+
+1. Establish the fact at the strongest tier you can. Prefer calling it over reading it.
+2. Add it here with its **tier** and the **build** it was established against.
+3. If a design document needed the fact, link from the design *to here* rather than restating it —
+   designs get superseded (four residue specs were bannered as superseded on 2026-10-21) while an API
+   fact outlives the design that discovered it. **That mismatch is why this file exists.**
+4. If you find an existing row is wrong for a newer build, correct it in place and say what it said
+   before. A silently-corrected row teaches that the file is unreliable; a visibly-corrected one
+   teaches what changed.
+
+*Created 2026-10-21, for `0.7.2`. Prompted by the observation that this project had been recording
+engine findings inside design specs and lore documents — surfaces that are either superseded or
+version-stamped for a different purpose — while the one document named as the engine reference sat two
+builds behind.*

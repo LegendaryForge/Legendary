@@ -587,7 +587,22 @@ mathematics is wasted.
    > queries become available — reopening this fork in the *other* direction. #18's handover trigger
    > was filed as an asset-contribution question; it now also gates an architectural one.
    >
-   > **Still signature-level, not probed.** Per the standing method rule, a signature is a hypothesis:
+   > **Engine facts from this investigation now live in
+   > `../../integration/hytale-engine-api.md`**, with build stamps and evidence tiers, rather than
+   > only here. A design gets superseded; an API fact outlives the design that found it.
+   >
+   > **Partly probed 2026-10-21, and the probe narrowed the answer.** `/signalprobe` on a headless
+   > `0.7.2` server returned `INCONCLUSIVE` for q1 and q2 — **because a headless server loads no
+   > chunk region at all** (nothing in memory at any offset 0..4096). That is itself a result: the
+   > bound on "works in loaded chunks" is *empty* with no player connected, so derivation cannot
+   > pre-compute a region before a player arrives. What the same run **did** settle: the world is
+   > 320 blocks tall starting at y=0 (`canHoldY` y319 true / y320 false / y-1 false — previously
+   > inferred, now measured), and `supportsCubicSections()` is `false`, so the V1 shape is live.
+   >
+   > **Still outstanding, and it needs a connected client:** whether `getSkyLight` takes world or
+   > section-local coordinates, which of global/local light carries sky, and what the reads cost.
+   >
+   > **Signature-level remainder.** Per the standing method rule, a signature is a hypothesis:
    > unverified here are whether a mod can reach the world's `EnvironmentChunk` component and
    > `ChunkLightData` at runtime, and what `getSkyLight` and an environment read actually *cost* — which
    > is what "cheaply" in this question's original wording was asking. One live probe settles both.
