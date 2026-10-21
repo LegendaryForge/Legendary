@@ -8,7 +8,7 @@ import java.util.Set;
  * The roster's groundings, in the only module allowed to name Hytale assets.
  *
  * <p>{@code :core} holds the grounding <em>types</em> and the scoring; it may not hold these ids,
- * because {@code Fluid_Lava} and {@code Env_Zone4_Volcanoes} are Hytale's and {@code :core} is
+ * because {@code Lava_Source} and {@code Env_Zone4_Volcanoes} are Hytale's and {@code :core} is
  * engine-agnostic by build guard. That separation is also what keeps the roster a reversible
  * documentation decision rather than an API: there is no enum of elements anywhere, only these
  * strings.
@@ -23,11 +23,25 @@ import java.util.Set;
  * terrain is Water's to claim), and Life is farmed rather than sited — 1 NPC dropper against 64 crop
  * tables.
  *
- * <p><strong>Every id here was verified present in build 0.7.2</strong> rather than guessed: the
- * fluids are the contents of {@code Server/BlockTypeList/Fluids.json}, and the environment
+ * <p><strong>Every id here was verified present in build 0.7.3</strong> rather than guessed: the
+ * fluids are {@code Fluid} assets under {@code Server/Item/Block/Fluids/}, and the environment
  * substrings were matched against the 134 shipped {@code Server/Environments} assets. A rule naming
  * an asset that does not exist would score zero forever and look exactly like terrain that does not
  * qualify.
+ *
+ * <p><strong>That is not a hypothetical, and the fluid namespace is the trap.</strong> Until
+ * 2026-10-21 these required {@code Fluid_Lava} and {@code Fluid_Water}, taken from
+ * {@code Server/BlockTypeList/Fluids.json} — a <em>block type</em> list. Those names exist, so the
+ * verification above passed; they are simply not what the runtime hands back.
+ * {@code SectionReader.getFluidId} returns a {@code Fluid} asset index, which
+ * {@link SectionReaderTerrainSample} resolves through {@code Fluid.getAssetMap()} to ids like
+ * {@code Water_Source}. So both {@code Physical} elements — the only two with a required fluid —
+ * could never match, and {@code Physical} rejected every candidate while looking like correct
+ * strictness. Caught by the first live {@code /residueprobe} run standing in a river
+ * ({@code fluid=Water_Source getFluidId=2}) and confirmed standing in lava
+ * ({@code fluid=Lava getFluidId=14}). The unit tests could not catch it, because {@code :core}
+ * treats fluid names as opaque strings and {@code SiteScorerTest} supplies the same invented name to
+ * both the grounding and its fake terrain.
  *
  * <p><strong>Why substrings and not the asset tags.</strong> Environments carry structured
  * {@code Tags} in their JSON — {@code Volcanic}, {@code Shores}, {@code Glacial}, {@code Mountains} —
@@ -61,13 +75,25 @@ public final class HytaleDerivationRules {
         return List.of(
                 // --- Physical: the fluid is required. A volcanic region with no lava is not a Fire
                 // site, which is the defect the Physical type exists to prevent.
+                // Source is the body of a lava lake; the bare id is its flowing child. Both count,
+                // and the flowing one is not a speculative inclusion: standing in lava measured
+                // fluid=Lava getFluidId=14, so a set holding only Lava_Source would still have
+                // missed what a player was standing in.
                 new ElementGrounding.Physical(
-                        "fire", Set.of("Fluid_Lava"), Set.of("Volcanoes", "Caves_Volcanic", "Crucible", "Wastes")),
+                        "fire",
+                        Set.of("Lava_Source", "Lava"),
+                        Set.of("Volcanoes", "Caves_Volcanic", "Crucible", "Wastes")),
 
                 // Glacial is corroboration here rather than a separate Ice element: the roster
                 // decision models Ice inside Water.
+                //
+                // Water_Finite is deliberately excluded. It shares Water_Source as its Parent but
+                // carries Ticker.Type=Finite, which is contained water — a player emptying a bucket
+                // should not mint a Water nexus. Worldgen bodies read as Water_Source (measured).
                 new ElementGrounding.Physical(
-                        "water", Set.of("Fluid_Water"), Set.of("Shores", "Swamps", "Glacial", "Caves_Swamps", "Oasis")),
+                        "water",
+                        Set.of("Water_Source", "Water"),
+                        Set.of("Shores", "Swamps", "Glacial", "Caves_Swamps", "Oasis")),
 
                 // --- Geometric: terrain shape, no marker to require. Both halves needed.
                 // Open sky is the discriminator, so the band is tight.

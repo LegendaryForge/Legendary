@@ -3,8 +3,11 @@
 > **This is the accreting reference. The other integration documents are dated snapshots.**
 >
 > `hytale-capability-audit.md` audited build `0.5.9` on 2026-08-24 and has not been re-run since;
-> the game is now `0.7.2`, and its own §6 *Re-audit checklist* was never executed for `0.6.1` or
-> `0.7.2`. `docs/README.md` already warns that it is "unreliable per row". That document stays as
+> the game is now `0.7.3` (this line said `0.7.2` until 2026-10-21; the launcher updated and the
+> `0.7.2` → `0.7.3` diff is one added class, `ThirdPartySentryFilter`, with zero signature removals
+> across the 65 types we import — captured in `../../scripts/api-baseline/snapshots/`), and its own
+> §6 *Re-audit checklist* was never executed for `0.6.1`, `0.7.2` or `0.7.3`.
+> `docs/README.md` already warns that it is "unreliable per row". That document stays as
 > history. **New findings land here**, one row at a time, each stamped with the build it was
 > established against and how.
 >
@@ -42,7 +45,7 @@ derivation would key on — see `../superpowers/specs/2026-10-20-residue-terrain
 |---|---|---|
 | `getEnvironment(x, y, z)` | `int` | environment index; resolve a name via `Environment.getAssetMap().getAsset(i)` |
 | `getBlock(x, y, z)` | `int` | |
-| `getFluidId(x, y, z)` / `getWorldFluidId(x, y, z)` | `int` | |
+| `getFluidId(x, y, z)` / `getWorldFluidId(x, y, z)` | `int` | a **`Fluid` asset** index — resolve via `Fluid.getAssetMap().getAsset(i)`. **Not** a block-type id; see the namespace row below. Both accessors agreed at every position measured so far |
 | `getSupportValue(x, y, z)` | `int` | |
 | `hasStorageInMemory(x, y, z)` | `boolean` | **the loaded/unloaded discriminator** |
 | `sectionAt(x, y, z)` | `Ref<ChunkStore>` | coordinate → section ref |
@@ -53,6 +56,43 @@ This is the **ergonomic positional read**, and it is not entity-anchored. Note t
 `WeatherConditionProbeCommand`, which reads environment via `transform.getSectionRef()` — that proves
 "anywhere inside the section a player occupies", which is a narrower claim and was briefly mistaken
 for the general one.
+
+### Fluids live in two namespaces, and the wrong one silently scores zero
+
+**Established 2026-10-21 against `0.7.3`.** [measured]
+
+`getFluidId` returns an index into the **`Fluid` asset** map, whose ids are the filenames under
+`Server/Item/Block/Fluids/`:
+
+| Fluid asset | Shape |
+|---|---|
+| `Water_Source`, `Lava_Source` | the body — `MaxFluidLevel: 1` |
+| `Water`, `Lava` | the flowing child — `Parent: <X>_Source`, `MaxFluidLevel: 8`, `CanDemote: true` |
+| `Water_Finite` | `Parent: Water_Source` with `Ticker.Type: Finite` — contained water |
+| plus `Poison`, `Slime`, `Slime_Red`, `Tar`, `Tar_Void`, `Fire`, `Dungeon_Fire_NoSpread` and their `_Source` variants | 17 files; the boot log counts `Fluid: 19` |
+
+**Measured**, two positions, both with a client connected:
+
+| Standing in | Position | Reported |
+|---|---|---|
+| a river | `-1001,113,150` | `fluid=Water_Source getFluidId=2 getWorldFluidId=2` |
+| flowing lava | `-522,164,284` | `fluid=Lava getFluidId=14 getWorldFluidId=14` |
+
+Note the second is the **flowing** child, not `Lava_Source`. A required-fluid set holding only the
+`_Source` variants would miss fluid a player is standing in.
+
+**The trap.** `Server/BlockTypeList/Fluids.json` is a *different* namespace — a block-type list
+naming `Fluid_Water`, `Fluid_Lava`, `Fluid_Poison`, `Fluid_Slime`, `Fluid_Slime_Red`, `Fluid_Tar`.
+Those names are real, so verifying a fluid id against that file **passes** while the runtime never
+produces them. `HytaleDerivationRules` required `Fluid_Lava` and `Fluid_Water` on exactly that
+basis, which made both `Physical` groundings — Fire and Water, the only two with a required fluid —
+unable to match anything, while presenting as correct strictness. Corrected the same day.
+
+Nothing in the build could catch it: `:core` treats fluid names as opaque strings by design, and
+`SiteScorerTest` supplies the same invented name to both the grounding and its fake terrain, so the
+suite is self-consistent and namespace-blind. This is the third instance of *the asset tree and the
+runtime API are different surfaces, and neither is a subset of the other* — see the 2026-10-21
+`#surprise` entry in the vault's `Hytale_Observations.md`.
 
 ### Measured runtime values
 
