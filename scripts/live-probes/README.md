@@ -34,7 +34,7 @@ executing, not by reading.
 | `drive-weatheroverrideprobe-client.sh` | `/weatheroverrideprobe` | 2026-10-20 | 0.7.2 |
 | `drive-weatheroverrideprobe.sh` | `/weatheroverrideprobe` (headless; expects SKIPPED) | 2026-10-20 | 0.7.2 |
 | `drive-beamprobe.sh` | `/beamprobe` | 2026-10-20 | 0.7.2 |
-| `drive-render-session-client.sh` | `/beamprobe` + `/markerprobe` | **never run** | written 2026-10-20 against 0.7.2 |
+| `drive-render-session-client.sh` | `/beamprobe` + `/markerprobe` | 2026-10-20 | 0.7.2 |
 | `drive-pointprobe.sh` | `/pointprobe` | 2026-10-20 | 0.7.2 |
 | `drive-blockprobe.sh` | `/blockplacementprobe` | 2026-08-29 | **0.6.1 — unverified since** |
 | `drive-prefabprobe.sh` | `/prefabprobe` | 2026-08-29 | **0.6.1 — unverified since** |
@@ -44,11 +44,22 @@ than silently endorsed. `/prefabprobe` in particular is known to have changed
 behaviour: `World.waitForFutureWithoutLock` was removed in 0.7.2, so it is now an
 async chain and **no longer prints when it returns**.
 
-`drive-render-session-client.sh` is marked **never run** rather than left out of the
-table. It was written and its probes compile against the real jar, which is strictly
-weaker than having been executed — and this table's whole purpose is that a driver is
-a hypothesis until it runs. Writing "2026-10-20" there because that is when it was
-authored would be the same category error the `-client` drivers exist to prevent.
+`drive-render-session-client.sh` ran green on 2026-10-20 and closed both of §8's
+rendering questions — beams render, and the `spawn`-returns-null anomaly was a headless
+artifact (`5 VALID / 0 null` with a client attached). It was committed the same day
+marked **never run**, which was correct at the time: compiling against the real jar is
+strictly weaker than having executed, and this table exists because a driver is a
+hypothesis until it runs.
+
+**Its first run exposed three defects in the instruments, which is the point of running
+them.** One was an ordering bug in this driver: `/beamprobe` fired *first*, and its
+holders have a 60s lifetime, so the beams expired within seconds of the 15-minute hold
+beginning — the window that exists purely so a human can look at them did not overlap
+their lifetime. `/beamprobe` now fires **last**, immediately before the hold. The other
+two were in `/markerprobe` and are recorded in its javadoc: it graded its own
+non-idempotence as an engine failure, and its assertion details restated expectations
+instead of observed values, so a FAIL line read `isRevealed == false` on a call that had
+returned `true`.
 
 ## Client-attached vs headless
 

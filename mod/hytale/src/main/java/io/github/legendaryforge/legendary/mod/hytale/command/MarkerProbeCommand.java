@@ -95,6 +95,38 @@ import org.joml.Vector3d;
  * so it persists until the server restarts; registration is by key, so re-running replaces rather
  * than accumulates. The marker is also left <b>revealed</b> at the end, because the one question a
  * headless run can never answer is whether it draws.
+ *
+ * <h2>RESULTS — run 2026-10-20, client attached</h2>
+ *
+ * <p>Everything §5.4 asked, answered: the gate passed 7/7 on a clean player, publication was
+ * confirmed by the two-phase read-back (run 1 {@code contains = false} with 3 markers, run 2
+ * {@code contains = true} with 4), and the marker <b>rendered</b> at the published position with its
+ * custom name. The two-phase shape was load bearing — a single invocation would have recorded this
+ * mechanism as broken.
+ *
+ * <p>One engine fact worth carrying into the port: <b>{@code reveal()} reports state change, not
+ * success.</b> Called on an already-revealed marker it returns {@code false}. A port treating the
+ * return as "did this succeed" would read an already-discovered feature as a publication failure.
+ * Same shape as §5.1's {@code tryClaimOverride} correction, found the same way — by calling it twice.
+ *
+ * <h2>Two defects that first run exposed in THIS probe</h2>
+ *
+ * <p>Both are fixed, and both are worth stating because they are the probe misreporting rather than
+ * the engine misbehaving — the failure mode a probe is least able to detect in itself.
+ *
+ * <ol>
+ *   <li><b>It graded its own non-idempotence as an engine failure.</b> Choice 1 above (absent case
+ *       first) and the leave-revealed decision in the previous paragraph are mutually exclusive
+ *       across two runs, and the driver runs this twice by design. Run 2 therefore reported two
+ *       FAILs on a mechanism working perfectly. There is now an idempotence guard: an
+ *       already-revealed marker at entry means a prior run, and the gate sequence is <b>skipped
+ *       with its reason stated</b> rather than failed.
+ *   <li><b>Its assertion details restated the expectation, not the observation.</b> Run 2 printed
+ *       {@code FAIL  not revealed before any reveal} above the detail
+ *       {@code isRevealed(...) == false at world start} — on a call that had returned {@code true}.
+ *       A line that contradicts the verdict beside it is worse than no detail at all. Every detail
+ *       now interpolates the observed value.
+ * </ol>
  */
 public class MarkerProbeCommand extends AbstractWorldCommand {
 
@@ -256,41 +288,62 @@ public class MarkerProbeCommand extends AbstractWorldCommand {
             return;
         }
 
+        // IDEMPOTENCE GUARD. Measured 2026-10-20: this probe is run TWICE per session (the
+        // publication read-back needs a map tick between runs), and run 1 deliberately leaves the
+        // marker revealed so the operator can look at it. Those two choices contradict the
+        // absent-case-first assertion below, and on the first live run they produced two FAILs on
+        // a mechanism that was working perfectly. That is the probe reporting its own design
+        // conflict as an engine defect, which is worse than reporting nothing.
+        //
+        // So: detect the state rather than assume it. A revealed marker at entry means a prior run
+        // in this session, and the gate sequence is skipped with its reason stated.
+        boolean alreadyRevealed = DiscoverableMapMarkers.isRevealed(player, MARKER_ID);
+        if (alreadyRevealed) {
+            sb.append("  ----  gate sequence SKIPPED, not failed\n");
+            sb.append("        ")
+                    .append(MARKER_ID)
+                    .append(" is already revealed, so a prior run in this session left it so.\n");
+            sb.append("        The absent-case assertion cannot be made twice against one player.\n");
+            sb.append("        Relog, or use a fresh world, to re-run the gate sequence.\n");
+            appendPublicationReadBack(sb, player);
+            return;
+        }
+
         // 1. ABSENT FIRST, ALONE. A negative among positives is ambiguous.
-        check(
-                sb,
-                "not revealed before any reveal",
-                !DiscoverableMapMarkers.isRevealed(player, MARKER_ID),
-                "isRevealed(" + MARKER_ID + ") == false at world start");
+        //    Details below report the OBSERVED value, never the expectation. The first live run
+        //    printed `FAIL ... isRevealed == false at world start` on a call that had returned
+        //    true -- a line that contradicts the verdict beside it, because the string restated
+        //    what was wanted instead of what happened.
+        check(sb, "not revealed before any reveal", true, "isRevealed(" + MARKER_ID + ") -> false at world start");
 
         // 2. reveal
         boolean revealed = DiscoverableMapMarkers.reveal(player, MARKER_ID);
         check(sb, "reveal() returns true", revealed, "reveal(" + MARKER_ID + ") -> " + revealed);
-        check(
-                sb,
-                "revealed after reveal()",
-                DiscoverableMapMarkers.isRevealed(player, MARKER_ID),
-                "isRevealed(" + MARKER_ID + ") == true");
+        boolean nowRevealed = DiscoverableMapMarkers.isRevealed(player, MARKER_ID);
+        check(sb, "revealed after reveal()", nowRevealed, "isRevealed(" + MARKER_ID + ") -> " + nowRevealed);
 
         // 3. THE CONTROL. Without this, "isRevealed -> true" proves only that the method
         //    returns true, not that the gate keys on the id.
+        boolean controlRevealed = DiscoverableMapMarkers.isRevealed(player, CONTROL_ID);
         check(
                 sb,
                 "CONTROL: an unrevealed id stays false",
-                !DiscoverableMapMarkers.isRevealed(player, CONTROL_ID),
-                "isRevealed(" + CONTROL_ID + ") == false while " + MARKER_ID + " is revealed");
+                !controlRevealed,
+                "isRevealed(" + CONTROL_ID + ") -> " + controlRevealed + " while " + MARKER_ID + " is revealed");
 
         // 4. hide round-trips
         boolean hidden = DiscoverableMapMarkers.hide(player, MARKER_ID);
         check(sb, "hide() returns true", hidden, "hide(" + MARKER_ID + ") -> " + hidden);
-        check(
-                sb,
-                "not revealed after hide()",
-                !DiscoverableMapMarkers.isRevealed(player, MARKER_ID),
-                "isRevealed(" + MARKER_ID + ") == false");
+        boolean afterHide = DiscoverableMapMarkers.isRevealed(player, MARKER_ID);
+        check(sb, "not revealed after hide()", !afterHide, "isRevealed(" + MARKER_ID + ") -> " + afterHide);
 
         // 5. Re-reveal. §5.1's lesson: a repeat operation's semantics are worth measuring rather
         //    than assuming refusal, because tryClaimOverride's same-claimant case was an update.
+        //
+        //    MEASURED 2026-10-20: reveal() reports STATE CHANGE, not success. Called on an
+        //    already-revealed marker it returns FALSE. Here it follows a hide(), so it does change
+        //    state and returns true -- but a caller treating the return as "did this succeed"
+        //    would misread an already-revealed marker as a failure. The port must not.
         boolean reRevealed = DiscoverableMapMarkers.reveal(player, MARKER_ID);
         check(
                 sb,
@@ -298,8 +351,18 @@ public class MarkerProbeCommand extends AbstractWorldCommand {
                 reRevealed,
                 "reveal(" + MARKER_ID + ") -> " + reRevealed + " (left revealed deliberately)");
 
-        // 6. Publication read-back. NOT graded -- the provider fires on the map tick, so an
-        //    absence here on the first invocation is expected, not a failure.
+        appendPublicationReadBack(sb, player);
+    }
+
+    /**
+     * Publication read-back. NOT graded.
+     *
+     * <p>The provider fires on the map tick, so an absence on the first invocation of a session is
+     * expected rather than a failure. Measured 2026-10-20: run 1 reported {@code contains = false}
+     * with 3 markers, run 2 reported {@code contains = true} with 4. The two-phase shape is load
+     * bearing — a single invocation would have recorded this mechanism as not working.
+     */
+    private void appendPublicationReadBack(StringBuilder sb, Player player) {
         sb.append("  ----  publication read-back (not graded -- async, see javadoc)\n");
         try {
             Map<String, MapMarker> sent = player.getWorldMapTracker().getSentMarkers();
