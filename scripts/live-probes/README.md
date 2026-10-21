@@ -22,6 +22,18 @@ git-ignored — the same shape as the `2026-10-20 DEBT` observation about
 measurement whose driver is untracked can be neither reproduced nor checked; it can
 only be believed or replaced.
 
+**The last two were promoted 2026-10-21** — `drive-signalprobe.sh` and `server-up.sh` — and that
+promotion found a second instance of the same hazard, one directory over. The harness still held
+**diverged duplicates** of six already-tracked drivers, differing only in lacking the `SERVER_DIR`
+resolution block above. Every run that session had used the untracked copies, which means the
+tracked ones — the only ones with path resolution — **had never been executed at all**. That was
+fixed by running `drive-signalprobe.sh` from this directory and confirming the harness resolved and
+the log landed there rather than here; then the duplicates were deleted. They were not on the
+keep-list in `docs/integration/live-server-testing.md`, so the project's own cleanup guidance
+already treated them as disposable — what it had not anticipated was them being *run* in preference
+to the tracked originals. **If you find a `drive-*.sh` inside the harness directory, it is a stale
+shadow of a tracked file; delete it rather than run it.**
+
 ## Verification status
 
 A driver is a hypothesis about an engine that updates every 2–6 weeks. Re-verify by
@@ -36,8 +48,11 @@ executing, not by reading.
 | `drive-beamprobe.sh` | `/beamprobe` | 2026-10-20 | 0.7.2 |
 | `drive-render-session-client.sh` | `/beamprobe` + `/markerprobe` | 2026-10-20 | 0.7.2 |
 | `drive-pointprobe.sh` | `/pointprobe` | 2026-10-20 | 0.7.2 |
+| `drive-signalprobe.sh` | `/signalprobe` | 2026-10-21 | 0.7.2 |
 | `drive-blockprobe.sh` | `/blockplacementprobe` | 2026-08-29 | **0.6.1 — unverified since** |
 | `drive-prefabprobe.sh` | `/prefabprobe` | 2026-08-29 | **0.6.1 — unverified since** |
+
+`server-up.sh` is **not** in the table because it is not a probe driver — see below.
 
 The last two predate the 0.7.2 migration and are promoted as-is, labelled rather
 than silently endorsed. `/prefabprobe` in particular is known to have changed
@@ -60,6 +75,35 @@ two were in `/markerprobe` and are recorded in its javadoc: it graded its own
 non-idempotence as an engine failure, and its assertion details restated expectations
 instead of observed values, so a FAIL line read `isRevealed == false` on a call that had
 returned `true`.
+
+## `server-up.sh` — a third shape
+
+The drivers above boot, fire, and stop. `drive-blockspoofprobe-client.sh` boots, fires, and
+**holds**. `server-up.sh` boots and **holds without firing anything**, leaving a console FIFO at
+`.scratch/hytale-server/console` that accepts commands for as long as the server lives:
+
+```bash
+bash scripts/live-probes/server-up.sh
+echo signalprobe > .scratch/hytale-server/console
+echo stop        > .scratch/hytale-server/console
+```
+
+It exists because the fire-and-stop shape is wrong whenever a human must get into position
+*between* boot and probe. `/signalprobe` is the case that forced it: its decisive readings need a
+player standing somewhere specific — underground, beside a light source, at the surface at a
+chosen time of day — and a driver that fires on a timer either probes before the operator has
+arrived or guesses how long they will take. On 2026-10-21 the same server was held open while five
+readings were taken at five positions, which is five client joins the fire-and-stop shape would
+have cost.
+
+Two details in it were learned the hard way and are not obvious:
+
+- **The FIFO holder is `tail -f /dev/null`, not `sleep N`.** A sleep-based holder expired
+  mid-session once; the console then silently stopped accepting commands and the failure presented
+  as a hung server.
+- **The readiness check reads `ss -lun`, not `ss -ltn`.** Hytale's transport is QUIC, i.e. **UDP**,
+  so the TCP-only form reports `NOT LISTENING` for a perfectly healthy server. That false negative
+  was reported to the operator as "the server is down" before it was caught.
 
 ## Client-attached vs headless
 
