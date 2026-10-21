@@ -647,12 +647,23 @@ mathematics is wasted.
    > unverified here are whether a mod can reach the world's `EnvironmentChunk` component and
    > `ChunkLightData` at runtime, and what `getSkyLight` and an environment read actually *cost* — which
    > is what "cheaply" in this question's original wording was asking. One live probe settles both.
-3. **Does a Void event fire on its own?** `getEventStartSeconds()` exists, as do `VoidEventCommands` and
-   `StartVoidEventCommand`, and `StartVoidEventInFragmentSystem` hints at automatic start in some
-   "Fragment" context. If it only fires by command, we must schedule events ourselves — possible, but it
-   changes the character from *the world does this* to *we stage it*. Blocks §6.
-4. **How long does a Void event last?** Readable from config rather than guessed. Blocks §6's harvest
-   loop being a window rather than a chore.
+3. **ANSWERED 2026-10-21 — it fires on its own, but it is Fragment-scoped, not world-scoped.** [asset]
+   The config hangs off a *gameplay config* under `Plugin.Portal.VoidEvent.Stages`, and only two of the
+   eight shipped gameplay configs carry one — `Portal.json` and `PortalsGoblins.json`, both portal
+   destinations. `StartVoidEventInFragmentSystem` is a `DelayedSystem` whose only method is
+   `delayedTick`. So the answer is neither of the two this question offered: the world *does* do it, and
+   the world that does it is a **Fragment you travel to**, not the player's own. Commands exist too, so
+   it is also manually triggerable. **Full detail, tiers and the confirming probe:
+   `../../integration/hytale-engine-api.md` § "The Void event".** What §6 still needs is whether a *mod*
+   can attach a `VoidEvent` to a world it defines — unverified.
+4. **ANSWERED 2026-10-21 — it has no duration; it escalates and then evicts you.** [asset]
+   `PortalsGoblins.json` stages at **120 / 240 / 390 / 540 / 690 / 780 seconds** (Faint → Mild → Light →
+   Heavy_Surge → Heavy_Late → Storm); `Portal.json` at **420 / 540**, spawning `VoidInvasion_Portal`
+   blocks at the first. There is no terminal stage and no duration field — the Fragment ejects you:
+   *"The Veil of Void has closed once more / Your presence is no longer permitted"*, with `VOID_EVICTION`
+   as a first-class title style. **So §6's harvest loop is a window, and the window is the visit** —
+   roughly two to thirteen minutes of rising pressure bounded by being thrown out rather than by a timer
+   expiring, which is a stronger pacing device than this question assumed.
 5. **Roster decision. ✅ CLOSED 2026-10-21** — adopted as a reversible modelling default; see
    [`2026-10-21-residue-roster-decision.md`](2026-10-21-residue-roster-decision.md). History below.
    **Narrowed earlier the same day, then closed.** No longer "rune roster or essence

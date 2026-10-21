@@ -286,3 +286,99 @@ residue spec §5.
 engine findings inside design specs and lore documents — surfaces that are either superseded or
 version-stamped for a different purpose — while the one document named as the engine reference sat two
 builds behind.*
+
+---
+
+## The Void event
+
+**Established 2026-10-21 against `0.7.2`.** Answers §9 q3 and q4 of
+`../superpowers/specs/2026-10-20-residue-terrain-derivation-design.md`, which both blocked §6.
+**Nothing here is `[measured]`** — the conclusions are read off assets and signatures. The probe that
+would confirm them is named at the end.
+
+### It is Fragment-scoped, not world-scoped — and that is the headline
+
+The config is **not** global. It hangs off a *gameplay config*, under
+`Plugin.Portal.VoidEvent.Stages`, and the two configs that carry one are both portal destinations:
+[asset]
+
+| Gameplay config | `Death.RespawnController` | Shape |
+|---|---|---|
+| `Server/GameplayConfigs/Portal.json` | `ExitInstance` | thin instance config, `Parent: Default` |
+| `Server/GameplayConfigs/PortalsGoblins.json` | `WorldSpawnPoint` | full world config — Gathering, Respawn, Player, Spawn … |
+
+Eight gameplay configs ship in total; only those two define a `VoidEvent`. So the Void event is
+content **of a place you travel to**, not weather that arrives at home. `portals.discoverySubtitle =
+"Fragment of Orbis"`, and `PortalsGoblins` is `portals.goblinBreach` — *"The Guttering Hollows …
+Chaos stirs in the ruins of a lost Enkindled settlement."* [asset]
+
+### Staging — the numbers §9 q4 asked for
+
+`PortalsGoblins.json`, six stages, seconds **into the instance**: [asset]
+
+| `SecondsInto` | `ForcedWeather` | Sound | Title |
+|---|---|---|---|
+| 120 | `Cave_Goblin_Void_Event_Faint` | `SFX_Void_Encroaching` | `portals.voidSurge.title`, style `VoidEviction`, 5s |
+| 240 | `Cave_Goblin_Void_Event_Mild` | `SFX_Void_Encroaching_Whispers` | |
+| 390 | `Cave_Goblin_Void_Event_Light` | `SFX_Void_Encroaching_Whispers` | |
+| 540 | `Cave_Goblin_Void_Event_Heavy_Surge` | `SFX_Void_Encroaching_Whispers` | |
+| 690 | `Cave_Goblin_Void_Event_Heavy_Late` | | |
+| 780 | `Cave_Goblin_Void_Event_Storm` | `SFX_Void_Encroaching_Whispers` | |
+
+`Portal.json` is shorter and spawns the invasion: stage 1 at **420s** forces
+`Portals_Void_Event_Light` and spawns `VoidInvasion_Portal` blocks via three beacons
+(`Portal_Void_Event_Minor` / `_Major` / `_Critter`) with `Void_Dragon_Effects`; stage 2 at **540s**
+forces `Portals_Void_Event_Intense`. [asset]
+
+**There is no terminal stage and no duration field.** The event escalates and then the Fragment
+*ejects* you: `portals.goblinBreach.closing.title = "The Veil of Void has closed once more"`,
+subtitle *"Your presence is no longer permitted"*, and `VOID_EVICTION` is a first-class title style
+(*"The themed title used by Void Eviction events"*). [asset]
+
+> **So §6's question resolves as: the window is the visit.** Roughly two to thirteen minutes of
+> escalating pressure, ending in eviction rather than expiry. A harvest loop built on this is
+> bounded by being thrown out, not by a timer running down — which is a stronger pacing device than
+> the question anticipated.
+
+### Shapes worth knowing
+
+- **`VoidEventConfig`** — `getEventStartSeconds()`, `getInvasionPortalSpacing()`,
+  `getActiveWeatherId(stage)`, `getActiveMusicIndex(stage)`, `getActiveInvasionPortals(stage)`,
+  `getMaxPortalCount(stage)`, `findLatestStage(double)`, `forEachStage(...)`; `MAX_PORTAL_COUNT`,
+  `DEFAULT_PORTAL_COUNT`. Both it and `VoidEventStage` carry a `BuilderCodec`, which is why the
+  numbers live in assets. [javap]
+- **`VoidEventStage`** — `getSecondsInto()`, `getExtraPortalCount()`, `getForcedWeatherId()`,
+  `getInvasionPortals()`, `getMusicContainerId()`, `getSoundEventId()`, `getTitle()`,
+  `isAfter(stage)`. [javap]
+- **Stage order is a real constraint, and Hypixel documented it in the asset:** `PortalsGoblins.json`
+  carries `"$Comment": "Stages must be listed in ascending SecondsInto order: stage lookup reads the
+  array as written."` So `findLatestStage(double)` does not sort. [asset]
+- **Systems:** `StartVoidEventInFragmentSystem extends DelayedSystem<EntityStore>` with
+  `delayedTick(float, int, Store<EntityStore>)`, plus `VoidEventStagesSystem`, `VoidEventRefSystem`,
+  `VoidEventPlayerJoinSystem`, `VoidInvasionPortalsSpawnSystem`, `VoidSpawnerSystems`. [javap]
+  Commands also exist (`VoidEventCommands`, `StartVoidEventCommand`), so it is both auto-started and
+  manually triggerable.
+
+### What is inferred, not established
+
+**q3's answer — "it fires on its own" — is inference.** A `DelayedSystem` whose only method is
+`delayedTick`, plus a staged config keyed on seconds-into, plus a player-join system, is a strong
+read. It is not a run. Two things specifically unverified:
+
+1. Whether a **mod** can attach a `VoidEvent` config to a world it defines, which is what §6 would
+   need to have this happen anywhere other than Hypixel's own Fragments.
+2. Whether the stage clock starts on instance creation or on first player join —
+   `VoidEventPlayerJoinSystem` exists, so either is plausible, and it changes whether an empty
+   instance advances.
+
+**The probe that settles both:** enter a goblin-breach Fragment, record wall-clock against the
+observed weather/title transitions, and compare to 120/240/390/540/690/780. One visit answers the
+clock question and confirms auto-start; a second visit with a delayed join separates
+creation-time from join-time.
+
+### One lore note the assets volunteer
+
+`portals.incomplete.description` — *"The energies within this Fragment have yet to take their final
+form. All you encounter within — lore, function, and form — awaits its true shape."* [asset] That is
+Hypixel telling players, in-game, that Fragments are unfinished. Useful corroboration for the
+project's standing posture that a zero in this build is not a zero in the design.
