@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 final class FlowingTrialSessionTest {
 
     @Test
-    void completionGrantsSigilAOnce() {
+    void completionGrantsCoursingLodestoneOnce() {
         // Make the test deterministic + fast by using low thresholds.
         FlowingTrialTuning t = new FlowingTrialTuning(
                 1.0, // emerge
@@ -27,22 +27,22 @@ final class FlowingTrialSessionTest {
         boolean granted = false;
         for (int i = 0; i < 200; i++) {
             FlowingTrialSessionStep r = session.step(new MotionSample(1, 0, 0, true));
-            granted |= r.sigilGrantedThisTick();
+            granted |= r.lodestoneGrantedThisTick();
             if (granted) {
                 break;
             }
         }
 
-        assertTrue(granted, "should grant sigil A upon completion");
-        assertTrue(p.hasSigilA(), "progress should reflect sigil A proof");
+        assertTrue(granted, "should grant lodestone A upon completion");
+        assertTrue(p.hasCoursingLodestone(), "progress should reflect lodestone A proof");
 
-        // Keep stepping; sigil should not be granted again.
+        // Keep stepping; lodestone should not be granted again.
         boolean grantedAgain = false;
         for (int i = 0; i < 200; i++) {
             FlowingTrialSessionStep r = session.step(new MotionSample(1, 0, 0, true));
-            grantedAgain |= r.sigilGrantedThisTick();
+            grantedAgain |= r.lodestoneGrantedThisTick();
         }
-        assertFalse(grantedAgain, "sigil grant should be idempotent");
+        assertFalse(grantedAgain, "lodestone grant should be idempotent");
     }
 
     @Test

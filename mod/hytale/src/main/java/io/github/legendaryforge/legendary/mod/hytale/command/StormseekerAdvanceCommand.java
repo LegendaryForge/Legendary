@@ -41,7 +41,7 @@ public class StormseekerAdvanceCommand extends AbstractPlayerCommand {
             sendText(
                     context,
                     "[Stormseeker] Cannot advance from " + before
-                            + " — exit conditions not met (need both sigils for Phase 2 exit).");
+                            + " — exit conditions not met (need both lodestones for Phase 2 exit).");
         } else {
             sendText(context, "[Stormseeker] Advanced: " + before + " -> " + after);
         }

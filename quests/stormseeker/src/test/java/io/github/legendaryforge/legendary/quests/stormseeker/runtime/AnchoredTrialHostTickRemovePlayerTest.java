@@ -10,27 +10,29 @@ import org.junit.jupiter.api.Test;
 final class AnchoredTrialHostTickRemovePlayerTest {
 
     @Test
-    void removePlayerClearsSessionAndSigilBEdgeTracking() {
+    void removePlayerClearsSessionAndStandingLodestoneEdgeTracking() {
         var progress = new StormseekerProgress();
         var host = new OutcomeRecordingHostRuntime(List.of("p1"), progress);
         var tick = new AnchoredTrialHostTick();
 
         // Grant B and tick -> emits once.
-        progress.grantSigilB();
+        progress.grantStandingLodestone();
         tick.tick(host);
         assertEquals(1, host.outcomes.size());
         assertEquals(
-                StormseekerPhaseMilestone.SIGIL_B_GRANTED, host.outcomes.get(0).milestone());
+                StormseekerPhaseMilestone.STANDING_LODESTONE_GRANTED,
+                host.outcomes.get(0).milestone());
 
         // Clear host-side tracking for the player.
         assertTrue(tick.removePlayer("p1"));
 
         // Ticking again should re-emit because the edge tracking was cleared.
-        // (Progress already has Sigil B, so host tick observes the edge as "new" again after removal.)
+        // (Progress already has the Standing Lodestone, so host tick observes the edge as "new" again after removal.)
         tick.tick(host);
         assertEquals(2, host.outcomes.size());
         assertEquals(
-                StormseekerPhaseMilestone.SIGIL_B_GRANTED, host.outcomes.get(1).milestone());
+                StormseekerPhaseMilestone.STANDING_LODESTONE_GRANTED,
+                host.outcomes.get(1).milestone());
     }
 
     @Test

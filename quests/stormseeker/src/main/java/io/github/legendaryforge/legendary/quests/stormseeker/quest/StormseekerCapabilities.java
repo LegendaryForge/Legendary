@@ -15,7 +15,7 @@ public final class StormseekerCapabilities {
         };
     }
 
-    public boolean canTrackSigils(StormseekerProgress progress) {
+    public boolean canTrackLodestones(StormseekerProgress progress) {
         return switch (progress.phase()) {
             case UNTOUCHED, PHASE_1_THE_MARK, PHASE_2_THE_TREK, PHASE_3_THE_WAKING -> false;
             default -> true;

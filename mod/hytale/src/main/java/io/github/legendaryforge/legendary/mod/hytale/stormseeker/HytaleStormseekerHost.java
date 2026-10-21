@@ -38,7 +38,8 @@ public final class HytaleStormseekerHost implements StormseekerHostRuntime {
         StormseekerProgress progress = store.load(playerId);
         players.putIfAbsent(playerId, new PlayerState(playerRef, progress));
         System.out.println("[LegendaryHytale] Loaded progress for " + playerId + ": phase=" + progress.phase()
-                + " sigilA=" + progress.hasSigilA() + " sigilB=" + progress.hasSigilB());
+                + " lodestoneCoursing=" + progress.hasCoursingLodestone() + " lodestoneStanding="
+                + progress.hasStandingLodestone());
     }
 
     public void removePlayer(String playerId) {
@@ -115,7 +116,7 @@ public final class HytaleStormseekerHost implements StormseekerHostRuntime {
     @Override
     public void emitStormseekerMilestone(StormseekerMilestoneOutcome outcome) {
         System.out.println("[LegendaryHytale] Milestone: " + outcome);
-        // Save immediately on milestone (sigil grants, phase transitions)
+        // Save immediately on milestone (lodestone grants, phase transitions)
         String playerId = outcome.playerId();
         PlayerState state = players.get(playerId);
         if (state != null) {

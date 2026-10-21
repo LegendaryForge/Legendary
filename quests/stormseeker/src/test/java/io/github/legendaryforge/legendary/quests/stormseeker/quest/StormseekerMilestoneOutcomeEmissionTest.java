@@ -10,20 +10,22 @@ import org.junit.jupiter.api.Test;
 public final class StormseekerMilestoneOutcomeEmissionTest {
 
     @Test
-    void emitsFlowingTrialOutcomeExactlyOnceOnSigilAGrant() {
+    void emitsFlowingTrialOutcomeExactlyOnceOnCoursingLodestoneGrant() {
         var progress = new StormseekerProgress();
         var host = new OutcomeRecordingHostRuntime(List.of("p1"), progress);
         var tick = new FlowingTrialHostTick();
 
-        // Tick until Sigil A is granted
-        for (int i = 0; i < 500 && !progress.hasSigilA(); i++) {
+        // Tick until the Coursing Lodestone is granted
+        for (int i = 0; i < 500 && !progress.hasCoursingLodestone(); i++) {
             tick.tick(host);
         }
 
         assertEquals(
-                true, progress.hasSigilA(), "Test precondition: Sigil A should have been granted within tick budget");
+                true,
+                progress.hasCoursingLodestone(),
+                "Test precondition: the Coursing Lodestone should have been granted within tick budget");
 
-        assertEquals(1, host.outcomes.size(), "Flowing Trial outcome should emit once on Sigil A grant");
+        assertEquals(1, host.outcomes.size(), "Flowing Trial outcome should emit once on the Coursing Lodestone grant");
 
         // Additional ticks must not emit again
         tick.tick(host);
@@ -33,25 +35,28 @@ public final class StormseekerMilestoneOutcomeEmissionTest {
     }
 
     @Test
-    void emitsDualSigilsGrantedWhenSigilBAlreadyGrantedOnSigilAGrant() {
+    void emitsDualLodestonesGrantedWhenStandingLodestoneAlreadyGrantedOnCoursingLodestoneGrant() {
         var progress = new StormseekerProgress();
-        progress.grantSigilB();
+        progress.grantStandingLodestone();
         var host = new OutcomeRecordingHostRuntime(List.of("p1"), progress);
         var tick = new FlowingTrialHostTick();
 
-        // Tick until Sigil A is granted
-        for (int i = 0; i < 500 && !progress.hasSigilA(); i++) {
+        // Tick until the Coursing Lodestone is granted
+        for (int i = 0; i < 500 && !progress.hasCoursingLodestone(); i++) {
             tick.tick(host);
         }
 
         assertEquals(
-                true, progress.hasSigilA(), "Test precondition: Sigil A should have been granted within tick budget");
+                true,
+                progress.hasCoursingLodestone(),
+                "Test precondition: the Coursing Lodestone should have been granted within tick budget");
 
         assertEquals(2, host.outcomes.size(), "A grant with B already granted must emit A + dual");
         assertEquals(
-                StormseekerPhaseMilestone.SIGIL_A_GRANTED, host.outcomes.get(0).milestone());
+                StormseekerPhaseMilestone.COURSING_LODESTONE_GRANTED,
+                host.outcomes.get(0).milestone());
         assertEquals(
-                StormseekerPhaseMilestone.DUAL_SIGILS_GRANTED,
+                StormseekerPhaseMilestone.DUAL_LODESTONES_GRANTED,
                 host.outcomes.get(1).milestone());
 
         // Additional ticks must not emit again

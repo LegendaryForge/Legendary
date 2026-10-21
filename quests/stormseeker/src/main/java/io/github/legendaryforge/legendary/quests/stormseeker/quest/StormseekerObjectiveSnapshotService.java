@@ -14,7 +14,7 @@ public final class StormseekerObjectiveSnapshotService {
 
     // Stable objective ids (string ids to keep this API portable).
     public static final String OBJ_REACH_ATTUNEMENT = "stormseeker.phase1.reach_the_waking";
-    public static final String OBJ_EARN_SIGIL_A = "stormseeker.phase4.sigil_a_flowing";
+    public static final String OBJ_EARN_COURSING_LODESTONE = "stormseeker.phase4.coursing_lodestone";
 
     /**
      * Snapshot objectives for the current phase (minimal scaffold).
@@ -30,14 +30,15 @@ public final class StormseekerObjectiveSnapshotService {
             return out;
         }
 
-        // The Trials: Flowing Trial -> Sigil A.
+        // The Trials: Flowing Trial -> the Coursing Lodestone.
         if (phase == StormseekerPhase.PHASE_4_THE_TRIALS) {
-            if (progress.hasSigilA()) {
-                out.add(ObjectiveStatus.complete(OBJ_EARN_SIGIL_A));
+            if (progress.hasCoursingLodestone()) {
+                out.add(ObjectiveStatus.complete(OBJ_EARN_COURSING_LODESTONE));
             } else {
-                out.add(ObjectiveStatus.incomplete(
-                        OBJ_EARN_SIGIL_A,
-                        "Enter the Flowing Trial and maintain coherent movement to earn Sigil A.")); // real path
+                out.add(
+                        ObjectiveStatus.incomplete(
+                                OBJ_EARN_COURSING_LODESTONE,
+                                "Enter the Flowing Trial and maintain coherent movement to earn the Coursing Lodestone.")); // real path
             }
             return out;
         }

@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 final class AnchoredTrialSessionTest {
 
     @Test
-    void grantsSigilBAfterRequiredStationaryTicks() {
+    void grantsStandingLodestoneAfterRequiredStationaryTicks() {
         StormseekerProgress progress = new StormseekerProgress();
         AnchoredTrialSession session = new AnchoredTrialSession(progress);
 
@@ -17,13 +17,13 @@ final class AnchoredTrialSessionTest {
 
         for (int i = 1; i < AnchoredTrialSession.REQUIRED_STATIONARY_TICKS; i++) {
             AnchoredTrialSessionStep step = session.step(still);
-            assertFalse(step.sigilGrantedThisTick(), "should not grant before threshold");
-            assertFalse(progress.hasSigilB());
+            assertFalse(step.lodestoneGrantedThisTick(), "should not grant before threshold");
+            assertFalse(progress.hasStandingLodestone());
         }
 
         AnchoredTrialSessionStep granted = session.step(still);
-        assertTrue(granted.sigilGrantedThisTick(), "should grant at threshold");
-        assertTrue(progress.hasSigilB());
+        assertTrue(granted.lodestoneGrantedThisTick(), "should grant at threshold");
+        assertTrue(progress.hasStandingLodestone());
     }
 
     @Test
@@ -39,8 +39,8 @@ final class AnchoredTrialSessionTest {
 
         AnchoredTrialSessionStep reset = session.step(moving);
         assertEquals(0, reset.stationaryStreak());
-        assertFalse(reset.sigilGrantedThisTick());
-        assertFalse(progress.hasSigilB());
+        assertFalse(reset.lodestoneGrantedThisTick());
+        assertFalse(progress.hasStandingLodestone());
     }
 
     @Test
@@ -53,9 +53,9 @@ final class AnchoredTrialSessionTest {
         for (int i = 0; i < AnchoredTrialSession.REQUIRED_STATIONARY_TICKS; i++) {
             session.step(still);
         }
-        assertTrue(progress.hasSigilB());
+        assertTrue(progress.hasStandingLodestone());
 
         AnchoredTrialSessionStep after = session.step(still);
-        assertFalse(after.sigilGrantedThisTick(), "idempotent after completion");
+        assertFalse(after.lodestoneGrantedThisTick(), "idempotent after completion");
     }
 }

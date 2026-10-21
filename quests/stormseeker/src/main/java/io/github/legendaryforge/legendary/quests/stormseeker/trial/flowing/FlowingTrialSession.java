@@ -17,26 +17,26 @@ public final class FlowingTrialSession {
 
     private final StormseekerProgress progress;
     private final FlowingTrialTuning tuning;
-    private final FlowingSigilGrantSystem sigilGrantSystem;
+    private final FlowingLodestoneGrantSystem lodestoneGrantSystem;
 
     private FlowingTrialState state;
 
     public FlowingTrialSession(StormseekerProgress progress) {
-        this(progress, FlowingTrialTuning.defaults(), new FlowingSigilGrantSystem(), new FlowingTrialState());
+        this(progress, FlowingTrialTuning.defaults(), new FlowingLodestoneGrantSystem(), new FlowingTrialState());
     }
 
     public FlowingTrialSession(StormseekerProgress progress, FlowingTrialTuning tuning) {
-        this(progress, tuning, new FlowingSigilGrantSystem(), new FlowingTrialState());
+        this(progress, tuning, new FlowingLodestoneGrantSystem(), new FlowingTrialState());
     }
 
     public FlowingTrialSession(
             StormseekerProgress progress,
             FlowingTrialTuning tuning,
-            FlowingSigilGrantSystem sigilGrantSystem,
+            FlowingLodestoneGrantSystem lodestoneGrantSystem,
             FlowingTrialState initialState) {
         this.progress = Objects.requireNonNull(progress, "progress");
         this.tuning = Objects.requireNonNull(tuning, "tuning");
-        this.sigilGrantSystem = Objects.requireNonNull(sigilGrantSystem, "sigilGrantSystem");
+        this.lodestoneGrantSystem = Objects.requireNonNull(lodestoneGrantSystem, "lodestoneGrantSystem");
         this.state = Objects.requireNonNull(initialState, "initialState");
     }
 
@@ -51,17 +51,17 @@ public final class FlowingTrialSession {
     /**
      * Advances the session by one movement sample tick.
      *
-     * @return step result containing hint + completion + whether sigil was granted this tick.
+     * @return step result containing hint + completion + whether lodestone was granted this tick.
      */
     public FlowingTrialSessionStep step(MotionSample sample) {
         FlowingTrialStepResult r = FlowingTrialEvaluator.step(state, sample, tuning);
         this.state = r.state();
 
-        boolean sigilGranted = false;
+        boolean lodestoneGranted = false;
         if (r.completedThisTick()) {
-            sigilGranted = sigilGrantSystem.onFlowingTrialCompleted(progress);
+            lodestoneGranted = lodestoneGrantSystem.onFlowingTrialCompleted(progress);
         }
 
-        return new FlowingTrialSessionStep(state.status, r.hint(), r.completedThisTick(), sigilGranted);
+        return new FlowingTrialSessionStep(state.status, r.hint(), r.completedThisTick(), lodestoneGranted);
     }
 }

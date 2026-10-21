@@ -6,23 +6,23 @@ import io.github.legendaryforge.legendary.quests.stormseeker.quest.StormseekerPh
 import io.github.legendaryforge.legendary.quests.stormseeker.quest.StormseekerProgress;
 import org.junit.jupiter.api.Test;
 
-final class FlowingSigilIssuerTest {
+final class FlowingLodestoneIssuerTest {
 
     @Test
-    void grantsSigilAIdempotently() {
+    void grantsCoursingLodestoneIdempotently() {
         StormseekerProgress p = new StormseekerProgress();
 
-        assertFalse(p.hasSigilA());
-        assertTrue(FlowingSigilIssuer.grantIfMissing(p));
-        assertTrue(p.hasSigilA());
+        assertFalse(p.hasCoursingLodestone());
+        assertTrue(FlowingLodestoneIssuer.grantIfMissing(p));
+        assertTrue(p.hasCoursingLodestone());
 
         // Second call should not re-grant.
-        assertFalse(FlowingSigilIssuer.grantIfMissing(p));
-        assertTrue(p.hasSigilA());
+        assertFalse(FlowingLodestoneIssuer.grantIfMissing(p));
+        assertTrue(p.hasCoursingLodestone());
     }
 
     @Test
-    void doesNotAdvancePastDualSigilsWithoutBoth() {
+    void doesNotAdvancePastDualLodestonesWithoutBoth() {
         StormseekerProgress p = new StormseekerProgress();
 
         // Drive to PHASE_4_THE_TRIALS.
@@ -32,17 +32,17 @@ final class FlowingSigilIssuerTest {
         p.advanceIfEligible(); // 3 -> 4
         assertEquals(StormseekerPhase.PHASE_4_THE_TRIALS, p.phase());
 
-        // Grant only Sigil A (Flowing).
-        assertTrue(FlowingSigilIssuer.grantIfMissing(p));
-        assertTrue(p.hasSigilA());
-        assertFalse(p.hasSigilB());
+        // Grant only the Coursing Lodestone (Flowing).
+        assertTrue(FlowingLodestoneIssuer.grantIfMissing(p));
+        assertTrue(p.hasCoursingLodestone());
+        assertFalse(p.hasStandingLodestone());
 
-        // Still must remain in Phase 2 until Sigil B exists.
+        // Still must remain in Phase 2 until the Standing Lodestone exists.
         assertEquals(StormseekerPhase.PHASE_4_THE_TRIALS, p.phase());
     }
 
     @Test
-    void advancesWhenBothSigilsExist() {
+    void advancesWhenBothLodestonesExist() {
         StormseekerProgress p = new StormseekerProgress();
 
         // Drive to PHASE_4_THE_TRIALS.
@@ -52,11 +52,11 @@ final class FlowingSigilIssuerTest {
         p.advanceIfEligible();
         assertEquals(StormseekerPhase.PHASE_4_THE_TRIALS, p.phase());
 
-        // Grant Sigil A via issuer.
-        assertTrue(FlowingSigilIssuer.grantIfMissing(p));
+        // Grant the Coursing Lodestone via issuer.
+        assertTrue(FlowingLodestoneIssuer.grantIfMissing(p));
 
-        // Grant Sigil B directly (Anchored mechanics not implemented here).
-        p.grantSigilB();
+        // Grant the Standing Lodestone directly (Anchored mechanics not implemented here).
+        p.grantStandingLodestone();
 
         // Now advancement should occur.
         p.advanceIfEligible();
@@ -65,7 +65,7 @@ final class FlowingSigilIssuerTest {
 
     @Test
     void systemWrapperDelegatesToIssuer() {
-        FlowingSigilGrantSystem sys = new FlowingSigilGrantSystem();
+        FlowingLodestoneGrantSystem sys = new FlowingLodestoneGrantSystem();
         StormseekerProgress p = new StormseekerProgress();
 
         assertTrue(sys.onFlowingTrialCompleted(p));

@@ -201,7 +201,11 @@ up from 10,235, and two of the original verdicts have flipped. [asset, 0.7.2]
 | *leyline* | 0 | **0** | still ours to use |
 | *resonator* | 0 | **0** | still ours to use |
 | *attune* | 0 | **0** | still ours to use |
-| *sigil* | 0 | **2** | **taken** — `Ingredient_Enkindled_Resource` is the "Enkindled Sigil" |
+| *sigil* | 0 | **2** | **taken** — `Ingredient_Enkindled_Resource` is the "Enkindled Sigil". **Vacated 2026-10-21**: we renamed off it |
+| *lodestone* | — | **0** | **ours** — adopted 2026-10-21 for the two trial proofs; 0 in lang *and* 0 in 68,759 asset names |
+| *coursing* | — | **0** | **ours** — adopted 2026-10-21; clean in both surfaces |
+| *standing* | — | 7 | ours, with a caveat: 7 lang hits and 1 asset hit, all lowercase prose, no content named this |
+| *keystone* | — | **0 / 4** | **taken, and invisible to this table's old method** — see below |
 | *rune* | 0 | **54** | **taken** — the runestone system |
 | *crystal* | 89 | 85 | theirs |
 | *storm* | 45 | 46 | theirs |
@@ -215,14 +219,30 @@ up from 10,235, and two of the original verdicts have flipped. [asset, 0.7.2]
 in this document, because each release can take a word, and nothing warns us — we find out by reading a
 design that used it.
 
-**`sigil` is not "a word to watch" — the collision is already live in our code.** `stormseeker` ships
-`SIGIL_FLOWING` and `SIGIL_ANCHORED` as both `ResourceId`s and item ids
-(`stormseeker:sigil_flowing`, `stormseeker:sigil_anchored`), chosen when `sigil` had **zero**
-occurrences in `server.lang`. 0.7.2 now ships the *"Enkindled Sigil"*, so a word picked precisely
-because the game did not use it is now a word the game does use — and ours are player-facing item
-names. Nothing breaks; the ids are namespaced. But the fiction now implies a connection to Hypixel
-content we do not control, which is the cost an invented word was chosen to avoid. Worth a deliberate
-keep-or-rename decision rather than discovering it in a player's inventory.
+**`sigil` — RESOLVED 2026-10-21 by renaming.** `stormseeker` shipped `SIGIL_FLOWING` and
+`SIGIL_ANCHORED` as both `ResourceId`s and item ids, chosen when `sigil` had **zero** occurrences.
+0.7.2 ships the *"Enkindled Sigil"*, so a word picked precisely because the game did not use it
+became a word the game does use. They are now the **Coursing Lodestone** and **Standing Lodestone**;
+`sigil` appears nowhere in the source tree. One correction to the record: this paragraph previously
+called ours *"player-facing item names"*, and they were not — no asset or `server.lang` entry ever
+defined them, so the collision was prospective rather than live in anyone's inventory. That is why
+the rename cost nothing: there was no shipped item to migrate.
+
+**The method behind this table was incomplete, and `keystone` is the proof.** Every verdict above was
+measured against `server.lang` alone. `keystone` has **0** occurrences there — and **4** in the asset
+namespace, all Void content (`Void_Anomaly_Crystal_Keystone` as an NPC role, drop list, group and
+spawn marker). It is invisible to a `server.lang` check because its display name is
+`npcRoles.Void_Anomaly_Crystal.name = Void Crystal`; the word never reaches a player. That matters
+because the Stormseeker narrative had already chosen *Keystone* as the replacement for *sigil*, on
+the strength of a check that could not see it.
+
+> **A vocabulary check must read both surfaces: `server.lang` (11,507 lines) and the asset namespace
+> (68,759 entries).** The first tells you what a player can read; the second tells you what Hypixel
+> has built. A word clean in the first and taken in the second is safe *today* and becomes a
+> collision the moment they give it a display name — which is a change we would not notice.
+
+This is a different failure from the stale-`[gap]` problem below. That one is about *when* a claim was
+measured; this one is about *what was measured at all*. Both produce a confident zero.
 
 **One further collision to watch, not yet a problem:** *lattice*. 0.7.2 names a player-facing station the
 **Runebinder's Lattice**, and the residue design's candidate generator is also called a lattice (that

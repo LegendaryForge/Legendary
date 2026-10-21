@@ -29,8 +29,8 @@ public final class StormseekerWiring {
     public static final ResourceId DENY_NOT_ON_REQUIRED_QUEST_STEP =
             ResourceId.of("stormseeker", "not_on_required_quest_step");
 
-    public static final ResourceId SIGIL_FLOWING = ResourceId.of("stormseeker", "sigil_flowing");
-    public static final ResourceId SIGIL_ANCHORED = ResourceId.of("stormseeker", "sigil_anchored");
+    public static final ResourceId LODESTONE_COURSING = ResourceId.of("stormseeker", "lodestone_coursing");
+    public static final ResourceId LODESTONE_STANDING = ResourceId.of("stormseeker", "lodestone_standing");
 
     // Phase 2: The Trek
     private static StormseekerTrekSystem PHASE_2_THE_TREK;

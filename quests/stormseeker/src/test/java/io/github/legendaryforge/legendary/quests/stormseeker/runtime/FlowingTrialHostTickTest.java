@@ -13,11 +13,11 @@ import org.junit.jupiter.api.Test;
 final class FlowingTrialHostTickTest {
 
     @Test
-    void tickEmitsHintsAndGrantsSigilAIdempotently() {
+    void tickEmitsHintsAndGrantsCoursingLodestoneIdempotently() {
         FlowingTrialHostTick hostTick = new FlowingTrialHostTick();
         FakeRuntime rt = new FakeRuntime();
 
-        assertFalse(rt.progress.hasSigilA());
+        assertFalse(rt.progress.hasCoursingLodestone());
 
         boolean completedObserved = false;
         for (int i = 0; i < 500; i++) {
@@ -31,12 +31,12 @@ final class FlowingTrialHostTickTest {
 
         assertFalse(rt.hints.isEmpty(), "expected at least one hint emission");
         assertTrue(completedObserved, "expected completion to be observed within tick budget");
-        assertTrue(rt.progress.hasSigilA(), "sigil A should be granted on completion");
+        assertTrue(rt.progress.hasCoursingLodestone(), "lodestone A should be granted on completion");
 
         for (int i = 0; i < 50; i++) {
             hostTick.tick(rt);
         }
-        assertTrue(rt.progress.hasSigilA());
+        assertTrue(rt.progress.hasCoursingLodestone());
     }
 
     @Test

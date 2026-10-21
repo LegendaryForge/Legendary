@@ -28,19 +28,19 @@ public final class FlowingTrialHostTick {
             Objects.requireNonNull(playerId, "playerId");
 
             StormseekerProgress progress = runtime.progress(playerId);
-            boolean hadSigilA = progress.hasSigilA();
+            boolean hadCoursingLodestone = progress.hasCoursingLodestone();
 
             FlowingTrialSession session = sessions.computeIfAbsent(playerId, id -> new FlowingTrialSession(progress));
 
             var step = session.step(runtime.motionSample(playerId));
 
-            boolean hasSigilANow = progress.hasSigilA();
-            if (!hadSigilA && hasSigilANow) {
-                runtime.emitStormseekerMilestone(
-                        new StormseekerMilestoneOutcome(playerId, StormseekerPhaseMilestone.SIGIL_A_GRANTED));
-                if (progress.hasSigilB()) {
-                    runtime.emitStormseekerMilestone(
-                            new StormseekerMilestoneOutcome(playerId, StormseekerPhaseMilestone.DUAL_SIGILS_GRANTED));
+            boolean hasCoursingLodestoneNow = progress.hasCoursingLodestone();
+            if (!hadCoursingLodestone && hasCoursingLodestoneNow) {
+                runtime.emitStormseekerMilestone(new StormseekerMilestoneOutcome(
+                        playerId, StormseekerPhaseMilestone.COURSING_LODESTONE_GRANTED));
+                if (progress.hasStandingLodestone()) {
+                    runtime.emitStormseekerMilestone(new StormseekerMilestoneOutcome(
+                            playerId, StormseekerPhaseMilestone.DUAL_LODESTONES_GRANTED));
                 }
             }
 

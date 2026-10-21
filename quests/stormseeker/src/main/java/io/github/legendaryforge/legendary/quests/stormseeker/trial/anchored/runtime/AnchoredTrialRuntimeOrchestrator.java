@@ -47,7 +47,7 @@ public final class AnchoredTrialRuntimeOrchestrator {
         MotionSample sample = motionSampleSource.sampleFor(player);
 
         // Avoid unused warnings (palantir-java-format doesn’t like dead locals).
-        if (sample.moving() && progress.hasSigilB()) {
+        if (sample.moving() && progress.hasStandingLodestone()) {
             // No-op: scaffold only.
         }
     }

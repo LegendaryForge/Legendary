@@ -20,55 +20,55 @@ import org.junit.jupiter.api.Test;
 final class AnchoredTrialDogfoodHarnessTest {
 
     @Test
-    void anchoredTrialSessionGrantsSigilB_andHostTickEmitsMilestones() {
+    void anchoredTrialSessionGrantsStandingLodestone_andHostTickEmitsMilestones() {
         String player = "p1";
 
         FakeHostRuntime runtime = new FakeHostRuntime();
         runtime.ensurePlayer(player);
 
-        // Phase 2E gameplay loop is AnchoredTrialSession (stationary streak grants Sigil B).
+        // Phase 2E gameplay loop is AnchoredTrialSession (stationary streak grants the Standing Lodestone).
         AnchoredTrialSession session = new AnchoredTrialSession(runtime.progress(player));
 
         for (int i = 0; i < AnchoredTrialSession.REQUIRED_STATIONARY_TICKS + 5; i++) {
             session.step(runtime.motionSample(player));
-            if (runtime.progress(player).hasSigilB()) {
+            if (runtime.progress(player).hasStandingLodestone()) {
                 break;
             }
         }
 
-        assertTrue(runtime.progress(player).hasSigilB(), "expected Sigil B to be granted");
+        assertTrue(runtime.progress(player).hasStandingLodestone(), "expected the Standing Lodestone to be granted");
 
         // Host observer emits durable milestones on the progress edge.
         AnchoredTrialHostTick hostTick = new AnchoredTrialHostTick();
         hostTick.tick(runtime);
 
-        assertEquals(1, runtime.countMilestones(player, StormseekerPhaseMilestone.SIGIL_B_GRANTED));
-        assertEquals(0, runtime.countMilestones(player, StormseekerPhaseMilestone.DUAL_SIGILS_GRANTED));
+        assertEquals(1, runtime.countMilestones(player, StormseekerPhaseMilestone.STANDING_LODESTONE_GRANTED));
+        assertEquals(0, runtime.countMilestones(player, StormseekerPhaseMilestone.DUAL_LODESTONES_GRANTED));
     }
 
     @Test
-    void emitsDualSigilsGrantedWhenSigilAAlreadyPresent() {
+    void emitsDualLodestonesGrantedWhenCoursingLodestoneAlreadyPresent() {
         String player = "p1";
 
         FakeHostRuntime runtime = new FakeHostRuntime();
         runtime.ensurePlayer(player);
-        runtime.progress(player).grantSigilA();
+        runtime.progress(player).grantCoursingLodestone();
 
         AnchoredTrialSession session = new AnchoredTrialSession(runtime.progress(player));
         for (int i = 0; i < AnchoredTrialSession.REQUIRED_STATIONARY_TICKS + 5; i++) {
             session.step(runtime.motionSample(player));
-            if (runtime.progress(player).hasSigilB()) {
+            if (runtime.progress(player).hasStandingLodestone()) {
                 break;
             }
         }
 
-        assertTrue(runtime.progress(player).hasSigilB(), "expected Sigil B to be granted");
+        assertTrue(runtime.progress(player).hasStandingLodestone(), "expected the Standing Lodestone to be granted");
 
         AnchoredTrialHostTick hostTick = new AnchoredTrialHostTick();
         hostTick.tick(runtime);
 
-        assertEquals(1, runtime.countMilestones(player, StormseekerPhaseMilestone.SIGIL_B_GRANTED));
-        assertEquals(1, runtime.countMilestones(player, StormseekerPhaseMilestone.DUAL_SIGILS_GRANTED));
+        assertEquals(1, runtime.countMilestones(player, StormseekerPhaseMilestone.STANDING_LODESTONE_GRANTED));
+        assertEquals(1, runtime.countMilestones(player, StormseekerPhaseMilestone.DUAL_LODESTONES_GRANTED));
     }
 
     private static final class FakeHostRuntime implements StormseekerHostRuntime {

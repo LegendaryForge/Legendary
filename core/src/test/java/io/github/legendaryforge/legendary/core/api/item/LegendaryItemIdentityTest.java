@@ -12,7 +12,7 @@ final class LegendaryItemIdentityTest {
     void rejectsBlankQuestlineId() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new LegendaryItemIdentity(UUID.randomUUID(), " ", LegendaryItemRole.SIGIL));
+                () -> new LegendaryItemIdentity(UUID.randomUUID(), " ", LegendaryItemRole.PROOF_TOKEN));
     }
 
     @Test

@@ -22,11 +22,30 @@ import java.util.Properties;
  * <p>Format:
  * <pre>
  * phase=PHASE_4_THE_TRIALS
- * sigilA=true
- * sigilB=false
+ * lodestoneCoursing=true
+ * lodestoneStanding=false
  * </pre>
+ *
+ * <p>Files written before 2026-10-21 use {@code sigilA} / {@code sigilB} for the two proofs and
+ * are migrated on read. See {@link #LEGACY_KEY_COURSING}.
  */
 public final class PropertiesProgressStore {
+
+    private static final String KEY_COURSING = "lodestoneCoursing";
+    private static final String KEY_STANDING = "lodestoneStanding";
+
+    /**
+     * Key names used before the 2026-10-21 sigil -> lodestone rename. Read on load, never written:
+     * migration is one-way, so the first save after an upgrade drops them.
+     *
+     * <p>Without this fallback the rename would be silent data loss rather than a visible failure.
+     * A pre-rename file parses perfectly — it simply has no lodestone keys — so {@link #load}
+     * would return both proofs as {@code false}, {@link #quarantine} would never fire, and the
+     * next disconnect would save that fresh state over a player's completed trials.
+     */
+    private static final String LEGACY_KEY_COURSING = "sigilA";
+
+    private static final String LEGACY_KEY_STANDING = "sigilB";
 
     private final Path dataDir;
 
@@ -57,12 +76,12 @@ public final class PropertiesProgressStore {
                 progress.advanceToNextOrThrow(progress.phase().next());
             }
 
-            // Restore sigils
-            if (Boolean.parseBoolean(props.getProperty("sigilA", "false"))) {
-                progress.grantSigilA();
+            // Restore lodestones, accepting pre-rename key names (see LEGACY_KEY_COURSING)
+            if (readProof(props, KEY_COURSING, LEGACY_KEY_COURSING)) {
+                progress.grantCoursingLodestone();
             }
-            if (Boolean.parseBoolean(props.getProperty("sigilB", "false"))) {
-                progress.grantSigilB();
+            if (readProof(props, KEY_STANDING, LEGACY_KEY_STANDING)) {
+                progress.grantStandingLodestone();
             }
 
             return progress;
@@ -84,8 +103,8 @@ public final class PropertiesProgressStore {
 
             Properties props = new Properties();
             props.setProperty("phase", progress.phase().name());
-            props.setProperty("sigilA", String.valueOf(progress.hasSigilA()));
-            props.setProperty("sigilB", String.valueOf(progress.hasSigilB()));
+            props.setProperty(KEY_COURSING, String.valueOf(progress.hasCoursingLodestone()));
+            props.setProperty(KEY_STANDING, String.valueOf(progress.hasStandingLodestone()));
 
             try (Writer writer = Files.newBufferedWriter(file)) {
                 props.store(writer, "Stormseeker quest progress for " + playerId);
@@ -103,6 +122,19 @@ public final class PropertiesProgressStore {
         for (String playerId : playerIds) {
             save(playerId, progressLookup.apply(playerId));
         }
+    }
+
+    /**
+     * Reads a proof flag, falling back to its pre-rename key name only when the current key is
+     * absent. Presence, not truth, decides: an explicit {@code lodestoneCoursing=false} wins over
+     * a stale {@code sigilA=true}, so a post-rename save is never overridden by a legacy leftover.
+     */
+    private static boolean readProof(Properties props, String key, String legacyKey) {
+        String value = props.getProperty(key);
+        if (value == null) {
+            value = props.getProperty(legacyKey, "false");
+        }
+        return Boolean.parseBoolean(value);
     }
 
     /**

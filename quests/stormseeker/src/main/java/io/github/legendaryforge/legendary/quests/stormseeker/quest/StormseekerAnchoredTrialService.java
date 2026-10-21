@@ -16,8 +16,8 @@ import java.util.Objects;
  */
 public final class StormseekerAnchoredTrialService {
 
-    public static final ResourceId DENY_ENTER_ALREADY_HAS_SIGIL_B =
-            ResourceId.of("stormseeker", "deny_enter_already_has_sigil_b");
+    public static final ResourceId DENY_ENTER_ALREADY_HAS_STANDING_LODESTONE =
+            ResourceId.of("stormseeker", "deny_enter_already_has_standing_lodestone");
 
     private final AnchoredTrialParticipation participation = new AnchoredTrialParticipation();
     private final AnchoredTrialHostDriver driver;
@@ -37,8 +37,8 @@ public final class StormseekerAnchoredTrialService {
     /** Returns denial reason id, or null if entry is allowed. */
     public ResourceId denyEnterAnchoredTrialReason(StormseekerProgress progress) {
         Objects.requireNonNull(progress, "progress");
-        if (progress.hasSigilB()) {
-            return DENY_ENTER_ALREADY_HAS_SIGIL_B;
+        if (progress.hasStandingLodestone()) {
+            return DENY_ENTER_ALREADY_HAS_STANDING_LODESTONE;
         }
         return null;
     }

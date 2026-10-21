@@ -11,39 +11,41 @@ import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-final class AnchoredTrialHostTickDualSigilSymmetryTest {
+final class AnchoredTrialHostTickDualLodestoneSymmetryTest {
 
     @Test
-    void emitsDualSigilsGrantedWhenSigilAIsGrantedAfterSigilB() {
+    void emitsDualLodestonesGrantedWhenCoursingLodestoneIsGrantedAfterStandingLodestone() {
         var progress = new StormseekerProgress();
         var host = new RecordingHostRuntime("p1", progress);
         var tick = new AnchoredTrialHostTick();
 
-        // First, grant B and tick: should emit SIGIL_B_GRANTED only.
-        progress.grantSigilB();
+        // First, grant B and tick: should emit STANDING_LODESTONE_GRANTED only.
+        progress.grantStandingLodestone();
         tick.tick(host);
 
         assertEquals(1, host.outcomes.size());
         assertEquals(
-                StormseekerPhaseMilestone.SIGIL_B_GRANTED, host.outcomes.get(0).milestone());
+                StormseekerPhaseMilestone.STANDING_LODESTONE_GRANTED,
+                host.outcomes.get(0).milestone());
 
-        // Now grant A after B and tick: should emit DUAL_SIGILS_GRANTED exactly once.
-        progress.grantSigilA();
+        // Now grant A after B and tick: should emit DUAL_LODESTONES_GRANTED exactly once.
+        progress.grantCoursingLodestone();
         tick.tick(host);
 
         assertTrue(
-                host.outcomes.stream().anyMatch(o -> o.milestone() == StormseekerPhaseMilestone.DUAL_SIGILS_GRANTED),
-                "expected DUAL_SIGILS_GRANTED after A is granted post-B");
+                host.outcomes.stream()
+                        .anyMatch(o -> o.milestone() == StormseekerPhaseMilestone.DUAL_LODESTONES_GRANTED),
+                "expected DUAL_LODESTONES_GRANTED after A is granted post-B");
 
         int dualCount = (int) host.outcomes.stream()
-                .filter(o -> o.milestone() == StormseekerPhaseMilestone.DUAL_SIGILS_GRANTED)
+                .filter(o -> o.milestone() == StormseekerPhaseMilestone.DUAL_LODESTONES_GRANTED)
                 .count();
         assertEquals(1, dualCount, "dual milestone must be durable (emit once)");
 
         // Additional ticks must not re-emit dual.
         tick.tick(host);
         dualCount = (int) host.outcomes.stream()
-                .filter(o -> o.milestone() == StormseekerPhaseMilestone.DUAL_SIGILS_GRANTED)
+                .filter(o -> o.milestone() == StormseekerPhaseMilestone.DUAL_LODESTONES_GRANTED)
                 .count();
         assertEquals(1, dualCount, "dual milestone must not re-emit");
     }

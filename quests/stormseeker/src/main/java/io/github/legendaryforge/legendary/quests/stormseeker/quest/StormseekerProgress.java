@@ -7,43 +7,43 @@ import java.util.Objects;
  *
  * <p>Intentionally content-agnostic:
  * <ul>
- *   <li>Sigils are binary proofs only.</li>
+ *   <li>Lodestones are binary proofs only.</li>
  *   <li>No trial mechanics, rituals, or encounter logic live here.</li>
  * </ul>
  */
 public final class StormseekerProgress {
 
     private StormseekerPhase phase;
-    private boolean hasSigilA;
-    private boolean hasSigilB;
+    private boolean hasCoursingLodestone;
+    private boolean hasStandingLodestone;
 
     public StormseekerProgress() {
         this.phase = StormseekerPhase.UNTOUCHED;
-        this.hasSigilA = false;
-        this.hasSigilB = false;
+        this.hasCoursingLodestone = false;
+        this.hasStandingLodestone = false;
     }
 
     public StormseekerPhase phase() {
         return phase;
     }
 
-    public boolean hasSigilA() {
-        return hasSigilA;
+    public boolean hasCoursingLodestone() {
+        return hasCoursingLodestone;
     }
 
-    public boolean hasSigilB() {
-        return hasSigilB;
+    public boolean hasStandingLodestone() {
+        return hasStandingLodestone;
     }
 
-    public void grantSigilA() {
-        this.hasSigilA = true;
+    public void grantCoursingLodestone() {
+        this.hasCoursingLodestone = true;
     }
 
-    public boolean grantSigilB() {
-        if (hasSigilB()) {
+    public boolean grantStandingLodestone() {
+        if (hasStandingLodestone()) {
             return false;
         }
-        this.hasSigilB = true;
+        this.hasStandingLodestone = true;
         return true;
     }
 
@@ -61,7 +61,7 @@ public final class StormseekerProgress {
             case PHASE_3_THE_WAKING -> phase = StormseekerPhase.PHASE_4_THE_TRIALS;
 
             case PHASE_4_THE_TRIALS -> {
-                if (hasSigilA && hasSigilB) {
+                if (hasCoursingLodestone && hasStandingLodestone) {
                     phase = StormseekerPhase.PHASE_5_THE_FRAME;
                 }
             }

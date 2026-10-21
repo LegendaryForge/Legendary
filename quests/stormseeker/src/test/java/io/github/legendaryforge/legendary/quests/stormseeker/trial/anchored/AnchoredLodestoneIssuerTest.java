@@ -6,21 +6,21 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import io.github.legendaryforge.legendary.quests.stormseeker.quest.StormseekerProgress;
 import org.junit.jupiter.api.Test;
 
-public final class AnchoredSigilIssuerTest {
+public final class AnchoredLodestoneIssuerTest {
 
     @Test
-    void grantsSigilB_idempotently() {
+    void grantsStandingLodestone_idempotently() {
         var playerId = "p1";
         var progress = new StormseekerProgress();
 
-        var issuer = new AnchoredSigilIssuer();
+        var issuer = new AnchoredLodestoneIssuer();
 
-        assertFalse(progress.hasSigilB());
-        assertTrue(issuer.tryGrantSigilB(playerId, progress));
-        assertTrue(progress.hasSigilB());
+        assertFalse(progress.hasStandingLodestone());
+        assertTrue(issuer.tryGrantStandingLodestone(playerId, progress));
+        assertTrue(progress.hasStandingLodestone());
 
         // Second call should not newly grant.
-        assertFalse(issuer.tryGrantSigilB(playerId, progress));
-        assertTrue(progress.hasSigilB());
+        assertFalse(issuer.tryGrantStandingLodestone(playerId, progress));
+        assertTrue(progress.hasStandingLodestone());
     }
 }

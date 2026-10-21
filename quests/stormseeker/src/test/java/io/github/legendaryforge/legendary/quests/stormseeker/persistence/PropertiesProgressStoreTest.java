@@ -31,40 +31,91 @@ final class PropertiesProgressStoreTest {
     }
 
     @Test
+    void load_withPreRenameKeys_migratesSigilAAndSigilB(@TempDir Path dir) throws IOException {
+        // Saves written before the 2026-10-21 sigil -> lodestone rename use the old key names.
+        // Dropping them would silently reset a player's trial progress to zero: load() would see
+        // no lodestone keys, return false for both, and the next disconnect would overwrite the
+        // file with that fresh state. Quarantine does not catch this -- the file parses fine.
+        Files.writeString(dir.resolve("legacy.properties"), "phase=PHASE_4_THE_TRIALS\nsigilA=true\nsigilB=true\n");
+
+        StormseekerProgress loaded = new PropertiesProgressStore(dir).load("legacy");
+
+        assertEquals(StormseekerPhase.PHASE_4_THE_TRIALS, loaded.phase());
+        assertTrue(loaded.hasCoursingLodestone(), "pre-rename sigilA must restore as the Coursing Lodestone");
+        assertTrue(loaded.hasStandingLodestone(), "pre-rename sigilB must restore as the Standing Lodestone");
+    }
+
+    @Test
+    void load_withPreRenameKeys_migratesEachIndependently(@TempDir Path dir) throws IOException {
+        Files.writeString(dir.resolve("half.properties"), "phase=PHASE_4_THE_TRIALS\nsigilA=true\nsigilB=false\n");
+
+        StormseekerProgress loaded = new PropertiesProgressStore(dir).load("half");
+
+        assertTrue(loaded.hasCoursingLodestone());
+        assertFalse(loaded.hasStandingLodestone(), "sigilB=false must not be migrated as granted");
+    }
+
+    @Test
+    void load_prefersNewKeysOverLegacyWhenBothPresent(@TempDir Path dir) throws IOException {
+        // A file saved after the rename but hand-edited, or written by a mixed-version pair of
+        // servers. The current key wins; the legacy key must not override it.
+        Files.writeString(
+                dir.resolve("both.properties"), "phase=PHASE_4_THE_TRIALS\nlodestoneCoursing=false\nsigilA=true\n");
+
+        StormseekerProgress loaded = new PropertiesProgressStore(dir).load("both");
+
+        assertFalse(loaded.hasCoursingLodestone(), "explicit lodestoneCoursing=false must win over legacy sigilA=true");
+    }
+
+    @Test
+    void save_afterMigration_writesOnlyCurrentKeys(@TempDir Path dir) throws IOException {
+        Files.writeString(dir.resolve("legacy2.properties"), "phase=PHASE_4_THE_TRIALS\nsigilA=true\nsigilB=true\n");
+        var store = new PropertiesProgressStore(dir);
+
+        store.save("legacy2", store.load("legacy2"));
+
+        String rewritten = Files.readString(dir.resolve("legacy2.properties"));
+        assertTrue(rewritten.contains("lodestoneCoursing=true"), "must write the current key");
+        assertTrue(rewritten.contains("lodestoneStanding=true"), "must write the current key");
+        assertFalse(rewritten.contains("sigilA"), "legacy key must not be re-emitted -- migration is one-way");
+        assertFalse(rewritten.contains("sigilB"), "legacy key must not be re-emitted -- migration is one-way");
+    }
+
+    @Test
     void load_withNoSaveFile_returnsFreshProgress(@TempDir Path dir) {
         StormseekerProgress progress = new PropertiesProgressStore(dir).load("nobody");
 
         assertEquals(StormseekerPhase.UNTOUCHED, progress.phase());
-        assertFalse(progress.hasSigilA());
-        assertFalse(progress.hasSigilB());
+        assertFalse(progress.hasCoursingLodestone());
+        assertFalse(progress.hasStandingLodestone());
     }
 
     @Test
-    void save_thenLoad_roundTripsPhaseAndBothSigils(@TempDir Path dir) {
+    void save_thenLoad_roundTripsPhaseAndBothLodestones(@TempDir Path dir) {
         var store = new PropertiesProgressStore(dir);
         StormseekerProgress saved = at(StormseekerPhase.PHASE_4_THE_TRIALS);
-        saved.grantSigilA();
-        saved.grantSigilB();
+        saved.grantCoursingLodestone();
+        saved.grantStandingLodestone();
 
         store.save("p1", saved);
         StormseekerProgress loaded = store.load("p1");
 
         assertEquals(StormseekerPhase.PHASE_4_THE_TRIALS, loaded.phase());
-        assertTrue(loaded.hasSigilA());
-        assertTrue(loaded.hasSigilB());
+        assertTrue(loaded.hasCoursingLodestone());
+        assertTrue(loaded.hasStandingLodestone());
     }
 
     @Test
-    void save_thenLoad_keepsSigilsIndependent(@TempDir Path dir) {
+    void save_thenLoad_keepsLodestonesIndependent(@TempDir Path dir) {
         var store = new PropertiesProgressStore(dir);
         StormseekerProgress saved = at(StormseekerPhase.PHASE_4_THE_TRIALS);
-        saved.grantSigilA();
+        saved.grantCoursingLodestone();
 
         store.save("p1", saved);
         StormseekerProgress loaded = store.load("p1");
 
-        assertTrue(loaded.hasSigilA());
-        assertFalse(loaded.hasSigilB(), "sigilB was never granted and must not be restored");
+        assertTrue(loaded.hasCoursingLodestone());
+        assertFalse(loaded.hasStandingLodestone(), "lodestoneStanding was never granted and must not be restored");
     }
 
     @Test
@@ -79,13 +130,13 @@ final class PropertiesProgressStoreTest {
     @Test
     void load_withUnknownPhaseName_fallsBackToFreshProgress(@TempDir Path dir) throws IOException {
         Files.createDirectories(dir);
-        Files.writeString(dir.resolve("p1.properties"), "phase=PHASE_9_NOT_A_REAL_PHASE\nsigilA=true\n");
+        Files.writeString(dir.resolve("p1.properties"), "phase=PHASE_9_NOT_A_REAL_PHASE\nlodestoneCoursing=true\n");
 
         StormseekerProgress loaded = new PropertiesProgressStore(dir).load("p1");
 
         // load stays total: a bad save must not break player connect.
         assertEquals(StormseekerPhase.UNTOUCHED, loaded.phase());
-        assertFalse(loaded.hasSigilA());
+        assertFalse(loaded.hasCoursingLodestone());
     }
 
     @Test
@@ -102,7 +153,7 @@ final class PropertiesProgressStoreTest {
     @Test
     void load_thatFails_quarantinesTheOriginalInsteadOfLeavingItToBeOverwritten(@TempDir Path dir) throws IOException {
         Path file = dir.resolve("p1.properties");
-        String original = "phase=PHASE_6_THE_FORGING\nsigilA=true\nsigilB=true\n";
+        String original = "phase=PHASE_6_THE_FORGING\nlodestoneCoursing=true\nlodestoneStanding=true\n";
         Files.writeString(file, original);
         var store = new PropertiesProgressStore(dir);
 
@@ -125,7 +176,7 @@ final class PropertiesProgressStoreTest {
         // disconnect. Before quarantining, a single unreadable read permanently
         // replaced a finished questline with PHASE_0 the moment the player left.
         Path file = dir.resolve("p1.properties");
-        String original = "phase=PHASE_6_THE_FORGING\nsigilA=true\nsigilB=true\n";
+        String original = "phase=PHASE_6_THE_FORGING\nlodestoneCoursing=true\nlodestoneStanding=true\n";
         Files.writeString(file, original);
         var store = new PropertiesProgressStore(dir);
         Files.writeString(file, "phase=PHASE_9_NOT_A_REAL_PHASE\n");

@@ -30,7 +30,7 @@ public enum StormseekerPhase {
     /** The rite at the circle. Storm-sense is granted. */
     PHASE_3_THE_WAKING,
 
-    /** The Flowing and Anchored trials. Both sigils. */
+    /** The Flowing and Anchored trials. Both lodestones. */
     PHASE_4_THE_TRIALS,
 
     /** Gather, then craft the inert frame. */

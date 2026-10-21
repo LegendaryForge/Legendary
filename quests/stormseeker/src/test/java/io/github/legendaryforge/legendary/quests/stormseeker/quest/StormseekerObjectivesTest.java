@@ -7,12 +7,12 @@ import org.junit.jupiter.api.Test;
 final class StormseekerObjectivesTest {
 
     @Test
-    void flowingTrialObjectiveTracksSigilA() {
+    void flowingTrialObjectiveTracksCoursingLodestone() {
         StormseekerProgress p = new StormseekerProgress();
         var obj = StormseekerObjectives.flowingTrial();
 
         assertFalse(obj.isSatisfied(p));
-        p.grantSigilA();
+        p.grantCoursingLodestone();
         assertTrue(obj.isSatisfied(p));
     }
 
