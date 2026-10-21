@@ -110,7 +110,34 @@ val checkAssetPackIntegrity =
         outputs.upToDateWhen { false }
     }
 
-tasks.named("check") { dependsOn(checkManifestEntrypoint, checkAssetPackIntegrity) }
+// Two commands can claim one name without anything failing: CommandManager.register is a
+// Map.put with the return value popped, so the last registration silently wins. The boot log
+// is the only operator-visible inventory, and it had drifted to 13 names against 15
+// registrations. Reads sources, so like the two guards above it is meaningful on CI, where
+// this module compiles nothing at all.
+val checkCommandRegistration =
+    tasks.register<CommandRegistrationCheck>("checkCommandRegistration") {
+        group = "verification"
+        description =
+            "Verifies no two commands declare the same name and that the boot log names " +
+            "exactly the commands that are registered."
+        sources.from(
+            layout.projectDirectory
+                .dir("src/main/java")
+                .asFileTree
+                .matching { include("**/*.java") },
+        )
+        plugin.set(
+            layout.projectDirectory.file(
+                "src/main/java/io/github/legendaryforge/legendary/mod/hytale/LegendaryHytalePlugin.java",
+            ),
+        )
+        outputs.upToDateWhen { false }
+    }
+
+tasks.named("check") {
+    dependsOn(checkManifestEntrypoint, checkAssetPackIntegrity, checkCommandRegistration)
+}
 
 tasks.named("compileJava") {
     dependsOn(checkHytaleJarVersion)
