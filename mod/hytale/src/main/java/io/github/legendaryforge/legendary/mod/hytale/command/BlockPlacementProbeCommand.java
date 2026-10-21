@@ -23,7 +23,7 @@ import org.joml.Vector3d;
  * <p>Answers the question the residue design actually rests on: <em>can a plugin place a
  * harvestable block at an arbitrary position at runtime?</em> Act III literacy is reading crystal
  * density, and Class C crystals are harvested, depleted and cultivated — so they are blocks, not
- * particles. {@code /residueprobe} proved particle emission and that is what the network spec
+ * particles. {@code /residueparticleprobe} proved particle emission and that is what the network spec
  * cites as unblocking world expression; particles are not harvestable, so the cited evidence does
  * not reach the claim.
  *

@@ -93,17 +93,23 @@ public final class SiteScorer {
             Set<String> fluids,
             Optional<String> environment,
             LatticeParameters parameters) {
-        double score = 0;
         List<String> reasons = new ArrayList<>();
+        boolean fluidPresent = false;
         for (String fluid : fluids) {
             if (grounding.requiredFluids().contains(fluid)) {
-                score += parameters.fluidWeight();
+                fluidPresent = true;
                 reasons.add("fluid " + fluid + " within " + parameters.neighbourhoodRadius() + "b");
             }
         }
-        if (score == 0) {
+        if (!fluidPresent) {
             return null;
         }
+        // Once, however many variants matched. The requirement is "this fluid is here", and the
+        // game spells one fluid two ways -- `Set.of("Water_Source", "Water")` -- so accumulating per
+        // variant made a source-plus-flow site outrank a genuine shoreline on a difference that is
+        // about block bookkeeping rather than terrain. Every matched variant is still reported in
+        // the reasons, because that is what makes a probe reading interpretable on foot.
+        double score = parameters.fluidWeight();
         if (environment.isPresent()
                 && ElementGrounding.environmentMatches(environment.get(), grounding.corroboratingEnvironments())) {
             score += parameters.environmentWeight();

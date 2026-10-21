@@ -16,7 +16,7 @@ import java.util.List;
 import org.joml.Vector3d;
 
 /**
- * Debug command: {@code /residueprobe}
+ * Debug command: {@code /residueparticleprobe}
  *
  * <p>Answers one question, N3 of the residue-network design: <em>can a plugin emit a world
  * particle at an arbitrary position?</em> Sub-project 3 — crystals and their density expression —
@@ -46,7 +46,11 @@ public class ResidueParticleProbeCommand extends AbstractWorldCommand {
     private static final String[] CANDIDATE_IDS = {"Rain_Heavy", "Memory_Catch_Rune", "MemoryRecordedStatue"};
 
     public ResidueParticleProbeCommand() {
-        super("residueprobe", "Emits world particles at fixed offsets to test plugin-side particle spawning");
+        // Renamed off `residueprobe` 2026-10-21. Both this and ResidueSiteProbeCommand declared
+        // that name, and CommandManager.register is a Map.put whose return value is popped --
+        // no duplicate check, no warning. Last registration won, silently, and the boot log
+        // named the command once, so nothing anywhere revealed that two commands claimed it.
+        super("residueparticleprobe", "Emits world particles at fixed offsets to test plugin-side particle spawning");
     }
 
     @Override
