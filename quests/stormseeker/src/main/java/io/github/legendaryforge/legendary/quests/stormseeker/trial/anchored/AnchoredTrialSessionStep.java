@@ -8,14 +8,15 @@ import java.util.Objects;
  *
  * <p>Phase 2E initial mechanic (minimal, deterministic):
  * <ul>
- *   <li>If the player is stationary for N consecutive ticks, grant Sigil B.</li>
+ *   <li>If the player is stationary for N consecutive ticks, grant the Standing Lodestone.</li>
  *   <li>Stationary = !sample.moving().</li>
  * </ul>
  *
  * <p>This is intentionally simple scaffolding that can be replaced by richer mechanics later
  * without changing host-side milestone semantics.
  */
-public record AnchoredTrialSessionStep(boolean stationaryThisTick, int stationaryStreak, boolean sigilGrantedThisTick) {
+public record AnchoredTrialSessionStep(
+        boolean stationaryThisTick, int stationaryStreak, boolean lodestoneGrantedThisTick) {
 
     public static AnchoredTrialSessionStep from(MotionSample sample, int stationaryStreak, boolean granted) {
         Objects.requireNonNull(sample, "sample");

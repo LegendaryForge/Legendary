@@ -7,8 +7,8 @@ import java.util.List;
 /**
  * Canonical Stormseeker objectives (scaffold).
  *
- * <p>Phase 2 (Dual Sigils) begins by proving elemental alignment.
- * In code, that starts with the Flowing Trial -> Sigil A.
+ * <p>Phase 2 (Dual Lodestones) begins by proving elemental alignment.
+ * In code, that starts with the Flowing Trial -> the Coursing Lodestone.
  */
 public final class StormseekerObjectives {
 
@@ -26,12 +26,12 @@ public final class StormseekerObjectives {
 
             @Override
             public String summary() {
-                return "Complete the Flowing Trial (earn Sigil A).";
+                return "Complete the Flowing Trial (earn the Coursing Lodestone).";
             }
 
             @Override
             public boolean isSatisfied(StormseekerProgress progress) {
-                return progress.hasSigilA();
+                return progress.hasCoursingLodestone();
             }
         };
     }
@@ -46,12 +46,12 @@ public final class StormseekerObjectives {
 
             @Override
             public String summary() {
-                return "Complete the Anchored Trial (earn Sigil B)."; // future Phase 2
+                return "Complete the Anchored Trial (earn the Standing Lodestone)."; // future Phase 2
             }
 
             @Override
             public boolean isSatisfied(StormseekerProgress progress) {
-                return progress.hasSigilB();
+                return progress.hasStandingLodestone();
             }
         };
     }
@@ -61,8 +61,8 @@ public final class StormseekerObjectives {
         return List.of(flowingTrial());
     }
 
-    /** Phase 2 Dual Sigils objective set (scaffold). */
-    public static List<QuestObjective<StormseekerProgress>> phase2DualSigils() {
+    /** Phase 2 Dual Lodestones objective set (scaffold). */
+    public static List<QuestObjective<StormseekerProgress>> phase2DualLodestones() {
         return List.of(flowingTrial(), anchoredTrialPlaceholder());
     }
 }

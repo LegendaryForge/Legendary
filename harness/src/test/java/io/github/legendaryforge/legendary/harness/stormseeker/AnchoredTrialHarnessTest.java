@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 public class AnchoredTrialHarnessTest {
 
     @Test
-    void engineTickSeam_reachesAnchoredSteps_andEmitsSigilBMilestone() {
+    void engineTickSeam_reachesAnchoredSteps_andEmitsStandingLodestoneMilestone() {
         RecordingStormseekerHostRuntime host = new RecordingStormseekerHostRuntime();
         String playerId = "test-player";
 
@@ -24,7 +24,7 @@ public class AnchoredTrialHarnessTest {
 
         assertFalse(host.anchoredStepsView().isEmpty(), "Expected anchored step callbacks");
         assertTrue(
-                host.milestonesView().stream().anyMatch(m -> m.contains("SIGIL_B")),
-                "Expected a Sigil B milestone, got: " + host.milestonesView());
+                host.milestonesView().stream().anyMatch(m -> m.contains("STANDING_LODESTONE")),
+                "Expected a the Standing Lodestone milestone, got: " + host.milestonesView());
     }
 }

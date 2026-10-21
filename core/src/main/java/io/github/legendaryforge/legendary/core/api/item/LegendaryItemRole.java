@@ -7,7 +7,7 @@ package io.github.legendaryforge.legendary.core.api.item;
  * more specific identifiers later (e.g., resource ids per questline).
  */
 public enum LegendaryItemRole {
-    SIGIL,
+    PROOF_TOKEN,
     FRAME,
     LEGENDARY_WEAPON
 }

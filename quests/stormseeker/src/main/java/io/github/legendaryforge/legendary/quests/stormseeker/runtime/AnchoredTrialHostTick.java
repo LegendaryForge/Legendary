@@ -28,9 +28,9 @@ import java.util.Set;
 public final class AnchoredTrialHostTick {
 
     private final Map<String, AnchoredTrialSession> sessions = new HashMap<>();
-    private final Set<String> playersWithSigilB = new HashSet<>();
+    private final Set<String> playersWithStandingLodestone = new HashSet<>();
 
-    private final Set<String> playersWithDualSigils = new HashSet<>();
+    private final Set<String> playersWithDualLodestones = new HashSet<>();
 
     public void tick(StormseekerHostRuntime runtime) {
         Objects.requireNonNull(runtime, "runtime");
@@ -46,28 +46,30 @@ public final class AnchoredTrialHostTick {
             runtime.onAnchoredTrialStep(playerId, step);
 
             // Host-facing milestone emission is edge-based.
-            if (progress.hasSigilB() && playersWithSigilB.add(playerId)) {
-                runtime.emitStormseekerMilestone(
-                        new StormseekerMilestoneOutcome(playerId, StormseekerPhaseMilestone.SIGIL_B_GRANTED));
+            if (progress.hasStandingLodestone() && playersWithStandingLodestone.add(playerId)) {
+                runtime.emitStormseekerMilestone(new StormseekerMilestoneOutcome(
+                        playerId, StormseekerPhaseMilestone.STANDING_LODESTONE_GRANTED));
             }
 
-            if (progress.hasSigilA() && progress.hasSigilB() && playersWithDualSigils.add(playerId)) {
+            if (progress.hasCoursingLodestone()
+                    && progress.hasStandingLodestone()
+                    && playersWithDualLodestones.add(playerId)) {
                 runtime.emitStormseekerMilestone(
-                        new StormseekerMilestoneOutcome(playerId, StormseekerPhaseMilestone.DUAL_SIGILS_GRANTED));
+                        new StormseekerMilestoneOutcome(playerId, StormseekerPhaseMilestone.DUAL_LODESTONES_GRANTED));
             }
         }
     }
 
     public boolean removePlayer(String playerId) {
         Objects.requireNonNull(playerId, "playerId");
-        playersWithSigilB.remove(playerId);
-        playersWithDualSigils.remove(playerId);
+        playersWithStandingLodestone.remove(playerId);
+        playersWithDualLodestones.remove(playerId);
         return sessions.remove(playerId) != null;
     }
 
     public void clear() {
         sessions.clear();
-        playersWithSigilB.clear();
-        playersWithDualSigils.clear();
+        playersWithStandingLodestone.clear();
+        playersWithDualLodestones.clear();
     }
 }

@@ -22,7 +22,7 @@ final class StormseekerAnchoredTrialServiceLeaveDoesNotCleanupTest {
         // Advance close to the grant threshold (session + stationary streak should exist in host tick state).
         for (int i = 1; i < AnchoredTrialSession.REQUIRED_STATIONARY_TICKS; i++) {
             service.tick(host);
-            assertFalse(progress.hasSigilB(), "should not grant before threshold");
+            assertFalse(progress.hasStandingLodestone(), "should not grant before threshold");
         }
 
         // Default leave is membership-only: it must NOT cleanup/reset host tick session state.
@@ -32,7 +32,8 @@ final class StormseekerAnchoredTrialServiceLeaveDoesNotCleanupTest {
         // Re-enter and tick once: if leave did NOT cleanup, we should grant immediately.
         assertTrue(service.enterAnchoredTrial("p1", progress));
         service.tick(host);
-        assertTrue(progress.hasSigilB(), "leave should NOT reset stationary streak (expect immediate grant)");
+        assertTrue(
+                progress.hasStandingLodestone(), "leave should NOT reset stationary streak (expect immediate grant)");
     }
 
     private static final class SinglePlayerHostRuntime implements StormseekerHostRuntime {

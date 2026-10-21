@@ -49,11 +49,11 @@ public class StormseekerStatusCommand extends AbstractPlayerCommand {
         StringBuilder sb = new StringBuilder();
         sb.append("--- Stormseeker Status: ").append(username).append(" ---\n");
         sb.append("Phase: ").append(progress.phase()).append("\n");
-        sb.append("Sigil A (Flowing): ")
-                .append(progress.hasSigilA() ? "GRANTED" : "not earned")
+        sb.append("the Coursing Lodestone (Flowing): ")
+                .append(progress.hasCoursingLodestone() ? "GRANTED" : "not earned")
                 .append("\n");
-        sb.append("Sigil B (Anchored): ")
-                .append(progress.hasSigilB() ? "GRANTED" : "not earned")
+        sb.append("the Standing Lodestone (Anchored): ")
+                .append(progress.hasStandingLodestone() ? "GRANTED" : "not earned")
                 .append("\n");
         sb.append("Motion: dx=").append(String.format("%.3f", motion.dx()));
         sb.append(" dy=").append(String.format("%.3f", motion.dy()));
@@ -93,8 +93,8 @@ public class StormseekerStatusCommand extends AbstractPlayerCommand {
             sb.append(" dir=")
                     .append(String.format("%.2f", flowStep.hint().directionHintStrength()))
                     .append("\n");
-            if (flowStep.sigilGrantedThisTick()) {
-                sb.append(">>> SIGIL A GRANTED THIS TICK <<<\n");
+            if (flowStep.lodestoneGrantedThisTick()) {
+                sb.append(">>> COURSING LODESTONE GRANTED THIS TICK <<<\n");
             }
         } else {
             sb.append("Flowing Trial: not active\n");

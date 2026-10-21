@@ -17,8 +17,8 @@ import io.github.legendaryforge.legendary.quests.stormseeker.quest.StormseekerPr
  * Debug command: /ss-trial
  *
  * <p>Enters the Anchored Trial for the executing player.
- * The trial requires the player to stand still for ~40 ticks to earn Sigil B.
- * Use /stormseeker to check if Sigil B was granted.
+ * The trial requires the player to stand still for ~40 ticks to earn the Standing Lodestone.
+ * Use /stormseeker to check if the Standing Lodestone was granted.
  */
 public class StormseekerTrialCommand extends AbstractPlayerCommand {
 
@@ -35,8 +35,8 @@ public class StormseekerTrialCommand extends AbstractPlayerCommand {
         String playerId = playerRef.getUuid().toString();
         StormseekerProgress progress = host.progress(playerId);
 
-        if (progress.hasSigilB()) {
-            sendText(context, "[Stormseeker] You already have Sigil B (Anchored).");
+        if (progress.hasStandingLodestone()) {
+            sendText(context, "[Stormseeker] You already have the Standing Lodestone (Anchored).");
             return;
         }
 

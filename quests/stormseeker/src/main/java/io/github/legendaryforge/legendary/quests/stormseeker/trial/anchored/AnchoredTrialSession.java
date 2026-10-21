@@ -31,13 +31,13 @@ public final class AnchoredTrialSession {
     /**
      * Advances the anchored trial by one tick using the provided motion sample.
      *
-     * <p>Grants Sigil B when the stationary streak reaches {@link #REQUIRED_STATIONARY_TICKS}.
-     * This call is idempotent once Sigil B is granted.
+     * <p>Grants the Standing Lodestone when the stationary streak reaches {@link #REQUIRED_STATIONARY_TICKS}.
+     * This call is idempotent once the Standing Lodestone is granted.
      */
     public AnchoredTrialSessionStep step(MotionSample sample) {
         Objects.requireNonNull(sample, "sample");
 
-        if (progress.hasSigilB()) {
+        if (progress.hasStandingLodestone()) {
             // Already complete; keep streak stable but do not grant again.
             stationaryStreak = 0;
             return AnchoredTrialSessionStep.from(sample, stationaryStreak, false);
@@ -52,8 +52,8 @@ public final class AnchoredTrialSession {
 
         boolean granted = false;
         if (stationaryStreak >= REQUIRED_STATIONARY_TICKS) {
-            // Gameplay-side mutation: grant Sigil B (host tick will observe and emit milestones).
-            granted = progress.grantSigilB();
+            // Gameplay-side mutation: grant the Standing Lodestone (host tick will observe and emit milestones).
+            granted = progress.grantStandingLodestone();
             stationaryStreak = 0; // reset after completion edge
         }
 

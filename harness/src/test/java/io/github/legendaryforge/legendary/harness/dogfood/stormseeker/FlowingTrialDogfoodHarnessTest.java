@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 final class FlowingTrialDogfoodHarnessTest {
 
     @Test
-    void phaseC_canBeDrivenEndToEnd_andGrantsFlowingSigilOnce() {
+    void phaseC_canBeDrivenEndToEnd_andGrantsFlowingLodestoneOnce() {
         // Fast deterministic tuning for dogfood.
         FlowingTrialTuning t = new FlowingTrialTuning(1.0, 2.0, 1, 0.60, 0.20, 5.0, 1.0, 10.0, 0.25);
 
@@ -30,23 +30,23 @@ final class FlowingTrialDogfoodHarnessTest {
         for (int i = 0; i < 300; i++) {
             FlowingTrialSessionStep r = session.step(new MotionSample(1, 0, 0, true));
             sawNonZeroHint |= r.hint().intensity() > 0.0;
-            granted |= r.sigilGrantedThisTick();
+            granted |= r.lodestoneGrantedThisTick();
             if (granted) {
                 break;
             }
         }
 
         assertTrue(sawNonZeroHint, "moving should produce hint intent");
-        assertTrue(granted, "completion should grant Sigil A");
-        assertTrue(progress.hasSigilA(), "progress should reflect Sigil A proof");
+        assertTrue(granted, "completion should grant the Coursing Lodestone");
+        assertTrue(progress.hasCoursingLodestone(), "progress should reflect the Coursing Lodestone proof");
 
         // Further ticks must not grant again (idempotent).
         boolean grantedAgain = false;
         for (int i = 0; i < 200; i++) {
             FlowingTrialSessionStep r = session.step(new MotionSample(1, 0, 0, true));
-            grantedAgain |= r.sigilGrantedThisTick();
+            grantedAgain |= r.lodestoneGrantedThisTick();
         }
-        assertFalse(grantedAgain, "sigil grant must be idempotent");
+        assertFalse(grantedAgain, "lodestone grant must be idempotent");
     }
 
     @Test
@@ -63,22 +63,22 @@ final class FlowingTrialDogfoodHarnessTest {
         // Build: coherent motion for a while (may or may not complete depending on evaluator shape).
         for (int i = 0; i < 60; i++) {
             FlowingTrialSessionStep r = session.step(new MotionSample(1, 0, 0, true));
-            granted |= r.sigilGrantedThisTick();
+            granted |= r.lodestoneGrantedThisTick();
         }
 
         // Missteps: reverse direction. Contract: this must not create an additional grant.
         boolean grantedDuringMissteps = false;
         for (int i = 0; i < 40; i++) {
             FlowingTrialSessionStep r = session.step(new MotionSample(-1, 0, 0, true));
-            grantedDuringMissteps |= r.sigilGrantedThisTick();
+            grantedDuringMissteps |= r.lodestoneGrantedThisTick();
         }
-        assertFalse(grantedDuringMissteps, "missteps must not produce a new sigil grant");
+        assertFalse(grantedDuringMissteps, "missteps must not produce a new lodestone grant");
 
         // Recovery: if not yet granted, must still be able to reach completion eventually.
         if (!granted) {
             for (int i = 0; i < 500; i++) {
                 FlowingTrialSessionStep r = session.step(new MotionSample(1, 0, 0, true));
-                granted |= r.sigilGrantedThisTick();
+                granted |= r.lodestoneGrantedThisTick();
                 if (granted) {
                     break;
                 }
@@ -86,14 +86,14 @@ final class FlowingTrialDogfoodHarnessTest {
             assertTrue(granted, "should be able to recover to completion after missteps");
         }
 
-        assertTrue(progress.hasSigilA(), "Sigil A proof must be present after completion");
+        assertTrue(progress.hasCoursingLodestone(), "the Coursing Lodestone proof must be present after completion");
 
         // Idempotent after first completion.
         boolean grantedAgain = false;
         for (int i = 0; i < 150; i++) {
-            grantedAgain |= session.step(new MotionSample(1, 0, 0, true)).sigilGrantedThisTick();
+            grantedAgain |= session.step(new MotionSample(1, 0, 0, true)).lodestoneGrantedThisTick();
         }
-        assertFalse(grantedAgain, "sigil grant must remain idempotent");
+        assertFalse(grantedAgain, "lodestone grant must remain idempotent");
     }
 
     private static void assertHintZero(FlowHintIntent hint) {

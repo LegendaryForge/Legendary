@@ -39,7 +39,8 @@ occurrences in `server.lang`**; `storm` has 46, `essence` 11, `spirit` 8.
 > zero occurrences** — 0.7.2 ships the *"Enkindled Sigil"* (`Ingredient_Enkindled_Resource`), so it is
 > now a **colliding** word rather than an invented one, which is a different and worse problem: an
 > invented word merely sounds foreign, a colliding one asserts a connection to content we do not
-> control. The counts above are the 0.7.2 figures (previously 45 / 17 / 5 against 0.5.9); the drift is
+> control. **Resolved 2026-10-21: the word is gone.** The two items are the Coursing and Standing
+> Lodestones (Class F below); `sigil` appears nowhere in the source tree. The counts above are the 0.7.2 figures (previously 45 / 17 / 5 against 0.5.9); the drift is
 > small and the conclusion unchanged. Vocabulary `[gap]` claims decay every release — see the table in
 > `../setting/hytale-orbis-setting-brief.md` §3.
 
@@ -52,7 +53,7 @@ Six phases became five acts. **This is not a renumbering** — the structure cha
 | `PHASE_1_THE_MARK` — The Watching Elemental | **Act I — The Mark** (survives nearly intact) |
 | `PHASE_2_THE_TREK` — The Trek | **Act II — The Trace** |
 | `PHASE_3_THE_WAKING` — Attunement | **Act III — The Listening** (repurposed: literacy, not a granted sight) |
-| `PHASE_4_THE_TRIALS` — Dual Sigil Trials | **Act V, beat 1** |
+| `PHASE_4_THE_TRIALS` — Dual Lodestone Trials | **Act V, beat 1** |
 | `PHASE_5_THE_FRAME` — Craft Frame | **Act IV — The Raising** |
 | `PHASE_6_THE_FORGING` — Final Encounter | **Act V, beats 2–3** |
 | `COMPLETE` — Epilogue | **Epilogue** |
@@ -375,7 +376,7 @@ Post-completion ownership flags; ambient recognition that does not trivialise ga
 ## Materials
 
 > Generic materials build legendaries. Storm materials define Stormseeker. Crystals reveal space.
-> Keystones become the monument.
+> Keystones become the monument. **Lodestones go in the sword.**
 
 ### Class A — Generic Legendary Materials
 Shared backbone across Legendary lines. World-generated, vanilla-plus rare, no storm or questline
@@ -417,10 +418,36 @@ Cannot be mined, killed for, or crafted. **Given**, once, when the Circle answer
 Lightning is the strike; thunder is the answer. The two essences carry the theme with no exposition:
 **one is taken, one is given, and both go in the sword.**
 
+### Class F — Lodestones
+
+**Added 2026-10-21, and it closes a real gap.** The two trial proofs were `sigil_flowing` and
+`sigil_anchored` in code and were described nowhere in this section — v4.0 folded them into Class D
+Keystones, but a Keystone *is a tier of the Circle*, which is a structure left standing in the world.
+These are **carried**, and they are **consumed in the forging**. They are not Keystones and they
+needed their own class.
+
+**Coursing Lodestone** and **Standing Lodestone**. Deterministic proof tokens granted by the trials —
+never dropped, never NPC-decided, never RNG, exactly as Class D is. The difference is their fate:
+a Keystone becomes the monument, a Lodestone goes into the blade.
+
+**Why two, and why a pair rather than two halves.** A lodestone is naturally magnetised; it has two
+poles. The Flowing Trial scores movement against its own previous direction — it proves you can move
+*with* the storm, so its stone is the pole that **draws**. The Anchored Trial requires stationary
+ticks — it proves you can *hold*, so its stone is the pole that **stands**. The sword needs both
+because calling lightning and holding it are not the same act. This replaces a left-half/right-half
+structure inherited from the lineage note, which was arbitrary: two halves are a lock, two poles are
+a reason.
+
+**Vocabulary.** `lodestone`, `coursing` and `standing` were measured against build 0.7.2 before
+adoption: **0 occurrences in `server.lang`'s 11,507 lines and 0 across all 68,759 asset names** for
+`lodestone` and `coursing`; `standing` has 7 lang hits and 1 asset hit, all lowercase prose. See the
+setting brief's vocabulary check for why both surfaces must be measured, not just `server.lang`.
+
 ### Stormseeker is forged from
 
 | Class | Material | How obtained |
 |---|---|---|
+| F | **Coursing Lodestone** + **Standing Lodestone** | Earned, one per trial — carried, then consumed |
 | A | Generic legendary backbone | Ordinary rare world materials |
 | B | **Skyglass** | Peaks, during storms, perishable |
 | C | **Residue Crystal** | Where currents settle — also how the site was found |
@@ -631,7 +658,7 @@ StormseekerWiring.tick(host)
 - **v4.0 (2026-08-25):** Narrative rewritten from Orbis canon. New premise — the storm has no Circle
   because the builders opened a door with it. Six phases became five acts (not a renumbering; the
   structure changed). Materials keep February's taxonomy with leyline crystals re-founded on residue,
-  sigils becoming Keystones that are tiers of the monument, and a new class the premise requires,
+  sigils becoming Keystones that are tiers of the monument (revised 2026-10-21 — the two trial proofs are Class F Lodestones, not Keystones; see Materials), and a new class the premise requires,
   Essence of Thunder. Four lore-delivery channels adopted, replacing an atmosphere-only model that
   delivered nothing. `No neutral verbs` added to Core Principles. The Thunderfury mapping table
   retired to a lineage note. Invented vocabulary (`leyline`, `resonator`, `sigil`, `attune` — all 0
@@ -643,7 +670,7 @@ StormseekerWiring.tick(host)
   first phase". The code was renumbered in the same change. No design content was altered.
 
 - **v1.0 (2026-02-04):** Original narrative, design, and quest-phases documents (now superseded).
-- **v2.0 (2026-02-10):** Complete rewrite. Corrected phase structure, clarified sigil placement
+- **v2.0 (2026-02-10):** Complete rewrite. Corrected phase structure, clarified lodestone placement
   (Phase 2 only), added Thunderfury parallels, materials taxonomy, full code audit, documented open
   questions, consolidated into single source of truth.
 - **v3.0 (2026-02-16):** Phase 0/1/1.5 redesign. Removed movement restriction mechanic (not exposed

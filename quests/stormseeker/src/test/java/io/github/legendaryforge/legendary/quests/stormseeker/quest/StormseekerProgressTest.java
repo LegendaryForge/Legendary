@@ -30,7 +30,7 @@ final class StormseekerProgressTest {
     }
 
     @Test
-    void doesNotAdvanceOutOfTheTrialsWithoutBothSigils() {
+    void doesNotAdvanceOutOfTheTrialsWithoutBothLodestones() {
         StormseekerProgress p = new StormseekerProgress();
 
         // Drive to The Trials.
@@ -40,15 +40,15 @@ final class StormseekerProgressTest {
         p.advanceIfEligible();
         assertEquals(StormseekerPhase.PHASE_4_THE_TRIALS, p.phase());
 
-        // Missing sigils -> no advance.
+        // Missing lodestones -> no advance.
         p.advanceIfEligible();
         assertEquals(StormseekerPhase.PHASE_4_THE_TRIALS, p.phase());
 
-        p.grantSigilA();
+        p.grantCoursingLodestone();
         p.advanceIfEligible();
         assertEquals(StormseekerPhase.PHASE_4_THE_TRIALS, p.phase());
 
-        p.grantSigilB();
+        p.grantStandingLodestone();
         p.advanceIfEligible();
         assertEquals(StormseekerPhase.PHASE_5_THE_FRAME, p.phase());
     }

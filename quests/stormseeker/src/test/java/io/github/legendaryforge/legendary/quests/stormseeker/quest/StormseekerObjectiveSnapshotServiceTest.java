@@ -24,7 +24,7 @@ final class StormseekerObjectiveSnapshotServiceTest {
     }
 
     @Test
-    void theTrialsShowSigilAObjectiveIncompleteUntilGranted() {
+    void theTrialsShowCoursingLodestoneObjectiveIncompleteUntilGranted() {
         StormseekerObjectiveSnapshotService s = new StormseekerObjectiveSnapshotService();
         StormseekerProgress p = new StormseekerProgress();
         p.advanceToNextOrThrow(StormseekerPhase.PHASE_1_THE_MARK);
@@ -35,17 +35,17 @@ final class StormseekerObjectiveSnapshotServiceTest {
         List<ObjectiveStatus> snap = s.snapshot(p);
         assertEquals(1, snap.size());
         assertEquals(
-                StormseekerObjectiveSnapshotService.OBJ_EARN_SIGIL_A,
+                StormseekerObjectiveSnapshotService.OBJ_EARN_COURSING_LODESTONE,
                 snap.get(0).id());
         assertFalse(snap.get(0).completed());
         assertNotNull(snap.get(0).hint());
 
-        p.grantSigilA();
+        p.grantCoursingLodestone();
 
         snap = s.snapshot(p);
         assertEquals(1, snap.size());
         assertEquals(
-                StormseekerObjectiveSnapshotService.OBJ_EARN_SIGIL_A,
+                StormseekerObjectiveSnapshotService.OBJ_EARN_COURSING_LODESTONE,
                 snap.get(0).id());
         assertTrue(snap.get(0).completed());
         assertNull(snap.get(0).hint());

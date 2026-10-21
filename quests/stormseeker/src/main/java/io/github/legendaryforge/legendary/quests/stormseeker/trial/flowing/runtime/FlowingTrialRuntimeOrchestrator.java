@@ -15,7 +15,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Phase C runtime adapter for the Flowing Sigil Trial.
+ * Phase C runtime adapter for the Flowing Lodestone Trial.
  *
  * <p>Host responsibilities:
  * <ul>
@@ -70,7 +70,7 @@ public final class FlowingTrialRuntimeOrchestrator {
             hints.emit(player, step.hint(), step.status());
 
             // Persist progress only if we granted this tick (authoritative change).
-            if (step.sigilGrantedThisTick()) {
+            if (step.lodestoneGrantedThisTick()) {
                 progressStore.save(player, session.progress());
             }
 

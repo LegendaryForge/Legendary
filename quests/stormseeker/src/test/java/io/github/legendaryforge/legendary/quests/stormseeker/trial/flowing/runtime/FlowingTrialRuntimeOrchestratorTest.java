@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Test;
 final class FlowingTrialRuntimeOrchestratorTest {
 
     @Test
-    void coherentMovementEventuallyGrantsSigilA_andEmitsHints_andIsIdempotent() {
+    void coherentMovementEventuallyGrantsCoursingLodestone_andEmitsHints_andIsIdempotent() {
         PlayerRef p = new PlayerRef("p1");
 
         InMemoryProgressStore store = new InMemoryProgressStore();
@@ -39,13 +39,13 @@ final class FlowingTrialRuntimeOrchestratorTest {
         boolean granted = false;
         for (int i = 0; i < 2000; i++) {
             orch.tick(new LegendaryTickContext(i));
-            granted = store.load(p).orElseThrow().hasSigilA();
+            granted = store.load(p).orElseThrow().hasCoursingLodestone();
             if (granted) {
                 break;
             }
         }
 
-        assertTrue(granted, "should grant Sigil A after sustained coherence");
+        assertTrue(granted, "should grant the Coursing Lodestone after sustained coherence");
         assertFalse(hintSink.events.isEmpty(), "should emit hints during evaluation");
 
         int savesAfterGrant = store.saveCount;
@@ -55,7 +55,7 @@ final class FlowingTrialRuntimeOrchestratorTest {
             orch.tick(new LegendaryTickContext(i));
         }
 
-        assertTrue(store.load(p).orElseThrow().hasSigilA());
+        assertTrue(store.load(p).orElseThrow().hasCoursingLodestone());
         assertEquals(savesAfterGrant, store.saveCount, "grant must be idempotent and not spam saves");
 
         // Sanity: at least one emitted hint should have non-zero intensity at some point.

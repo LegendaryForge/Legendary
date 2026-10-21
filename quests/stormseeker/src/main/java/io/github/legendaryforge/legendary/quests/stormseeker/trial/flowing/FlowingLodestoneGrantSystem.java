@@ -4,20 +4,20 @@ import io.github.legendaryforge.legendary.quests.stormseeker.quest.StormseekerPr
 import java.util.Objects;
 
 /**
- * Phase C: translates Flowing Trial completion into authoritative sigil proof.
+ * Phase C: translates Flowing Trial completion into authoritative lodestone proof.
  *
  * <p>Runtime integration calls {@link #onFlowingTrialCompleted(StormseekerProgress)} when the
  * evaluator reports completion for a player. This system is intentionally engine-agnostic.
  */
-public final class FlowingSigilGrantSystem {
+public final class FlowingLodestoneGrantSystem {
 
     /**
-     * Idempotently grants Sigil A (Flowing) via StormseekerProgress.
+     * Idempotently grants the Coursing Lodestone (Flowing) via StormseekerProgress.
      *
      * @return true if newly granted on this call; false if already granted.
      */
     public boolean onFlowingTrialCompleted(StormseekerProgress progress) {
         Objects.requireNonNull(progress, "progress");
-        return FlowingSigilIssuer.grantIfMissing(progress);
+        return FlowingLodestoneIssuer.grantIfMissing(progress);
     }
 }
