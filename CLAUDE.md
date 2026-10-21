@@ -341,11 +341,26 @@ Three facts from the new document that are easy to re-derive wrongly:
   elements, and factions and named characters have them too. And the jar does **not** settle it: the
   five `Server/Abilities/Elements/` files are `{"DamageCause": "X"}` damage types, so they corroborate
   a list without being one. See § "Lore first" above; this bullet is that section's worked example.
-  **Current state:** `:core` keys residue to the six shipped **essence items** (Fire, Ice, Life,
-  Lightning, Void, Water). §3 of the new document recommends the **cosmological five** instead —
-  Fire, Water, Lightning, Wind, Earth, with Void handled separately as an incursion — keeping the word
-  *essence* and changing only the membership. **Recommended, not decided, not implemented.**
-  **Lightning is in every roster, so Stormseeker is unaffected.**
+  **DECIDED 2026-10-21** — `docs/superpowers/specs/2026-10-21-residue-roster-decision.md`. The roster
+  is the **cosmological five**: Fire, Water, Lightning, Wind, Earth, with Void handled separately as an
+  incursion. The word *essence* stays; only membership changes. `:core` still keys to the six shipped
+  **essence items** (Fire, Ice, Life, Lightning, Void, Water) — there is nothing to change in code, so
+  this is a documentation and content decision. **Lightning is in every roster, so Stormseeker is
+  unaffected.**
+
+  Recorded as a **reversible modelling default, not a claim about Hytale's taxonomy.** Two things from
+  that decision are load-bearing for anyone building on it:
+
+  - **Keep `elementId` an opaque `ResourceId`. Do not add an enum, a list, a default, or validation.**
+    That openness is what makes a roster change a documentation edit rather than a breaking API change
+    plus a migration, and the game ships every 2–6 weeks while still adding elements. It has been
+    misread as a gap before; it is the mechanism that makes the decision safe to take at all.
+  - **A content count is evidence about what has been built, never about what the world is.** An
+    argument weighing rosters by how many shipped creatures drop each essence was used to take this
+    decision and then withdrawn: the game's two elemental layers are each incomplete in *opposite*
+    directions — `Server/Abilities/Elements/` is complete at five (Wind and Earth included), while the
+    essence *items* omit Wind and Earth and add Ice, Life and Void. Fire has twenty droppers because
+    Zone 4 got built. Weighing that is measuring Hypixel's schedule.
 - **The roster is NOT in `:core`, and this bullet said otherwise until 2026-10-21.** It read *"element
   identity is a `:core` constructor argument with one consumer, so changing it is cheap until questline
   #2"*, and the specs said the roster was *"baked into `:core`'s API"*. Verified by reading the code:
