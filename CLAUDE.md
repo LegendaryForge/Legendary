@@ -228,6 +228,40 @@ can ever do it. If this machine stops being the one with the game installed, the
 
 ---
 
+## Lore first — the jar and this mod both derive from it
+
+**Hytale's lore is the authority on what things *are*. The jar is the authority on what the engine
+*does*, and carries no authority about meaning.** When the two disagree about naming or taxonomy, lore
+wins and our code changes to match — never the reverse. This mod is content for someone else's world,
+so getting the fiction right is not decoration on top of the engineering; it is the requirement the
+engineering serves.
+
+Three corollaries, each of which has already been got wrong once:
+
+1. **A jar read can tell you a list exists. It cannot tell you the list answers your question.**
+   `Server/Abilities/Elements/` ships exactly five files matching the five Gaia elements — and they are
+   `{"DamageCause": "X"}` damage types. That corroboration was treated as settling a roster question and
+   it settled nothing. Asset agreement is necessary and nowhere near sufficient.
+2. **First-party lore outranks community wikis.** A concept-art title on Hytale.com or a `server.lang`
+   description is primary; a fandom page restating it is a report, and wiki pages disagree in ways that
+   change conclusions — `hytalewiki.org`'s Element page omits the essence framing entirely, which is
+   where one wrong roster argument came from. Tag the tier when citing: see the provenance block in
+   `docs/superpowers/specs/2026-10-20-residue-terrain-derivation-design.md`.
+3. **Hypixel keep the lore deliberately open-ended**, to leave players and creators room for their own
+   stories. So lore constrains *less* than a rulebook would: where it is silent we are free to invent,
+   and should. The discipline is only that where it **does** speak, we follow it rather than inventing
+   over it — and that we check which of those two situations we are in before designing, rather than
+   after.
+
+Worked example, 2026-10-21: the residue roster. `:core` keyed residue to the six shipped **essence
+items**; a design argued it against **runes** and nearly renamed the API. Lore distinguishes three
+layers the project had collapsed into two — **essence** (world-substance, *"five magic essences that
+compose life on Orbis"*), **element** (natural force), and **rune** (the written character that
+*represents* an element, and which Trorks, Fauns and three named characters also have). Runes are
+notation, so they were never the roster. The word *essence* was right; the membership was not.
+
+---
+
 ## Questline framework: placed, not adopted
 
 The questline framework (`QuestlineModule` SPI, registry, `LegendaryWiring`) lives in
@@ -264,11 +298,18 @@ Three facts from the new document that are easy to re-derive wrongly:
 - **Extent.** One convergence per world yields **zero nexuses beyond ~3 km** — measured, in the
   committed `scripts/residue-scans/out-chosen.txt` §7. Tuning cannot fix it; the model is one
   localised feature in an unbounded world.
-- **Roster.** `:core` keys residue to essences (Fire, Ice, Life, Lightning, Void, Water). Hytale's
-  six *runes* are Wind, Earth, Lightning, Water, Fire, Void, and `Server/Abilities/Elements/` ships
-  exactly the five Gaia ones — verifiable from the jar, no lore source needed. **Lightning is in
-  every roster, so Stormseeker is unaffected.** Element identity is a `:core` constructor argument
-  with one consumer, so changing it is cheap until questline #2.
+- **Roster — revised 2026-10-21, and the earlier version of this bullet was wrong.** It read
+  *"Hytale's six **runes** are Wind, Earth, Lightning, Water, Fire, Void … verifiable from the jar, no
+  lore source needed."* Runes are not a roster — they are the written characters that *represent*
+  elements, and factions and named characters have them too. And the jar does **not** settle it: the
+  five `Server/Abilities/Elements/` files are `{"DamageCause": "X"}` damage types, so they corroborate
+  a list without being one. See § "Lore first" above; this bullet is that section's worked example.
+  **Current state:** `:core` keys residue to the six shipped **essence items** (Fire, Ice, Life,
+  Lightning, Void, Water). §3 of the new document recommends the **cosmological five** instead —
+  Fire, Water, Lightning, Wind, Earth, with Void handled separately as an incursion — keeping the word
+  *essence* and changing only the membership. **Recommended, not decided, not implemented.**
+  **Lightning is in every roster, so Stormseeker is unaffected.** Element identity is a `:core`
+  constructor argument with one consumer, so changing it is cheap until questline #2.
 - **Void is an incursion, not a darkness.** Not native to Orbis, no reachable destination, modelled
   by the engine as a staged invasion event. A "Void = night and underground dark" idea was
   considered and **dropped**; do not re-propose it.
@@ -280,7 +321,9 @@ can be on-demand or must move to generation time, which is an architectural fork
 
 ---
 
-*Last updated: 2026-10-21 — moved into this repository from `Projects/Hytale/CLAUDE.md`,
+*Last updated: 2026-10-21 (second change that day) — added § "Lore first" and corrected the
+residue Roster bullet, which had argued the roster against runes and claimed the jar settled it
+without a lore source; both were wrong. Earlier 2026-10-21 — moved into this repository from `Projects/Hytale/CLAUDE.md`,
 where nothing version-controlled it; added the launch-directory section above, whose claim about
 ancestor-only auto-loading is probe-measured rather than assumed. Previously 2026-10-20 — added
 the residue-direction pointer above. Previously 2026-08-24:
