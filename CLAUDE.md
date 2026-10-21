@@ -376,10 +376,24 @@ Three facts from the new document that are easy to re-derive wrongly:
   by the engine as a staged invasion event. A "Void = night and underground dark" idea was
   considered and **dropped**; do not re-propose it.
 
-The new document is a **proposed direction, not an approved one** — its own status line says so. The
-first task when residue resumes is a decision, not implementation, and its §9 ranks the open
-questions. The top two (is sky exposure queryable positionally? is biome?) decide whether derivation
-can be on-demand or must move to generation time, which is an architectural fork.
+**The direction was ADOPTED 2026-10-21** — `docs/superpowers/specs/2026-10-21-residue-terrain-derivation-adoption.md`.
+The convergence star retires (measured: 0.00 nexuses/km² beyond 3 km, and tuning is exhausted); the
+placed-nexus model is approved; §9 q1–q5 are closed. Three things from that decision bind anyone
+building on it:
+
+- **Derivation is pure `:core` code behind an injected terrain port, and no residue is authored into
+  worldgen JSON.** That declines §7's two-implementations trap by construction. It also costs nothing
+  real: `HytaleWorldGenProvider` — the live generator — has **zero** bytecode references to
+  `builtin/hytalegenerator`, so V2's graph machinery is not callable at runtime anyway. Verified, not
+  recalled.
+- **Timing is a deployment choice, not an architecture one.** The derivation is deterministic, so
+  on-demand-near-players (the only thing possible today) and generation-time precomputation into
+  `PointManager` return the same answer; the second is a *cache*, not a second source of truth.
+- **The first deliverable is `/residueprobe`, which places nothing.** The capability question is
+  answered — lava, water, environment and exposure reads all compile against the real jar. What no jar
+  read can answer is whether the scoring puts a Fire nexus *at* the lava lake, so the probe prints its
+  opinion about ground you can walk to and judge. River-versus-ocean is not expressible at all, and
+  Lightning over-reports until storm frequency reaches the port.
 
 ---
 
