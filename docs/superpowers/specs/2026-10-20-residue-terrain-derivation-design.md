@@ -359,6 +359,63 @@ is what the derivation *means*, and it needs settling before the roster is imple
 discovered later as a lore inconsistency. Per `CLAUDE.md` § "Lore first", where lore speaks we follow;
 here it speaks about the source of essence, and §5 had quietly answered differently.
 
+### The chain is engine data, and the spawner reads the same signals we proposed [jar]
+
+**Added 2026-10-21.** The two-arrow chain above was argued from item descriptions. It is also in the
+spawn tables, which makes it mechanism rather than theme.
+
+**Creatures are bound to places by `Environments` + `SpawnBlockSet`:**
+
+```json
+Server/NPC/Spawn/World/Zone4/Spawns_Zone4_Volcanoes_Predator.json
+{ "Environments": ["Env_Zone4_Volcanoes"],
+  "NPCs": [ {"Id":"Emberwulf"}, {"Id":"Skeleton_Burnt_Gunner"},
+            {"Id":"Zombie_Burnt"}, {"Id":"Spark_Living"}, {"Id":"Toad_Rhino_Magma"} ],
+  "DayTimeRange": [6, 18] }
+```
+
+Every NPC there is a Fire-essence dropper. Joining 290 NPC drop tables to 523 spawn tables gives the
+**essence → environment** map:
+
+| Essence | droppers | world-placed | environments | character |
+|---|---|---|---|---|
+| **Fire** | 20 | 13 | 14 | `Caves_Volcanic_T1..T3` (Zones 1–2), `Zone4_Volcanoes`, `Zone4_Wastes`, `Zone4_Caves_Volcanic` — **plus leakage** into `Zone1_Azure`, `Zone1_Swamps`, `Zone4_Forests`, `Zone4_Sewers` |
+| **Ice** | 12 | 6 | 6 | `Zone3_Glacial`, `Glacial_Henges`, `Mountains`, `Forests` — **and `Zone3_Caves_Volcanic_T2/T3`**, frost creatures in volcanic caves |
+| **Void** | 12 | 3 | 16 | spread across Zones 1–3 — `Plains`, `Deserts`, `Savanna`, `Tundra`, `Glacial`, … **uniform, not terrain-bound** |
+| **Lightning** | 1 | **0** | 0 | `Spirit_Thunder` is in **no world spawn table at all** |
+| **Water** | 0 | 0 | 0 | none |
+| **Life** | 1 | 0 | 0 | `Spirit_Root`; otherwise 64 crop tables |
+
+Three things follow, and one of them is sharper than the version above.
+
+**The correlation is real but not clean.** Fire's environments are dominated by volcanic ones, Ice's by
+glacial — so terrain is a sound proxy. But Fire leaks into swamps, forests and sewers, and Ice appears
+in volcanic caves. A strict terrain→element derivation will **disagree with the shipped game in
+specific places**, and that is a thing to accept deliberately rather than discover in play.
+
+**Lightning is worse off than the drop-table count suggested, and Void better explained.** Lightning's
+sole source is not merely rare — it has **no ambient world placement whatsoever**, so it is
+encounter/beacon-spawned only. Terrain-derived Lightning residue therefore has *zero* creature
+corroboration anywhere. Conversely Void's droppers span 16 environments across three zones with no
+terrain character at all, which **independently confirms §6's reading** that Void is an incursion rather
+than a feature of ground — a decision that was taken on lore and is now corroborated by placement data.
+
+**And the decisive one: the spawner reads the same signals §5 proposed.** `NPCSpawn`'s public API is
+`getEnvironments()` / `getEnvironmentIds()`, `getLightRange(LightType)`, `getDayTimeRange()`,
+`getMoonPhaseRange()`, and `RoleSpawnParameters.getSpawnBlockSet()`. `LightType` is
+`{Light, SkyLight, Sunlight, RedLight, GreenLight, BlueLight}`. So the engine's own creature-placement
+predicate is
+
+```
+environment  ×  sky-light range  ×  block set  ×  time of day / moon phase
+```
+
+which is the same three *spatial* inputs §5 derives residue from (environment, sky exposure, terrain
+blocks). **Residue built on those signals agrees with creature placement by construction, because it
+reads what the spawner reads.** That moves the proposed fiction — *residue explains why these creatures
+are here* — from lore-compatible to near-isomorphic with the engine's own rule. It is the strongest
+argument yet for the upstream framing, and it was not available when that framing was proposed.
+
 ### The anchor question this also answers
 
 The world-fit work left open what relative `y = 0` means in world terms. Terrain height is the obvious
@@ -504,11 +561,36 @@ mathematics is wasted.
 
 ## 9. Open questions, ranked by what they block
 
-1. **Is sky exposure cheaply queryable at an arbitrary position**, or only for loaded chunks? Decides
-   whether derivation can be on-demand or must be generation-time. Blocks §5 and §7. Unverified.
-2. **Is biome/environment queryable positionally**, rather than only per tracked entity? Same
-   consequence. `WorldMapTracker.getCurrentBiomeName()` and `getWeatherIndexForEnvironment(int)` are both
-   entity-anchored. Unverified.
+1. **ANSWERED 2026-10-21 — sky exposure is positionally readable, for loaded chunks only.** [jar]
+   `ChunkLightData.getSkyLight(int, int, int)` is **public**, alongside the `SKY_CHANNEL` of four 4-bit
+   channels. It is chunk-*section* data, so it requires the chunk loaded and lit; there is no
+   arbitrary-position form. (The getter was nearly recorded here as absent: a `javap | grep | head -12`
+   truncated it out of view. An absence produced by a pipe — the same family as the gate-verdict rule in
+   workspace `CLAUDE.md`.)
+2. **ANSWERED 2026-10-21 — environment is positionally readable for loaded chunks; the
+   arbitrary-position API exists but belongs to a generator this world does not run.** [jar]
+   `EnvironmentChunk` is a `Component<ChunkStore>` with `sliceToSection(int)`, and
+   `EnvironmentColumn.get(y)` returns an environment id — so it is chunk-attached state, like light, not
+   entity-anchored as this question assumed. Separately
+   `EnvironmentProvider.evaluate(Context) -> int` **is a pure function of position** — its `Context`
+   holds nothing but an `org.joml.Vector3i` — which would allow querying any coordinate without loading
+   a chunk. But it lives in `builtin/hytalegenerator` (998 classes), and
+   `HytaleWorldGenProvider` — the generator the live world actually uses — references that package
+   **zero** times.
+
+   > **So the fork resolves, for now: on-demand derivation is possible but bounded to loaded chunks**
+   > (in practice, near players). Anything world-wide must be generation-time. Both signals land the
+   > same way because both are chunk state, which is a more coherent answer than the question expected.
+   >
+   > **This couples to `[[Workspace_Deferrals]]` #18.** When the `HytaleGenerator` tree takes over
+   > generation, `EnvironmentProvider.evaluate` becomes reachable and arbitrary-position environment
+   > queries become available — reopening this fork in the *other* direction. #18's handover trigger
+   > was filed as an asset-contribution question; it now also gates an architectural one.
+   >
+   > **Still signature-level, not probed.** Per the standing method rule, a signature is a hypothesis:
+   > unverified here are whether a mod can reach the world's `EnvironmentChunk` component and
+   > `ChunkLightData` at runtime, and what `getSkyLight` and an environment read actually *cost* — which
+   > is what "cheaply" in this question's original wording was asking. One live probe settles both.
 3. **Does a Void event fire on its own?** `getEventStartSeconds()` exists, as do `VoidEventCommands` and
    `StartVoidEventCommand`, and `StartVoidEventInFragmentSystem` hints at automatic start in some
    "Fragment" context. If it only fires by command, we must schedule events ourselves — possible, but it
