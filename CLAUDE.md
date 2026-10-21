@@ -13,17 +13,28 @@ agent loop, Observation Protocol, Deferral Discipline).
 > 2026-10-21 with a two-run probe, one variable changed: launched from a parent directory only
 > the parent's file was in context; launched from the child, both were.
 >
-> So a session started one level up at `Projects/Hytale/` does not load this file at all — the
-> residue read-point below included. `~/Workspace/CLAUDE.md` still loads either way, because it
-> is an ancestor of both, which is precisely what makes the failure hard to notice: the session
-> looks oriented.
+> **This file is nonetheless loaded from either directory**, because
+> `Projects/Hytale/CLAUDE.md` contains the line `@Legendary/CLAUDE.md` and a CLAUDE.md
+> **import** does reach a subdirectory even though auto-load will not. Probe-measured the same
+> day, one variable changed: with that line the child's token is in context, without it absent.
+> A second probe confirmed the loader **dedupes** — launched from here the file appears once,
+> not twice — so the import costs a correctly-launched session nothing.
 >
-> A short stub at `Projects/Hytale/CLAUDE.md` exists to say so out loud if you launch from
-> there. It is the only guard available, because **nothing reports a `CLAUDE.md` that was never
-> loaded** — the failure is silent and reads as green.
+> **What a mislaunch still costs is git context, and only that.** Starting here points the
+> harness's git context at **this** repository; starting one level up points it at the
+> *workspace* repo, which every branch, commit, PR and merge instruction below would then be
+> wrong about. Read-only work is fine from either directory. The check is a command:
 >
-> Starting here also points the harness's git context at **this** repository instead of the
-> workspace repo, which is what every branch and PR instruction below already assumes.
+> ```bash
+> git rev-parse --show-toplevel     # must print …/Projects/Hytale/Legendary
+> ```
+>
+> **The stub's old guard is gone, and must not be reinstated.** It asked whether this file's H1
+> was in context — a sound signal while a mislaunch meant the file was absent, and a false
+> all-clear now that the import makes the heading present either way. A guard returning the
+> same answer in the good and bad cases is worse than none, which was the original failure here
+> in the opposite direction. The git toplevel replaced it because it still differs, and because
+> it is read off a command rather than introspected from the absence of something never seen.
 
 > **Until 2026-10-21 this file lived at `Projects/Hytale/CLAUDE.md` and was tracked by no
 > repository.** The workspace repo ignores `Projects/` wholesale (`.gitignore:11`) and
