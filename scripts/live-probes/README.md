@@ -34,6 +34,7 @@ executing, not by reading.
 | `drive-weatheroverrideprobe-client.sh` | `/weatheroverrideprobe` | 2026-10-20 | 0.7.2 |
 | `drive-weatheroverrideprobe.sh` | `/weatheroverrideprobe` (headless; expects SKIPPED) | 2026-10-20 | 0.7.2 |
 | `drive-beamprobe.sh` | `/beamprobe` | 2026-10-20 | 0.7.2 |
+| `drive-render-session-client.sh` | `/beamprobe` + `/markerprobe` | **never run** | written 2026-10-20 against 0.7.2 |
 | `drive-pointprobe.sh` | `/pointprobe` | 2026-10-20 | 0.7.2 |
 | `drive-blockprobe.sh` | `/blockplacementprobe` | 2026-08-29 | **0.6.1 — unverified since** |
 | `drive-prefabprobe.sh` | `/prefabprobe` | 2026-08-29 | **0.6.1 — unverified since** |
@@ -43,6 +44,12 @@ than silently endorsed. `/prefabprobe` in particular is known to have changed
 behaviour: `World.waitForFutureWithoutLock` was removed in 0.7.2, so it is now an
 async chain and **no longer prints when it returns**.
 
+`drive-render-session-client.sh` is marked **never run** rather than left out of the
+table. It was written and its probes compile against the real jar, which is strictly
+weaker than having been executed — and this table's whole purpose is that a driver is
+a hypothesis until it runs. Writing "2026-10-20" there because that is when it was
+authored would be the same category error the `-client` drivers exist to prevent.
+
 ## Client-attached vs headless
 
 Most probes answer headless. Two classes do not:
@@ -51,7 +58,18 @@ Most probes answer headless. Two classes do not:
   player's `WeatherTracker` and observes a packet to that player's connection. With
   no client it reports `SKIPPED`, never `PASS` — that is no run, not a degraded one.
 - **Anything whose observable is rendering.** `/beamprobe` can confirm the server
-  accepted a beam; only a client can confirm it was drawn.
+  accepted a beam; only a client can confirm it was drawn. `/markerprobe` likewise
+  confirms the discovery gate flipped, never that an icon appeared on the map.
+
+`drive-render-session-client.sh` is the driver for that second class, and it is the
+one script here that fires **two** probes. The pairing is not convenience: the scarce
+resource for a rendering question is a human at a connected client, not the server, so
+the right unit of work is one join per *hold window* rather than one per probe.
+Splitting `/beamprobe` and `/markerprobe` would make the operator connect twice to
+answer two halves of the same question. It also fires `/markerprobe` **twice** —
+`WorldMapManager` is a `TickingThread`, so a registered `MarkerProvider` publishes
+asynchronously and the first invocation cannot observe its own effect. An absent
+marker on run 1 is expected; on run 2 it is a finding.
 
 `drive-weatheroverrideprobe-client.sh` waits for `Player joined:` and fires the
 probe itself, so there is no window to mistime.

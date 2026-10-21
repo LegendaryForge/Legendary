@@ -14,6 +14,7 @@ import io.github.legendaryforge.legendary.core.internal.weather.OverrideRegistry
 import io.github.legendaryforge.legendary.mod.hytale.command.BeamProbeCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.BlockPlacementProbeCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.BlockSpoofProbeCommand;
+import io.github.legendaryforge.legendary.mod.hytale.command.MarkerProbeCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.PointStoreProbeCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.PrefabPasteProbeCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.ResidueParticleProbeCommand;
@@ -97,10 +98,11 @@ public class LegendaryHytalePlugin extends JavaPlugin {
         getCommandRegistry().registerCommand(new PrefabPasteProbeCommand());
         getCommandRegistry().registerCommand(new BeamProbeCommand());
         getCommandRegistry().registerCommand(new PointStoreProbeCommand());
+        getCommandRegistry().registerCommand(new MarkerProbeCommand());
         getLogger()
                 .atInfo()
                 .log(
-                        "Commands registered: /stormseeker, /ss-advance, /ss-trial, /weatherprobe, /weatherportprobe, /residueprobe, /blockprobe, /blockspoofprobe, /prefabprobe, /beamprobe, /pointprobe");
+                        "Commands registered: /stormseeker, /ss-advance, /ss-trial, /weatherprobe, /weatherportprobe, /residueprobe, /blockprobe, /blockspoofprobe, /prefabprobe, /beamprobe, /pointprobe, /markerprobe");
     }
 
     private void onPlayerConnect(PlayerConnectEvent event) {

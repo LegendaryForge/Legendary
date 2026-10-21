@@ -70,6 +70,30 @@ public class BeamProbeCommand extends AbstractWorldCommand {
 
     private static final int LOAD_TIMEOUT_SECONDS = 30;
 
+    // --- Verdict counters. Added 2026-10-20 so a driver can read this probe's result BY NAME.
+    //
+    // This probe printed no verdict line for its first two months, which made it unreadable to
+    // anything but a human: `drive-render-session-client.sh` greps for one, and an ABSENT verdict
+    // is a failure rather than a pass. Workspace CLAUDE.md asks that any new gate print a verdict
+    // line for exactly this reason.
+    //
+    // The grading is deliberately asymmetric. A `spawn returned null` is NOT counted as a failure:
+    // it is the observable §8 open question 2 exists to explain (null in a force-loaded chunk,
+    // VALID in an unloaded one, deterministic across three runs), so grading it FAIL would make
+    // the probe report failure while successfully measuring the thing it was re-run to measure.
+    // It is counted and surfaced in the verdict line instead, which is where a driver will see it.
+    private int testsRun;
+
+    private int beamsConstructed;
+
+    private int beamsValid;
+
+    private int holdersValid;
+
+    private int holdersNull;
+
+    private int buildsThrew;
+
     public BeamProbeCommand() {
         super("beamprobe", "Tests whether beams attach to positions and blocks, or only to entities");
     }
@@ -107,6 +131,7 @@ public class BeamProbeCommand extends AbstractWorldCommand {
             sendText(
                     context,
                     sb.append("no beam asset resolved -- cannot test attachment\n")
+                            .append("\nBEAM_PROBE_VERDICT: SKIPPED | no beam asset resolved\n")
                             .toString());
             return;
         }
@@ -151,6 +176,7 @@ public class BeamProbeCommand extends AbstractWorldCommand {
                             .append(": ")
                             .append(t.getMessage())
                             .append("\n");
+                    sb.append("\nBEAM_PROBE_VERDICT: SKIPPED | force-load failed, no position to test\n");
                     sendText(context, sb.toString());
                     return null;
                 });
@@ -220,7 +246,36 @@ public class BeamProbeCommand extends AbstractWorldCommand {
 
         sb.append("\nLook at the origin. A reported 'holder VALID' with nothing visible means the\n");
         sb.append("server accepted the beam and the client did not draw it -- a different failure.\n");
+        appendVerdict(sb);
         sendText(context, sb.toString());
+    }
+
+    /**
+     * The verdict line. Read it by name, never by position.
+     *
+     * <p>FAIL means the mechanism is broken: a builder threw, a constructed beam reported itself
+     * invalid, or no position anywhere produced a holder. A {@code spawn returned null} at some
+     * positions and not others is the §8 open-question-2 observable and is <em>reported</em> rather
+     * than graded — so a run that reproduces the anomaly cleanly reads PASS, because reproducing it
+     * is a successful measurement.
+     *
+     * <p>Rendering is not graded at all, and cannot be: the server has no way to know. That is the
+     * entire reason the client-attached driver holds the server open afterwards.
+     */
+    private void appendVerdict(StringBuilder sb) {
+        boolean broken = buildsThrew > 0 || beamsValid < beamsConstructed || holdersValid == 0;
+        sb.append("\nBEAM_PROBE_VERDICT: ").append(broken ? "FAIL" : "PASS");
+        sb.append(" | ").append(testsRun).append(" tests");
+        sb.append(", beams valid ").append(beamsValid).append("/").append(beamsConstructed);
+        sb.append(", holders ")
+                .append(holdersValid)
+                .append(" VALID / ")
+                .append(holdersNull)
+                .append(" null");
+        if (buildsThrew > 0) {
+            sb.append(", ").append(buildsThrew).append(" build(s) THREW");
+        }
+        sb.append(" | rendering NOT graded -- server cannot observe it\n");
     }
 
     private int beamIndexOf(String id) {
@@ -229,11 +284,13 @@ public class BeamProbeCommand extends AbstractWorldCommand {
 
     /** Spawns one holder carrying the supplied beams and reports what came back. */
     private void runTest(StringBuilder sb, String label, Store<EntityStore> store, Vector3d at, BeamSupplier supplier) {
+        testsRun++;
         sb.append(label).append(" at ").append(String.format("%.1f %.1f %.1f", at.x, at.y, at.z));
         AttachedBeam[] beams;
         try {
             beams = supplier.get();
         } catch (RuntimeException e) {
+            buildsThrew++;
             sb.append(" | BUILD THREW ")
                     .append(e.getClass().getSimpleName())
                     .append(": ")
@@ -248,12 +305,18 @@ public class BeamProbeCommand extends AbstractWorldCommand {
                 validBeams++;
             }
         }
+        beamsConstructed += beams.length;
+        beamsValid += validBeams;
         sb.append(" isValid=").append(validBeams).append("/").append(beams.length);
         try {
             Ref<EntityStore> holder = BeamComponent.spawn(store, at, LIFETIME_SECONDS, beams);
             if (holder == null) {
+                holdersNull++;
                 sb.append(" | spawn returned null\n");
                 return;
+            }
+            if (holder.isValid()) {
+                holdersValid++;
             }
             sb.append(" | holder ")
                     .append(holder.isValid() ? "VALID" : "invalid")
