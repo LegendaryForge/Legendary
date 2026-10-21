@@ -203,7 +203,7 @@ control must force an explicit calm id (`Zone1_Sunny`).
 
 ## Probe discipline
 
-- **Never place probe markers in a line.** The first `/residueprobe` layout put three markers east
+- **Never place probe markers in a line.** The first `/residueparticleprobe` layout put three markers east
   and two were hidden by terrain and by each other. **A marker you cannot see is indistinguishable
   from one that never rendered.** Use distinct bearings and multiple heights.
 - **Place the case you predict will be ABSENT first, while nothing else is on screen.** A marker

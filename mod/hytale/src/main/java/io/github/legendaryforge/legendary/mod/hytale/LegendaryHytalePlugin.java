@@ -106,7 +106,7 @@ public class LegendaryHytalePlugin extends JavaPlugin {
         getLogger()
                 .atInfo()
                 .log(
-                        "Commands registered: /stormseeker, /ss-advance, /ss-trial, /weatherprobe, /weatherportprobe, /residueprobe, /blockprobe, /blockspoofprobe, /prefabprobe, /beamprobe, /pointprobe, /markerprobe, /signalprobe");
+                        "Commands registered: /stormseeker, /ss-advance, /ss-trial, /weatherprobe, /weatheroverrideprobe, /weatherportprobe, /residueparticleprobe, /residueprobe, /blockprobe, /blockspoofprobe, /prefabprobe, /beamprobe, /pointprobe, /markerprobe, /signalprobe");
     }
 
     private void onPlayerConnect(PlayerConnectEvent event) {
