@@ -49,8 +49,12 @@ import org.joml.Vector3d;
  * is section-scoped (32³), but {@code WeatherConditionProbeCommand} passes <em>world</em> floored
  * coordinates to {@code EnvironmentSection.get} and that works, so these accessors appear to mask
  * internally. "Appear to" is not good enough for a value a derivation would key on, so both forms are
- * reported side by side and the run disambiguates. If they agree, the question was moot; if they
- * differ, the output says which is which rather than leaving a silently wrong reading.
+ * reported side by side and the run disambiguates. If they differ, the output says so; if they agree,
+ * <em>how much that is worth depends on the value</em>. Sky light saturates — the whole open surface
+ * reads 15 and everything deep reads 0 — so agreement at either extreme is weak evidence, because a
+ * wrongly-addressed cell would very likely return the same number. Only agreement at an intermediate
+ * value discriminates, and the output now labels which case it got. The first version of this line
+ * printed "masking confirmed" on a pair of 15s, asserting a conclusion its own data could not carry.
  *
  * <p>Second, which of {@code getGlobalLight()} and {@code getLocalLight()} carries sky. The split was
  * not known when §5 was written, and it matters: §5's argument for sky light is that it is
@@ -338,7 +342,13 @@ public class TerrainSignalProbeCommand extends AbstractWorldCommand {
                     .append(skyGlobalWorld)
                     .append(" section-local=")
                     .append(skyGlobalLocal)
-                    .append(skyGlobalWorld == skyGlobalLocal ? "  (agree -- masking confirmed)" : "  (DIFFER)")
+                    .append(
+                            skyGlobalWorld != skyGlobalLocal
+                                    ? "  (DIFFER -- world coords are NOT masked; use section-local)"
+                                    : skyGlobalWorld == ChunkLightData.MAX_VALUE || skyGlobalWorld == 0
+                                            ? "  (agree, but at a SATURATED value -- weak evidence,"
+                                                    + " a wrong cell would likely read the same)"
+                                            : "  (agree at an intermediate value -- masking likely)")
                     .append('\n');
             b.append(indent)
                     .append("getSkyLight local  world-coords=")

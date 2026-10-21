@@ -11,6 +11,47 @@ Canonical design, architecture, and integration documentation for the Legendary 
 
 ---
 
+## Where does this go?
+
+**Enforced by `checkDocsOrganization`, wired into `check`.** It prints `DOCS_VERDICT:` — read that
+line by name, never the exit code.
+
+| If you have… | It goes in | Why there |
+|---|---|---|
+| **a fact about the engine** — an API, a signature, a measured value, an asset schema | [`integration/hytale-engine-api.md`](integration/hytale-engine-api.md), as a new row with its **tier** and **build** | an API fact outlives the design that found it; designs get superseded |
+| **a fact about the fiction** — lore, naming, what exists in the world | [`setting/hytale-orbis-setting-brief.md`](setting/hytale-orbis-setting-brief.md) | lore is the authority on meaning; see `../CLAUDE.md` § "Lore first" |
+| **a design or decision** | a new `superpowers/specs/YYYY-MM-DD-*.md` with a `**Status:` line | dated and append-only; the status is what stops it reading as current after it is superseded |
+| **a plan to execute one** | a new `superpowers/plans/YYYY-MM-DD-*.md` | same |
+| **a durable rule for every session** | [`../CLAUDE.md`](../CLAUDE.md) | it is the only document auto-loaded every session |
+| **operating notes for the test server** | [`integration/live-server-testing.md`](integration/live-server-testing.md) | perishable, engine-specific, read at point of use |
+| **something superseded** | leave it where it is, add a banner saying so | deletion loses the record of what was believed and when |
+
+### The six rules
+
+1. **Curated directories are indexed here** — `architecture/`, `integration/`, `setting/`,
+   `stormseeker/` and this directory. A document nobody links to has no first reader.
+2. **Dated directories are date-prefixed** — `superpowers/specs/` and `superpowers/plans/` must
+   start `YYYY-MM-DD-`. That is what makes them discoverable without a hand-maintained index, which
+   is why they are *not* required here: they accumulate indefinitely, and indexing each one would
+   turn this file into a changelog.
+3. **Relative links resolve.** This is the only rule that catches a defect introduced by a *correct*
+   edit elsewhere — moving a file breaks every document pointing at it, and nothing else reports it.
+4. **Every spec declares a `**Status:`.** Four specs once read as "decided" while describing a model
+   superseded a day earlier; the only thing a direct reader saw was that stale framing.
+5. **`integration/` and `setting/` documents carry a verification stamp** — which build or which
+   date their claims were checked against. The setting brief asserted "there are no runes" as a
+   verified gap: true of build `0.5.9`, false of `0.7.2`, and nothing on the page said which.
+6. **Every directory under `docs/` is classified** as curated, dated, or exempt. Without this, adding
+   a directory means adding documents no rule examines — which is exactly how `architecture/` sat
+   unguarded in the guard's own first version.
+
+**Why rules and not habits.** Every documentation failure recorded in this project was content in the
+wrong *place*, not content missing, and each instance was fixed by hand while the next slipped the
+same way. The four ⚠️ banners in this tree are that history. A rule that fires on every commit is
+worth more than a convention that fires on whoever remembers it.
+
+---
+
 ## Architecture (`architecture/`)
 
 | Document | What it is |
