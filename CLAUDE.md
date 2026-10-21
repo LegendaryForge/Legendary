@@ -165,17 +165,37 @@ git checkout -b <type>/<short-description>
 git push -u origin <branch>
 gh pr create --base main
 git checkout main           # BEFORE the merge — see below
-gh pr merge <n> --merge     # merge commit, not squash or rebase — see below
+gh pr merge <n> --merge --delete-branch   # merge commit, not squash or rebase — see below
 ```
 
 **Merge, never squash or rebase.** Squash collapses deliberate commit separation (e.g. a
 mechanical reformat kept apart from a config change so it cannot conceal one); rebase
 rewrites SHAs that are cited across the knowledge vault.
 
-**Check out `main` before `gh pr merge`.** Run with the PR's own branch checked out — or from
-inside a worktree — the merge itself succeeds but its `--delete-branch` cleanup fails, so the
-remote branch survives the merge and nothing reports that as a failure. Eight for eight since
-adopting the precondition, which is why it is stated as a step above rather than as advice.
+**Check out `main` before `gh pr merge`, and pass `--delete-branch`.** Two separate
+requirements, and the recipe above now carries both. Run with the PR's own branch checked out — or
+from inside a worktree — and the merge itself succeeds while its `--delete-branch` cleanup fails,
+so the remote branch survives the merge and nothing reports that as a failure. The flag has to be
+written out because this repo's `deleteBranchOnMerge` is **false**: GitHub deletes nothing on its
+own, so a merge without it strands the branch even when the checkout precondition is satisfied.
+
+**The recipe omitted `--delete-branch` until 2026-10-21.** So the block above produced the exact
+outcome the paragraph beneath it warned about, and attributed it to the checkout precondition
+instead — copy-paste that block with `main` correctly checked out and the branch still survives.
+Derived from the PR record: **130 merged PRs (#1–#133), zero with a surviving head branch.** The
+one branch that remains, `docs/hytale-deferral-queue`, belongs to the deliberately closed #92.
+Read the 130 for what it is: it does not isolate `--delete-branch` at merge time, being equally
+consistent with later cleanup by hand, and it spans both the five-repo era and the
+long-lived-branch era.
+
+**It replaces a claim that could not be audited at all.** This sentence previously read *"Eight
+for eight since adopting the precondition"* — and `git log -S 'Eight for eight' -- CLAUDE.md`
+returns exactly one commit, `6c3c495`, the commit that brought this file into the repository. The
+eight was written and incremented across the two months this file was tracked by **no**
+repository: no history, no diff, and no origin date for "since adopting" that can be recovered.
+Not stale — unauditable by construction. It is the third document found on 2026-10-21 asserting
+git state that nothing re-derives, after the session-init orientation head (stale: it described
+the pre-relocation layout) and this recipe (wrong).
 
 **Branches are short-lived, and that is load-bearing.** Until 2026-08-24 this project used a
 long-lived `feat/stormseeker-bridge`. Because `main` can only be updated by merging *into*
@@ -396,7 +416,14 @@ building on it:
 
 ---
 
-*Last updated: 2026-10-21 (fourth change that day) — the dead repo-local `.git/hooks/pre-push`
+*Last updated: 2026-10-21 (fifth change that day) — § Pushing's copy-pasteable recipe gained the
+`--delete-branch` it had always been missing, and the "Eight for eight" claim beneath it was
+replaced by a derived 130-of-130 plus a note on what that figure does not prove. The recipe was
+producing the failure its own next paragraph warned about, while that paragraph blamed the checkout
+precondition; the claim could not be audited at all, because this file's entire history is the
+commit that brought it into the repository. Found while answering an operator report of "git
+issues" for which no symptom existed — what did exist was three documents asserting git state that
+nothing re-derives. Earlier 2026-10-21 (fourth change that day) — the dead repo-local `.git/hooks/pre-push`
 was deleted from disk and this file's paragraph describing it removed; what survives is the fact
 that paragraph existed to convey, that `core.hooksPath` overrides repo-local hooks and Spotless is
 enforced by `check`. The hook had never run, and its `SPOTLESS_EXECUTOR` path was wrong twice over
