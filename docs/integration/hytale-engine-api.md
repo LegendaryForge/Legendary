@@ -66,7 +66,43 @@ loaded survey at y=64, offsets 0..4096: all out
 absent case at 2,000,000: hasStorageInMemory=false, sectionAt null/invalid
 ```
 
-Three facts worth keeping:
+**Client-attached run, same build, player at `-982, 121, 103`:** [measured]
+
+```
+[StephKBart] hasStorageInMemory=true  sectionAt=valid
+  getEnvironment=78 (Env_Zone1_Plains)
+  BlockSection=present  hasGlobalLight=true  hasLocalLight=true
+  getSkyLight global world-coords=15  section-local=15
+  getSkyLight local  world-coords=15                      max=15
+  y+12: env=78  skyGlobal=9/9
+  y-12: env=78  skyGlobal=0/0
+cost over 20000 reads: getEnvironment 99ns/read, getSkyLight 34ns/read
+SIGNALPROBE_VERDICT: PASS | env=READ sky=READ absent=ok
+```
+
+**So both reads work at arbitrary coordinates inside a loaded section, and both are cheap** —
+99 ns and 34 ns, i.e. order 10⁷ reads/second. §9 q1's "cheaply" is answered with room to spare; a
+derivation can afford to sample these per-position rather than caching.
+
+Three caveats, because the verdict line is cleaner than the data:
+
+- **The coordinate form is *likely* masked, not confirmed.** World and section-local agreed — but at
+  **15**, which is the maximum and ubiquitous across the open surface, so a wrongly-addressed cell
+  would very probably have returned 15 too. The informative agreement is `y+12: 9/9`. Treat
+  world-coordinate addressing as probably-safe and re-check at an intermediate value before relying
+  on it.
+- **Global and local light are not yet discriminated.** They returned identical values at all three
+  samples (15/15, 9/9, 0/0), which is exactly what is expected with no player-placed light nearby. So
+  **§5's claim that sky light is immune to a player lighting a cave remains unverified** — it needs a
+  reading taken beside a torch, where the two should diverge.
+- **`y+12` reading 9 is unexplained.** Sky light should not *fall* twelve blocks above a position that
+  reads 15 in open air. Either there is cover above that spot, or the addressing is wrong in a way the
+  saturated surface reading hid. Open.
+
+Sky light does vary usefully with depth (15 surface → 0 at −12), so it is a real terrain signal
+regardless of how those three resolve.
+
+Three further facts worth keeping:
 
 1. **The world is 320 blocks tall and starts at y=0**, confirmed by the engine's own predicate rather
    than inferred from `EnvironmentSection[10] × 32`. `y319` true with `y320` false, and `y-1` false.
@@ -77,6 +113,10 @@ Three facts worth keeping:
 3. **A headless server holds no chunk region at all** — nothing loaded at any surveyed offset. So the
    practical bound on "on-demand derivation works in loaded chunks" is that with no player connected
    the bound is **empty**. Derivation cannot pre-compute a region before a player arrives.
+4. **The loaded region is local to a player, and small.** With a player connected at `-982, 103`, the
+   survey offsets `0..4096` on the origin diagonal were *still all unloaded* — only the player's own
+   neighbourhood is in memory. "Loaded" is not "the explored world"; it is a working set around
+   whoever is online.
 
 ### Sky light
 

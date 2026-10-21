@@ -191,6 +191,7 @@ instead.
 | `:mod:hytale:checkHytaleJarVersion` | game jar's class-file version is compatible; skipped when no jar present |
 | `:mod:hytale:checkManifestEntrypoint` | `manifest.json`'s `Main` names a class that exists, with a matching `package` line. The manifest refers to the entrypoint **as a string**, so the compiler cannot see it — a renamed package leaves the build fully green and produces a mod that will not load. Reads sources, not classes, so unlike the jar-version guard it is **not** skipped without the game and is the only check giving CI real coverage of this module |
 | `:mod:hytale:checkAssetPackIntegrity` | this module's shipped assets cannot silently override base-game ones. Hytale resolves an asset's id from its **filename**, and a `.lang` key we ship replaces the base game's text for every player on the server — both are designed engine features, invisible to the compiler, and both **fail green**. Enforced by requiring a Stormseeker-scoped prefix on every shipped asset filename and translation key; also checks that objective lines name objectives that exist and that referenced translation keys are defined. Reads files, not classes, so it is meaningful on CI where this module compiles nothing |
+| `checkDocsOrganization` (root) | `docs/` stays organised, in six mechanical rules: curated directories indexed in `docs/README.md`, `specs/`+`plans/` date-prefixed, **every relative link resolves**, every spec declares a `**Status:`, `integration/`+`setting/` docs carry a verification stamp, and **every directory is classified** so a new one cannot go unchecked. Prints `DOCS_VERDICT:`. Reads files, not classes, so it is meaningful on CI. All six were mutation-tested — introduced a violation of each and confirmed RED — because the guard was GREEN on first write, which proves nothing |
 | `checkModuleCoverage` (all modules) | a module compiles its **whole** source set, unless it declares why not and that declaration's predicate holds. `FULL` is the only state needing nothing said; `PARTIAL`, `EXEMPT` and `EMPTY` all fail when undeclared (amended 2026-08-24 — originally only `EXEMPT` required a declaration, so moving every file out of a module, or adding one file to a declared module, each defeated the check while staying green) |
 
 ---
@@ -212,6 +213,14 @@ Runners never have the proprietary jar, so on every CI run that module is EXEMPT
 guarantees a *new* module cannot go dark undeclared. **It does not detect Hytale API drift.**
 That class of failure — the `Vector3d` package move that went unnoticed for ~6 months, the
 game auto-updating to a Java 25 jar — can only be caught by compiling against the real jar.
+
+**Where any document goes is decided by a table, and enforced.** `docs/README.md` §
+"Where does this go?" maps the kind of thing you have to the file it belongs in — engine fact, lore
+fact, design, plan, durable rule, operating note, superseded thing — and states the six rules
+`checkDocsOrganization` enforces. **Read it before adding or moving a document.** Added 2026-10-21,
+because every documentation failure recorded in this project was content in the wrong *place* rather
+than content missing: each instance was fixed by hand, none of the fixes were enforced, and the next
+one slipped the same way.
 
 **What we know about the engine goes in one place.** `docs/integration/hytale-engine-api.md` is the
 living API reference — per-row build stamps and evidence tiers (**measured** / **compiled** /

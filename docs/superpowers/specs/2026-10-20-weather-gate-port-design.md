@@ -1,5 +1,16 @@
 # Per-player weather override port — `WeatherGate` + `PlayerWeatherController`
 
+**Status: IMPLEMENTED and merged** (PR #103, 2026-10-20). `WeatherGate` and
+`PlayerWeatherController` in `core`, `HytaleWeatherBackend` in `mod/hytale`, a consumer-side contract
+test in `harness`, `/stormseeker` migrated onto it, and `HytaleWeatherReader` deleted. Two claims this
+document rested on were refuted by the engine during implementation and are corrected in place:
+`effectiveWeather` was removed from the SPI because it cannot be implemented, and `core` speaks
+weather **ids** rather than indices.
+
+*Status line added 2026-10-21, when `checkDocsOrganization` was wired into `check` and found this the
+only spec in the tree without one. It had been readable as a proposal for a port that was already
+shipped.*
+
 **Rank 1 of the [0.7.2 capability assessment](2026-10-20-hytale-0.7.2-capability-assessment-design.md)
 §6.** Gate satisfied: `/weatheroverrideprobe` passed 23/23 against a live client (§5.1).
 
