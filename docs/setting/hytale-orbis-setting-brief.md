@@ -215,7 +215,16 @@ up from 10,235, and two of the original verdicts have flipped. [asset, 0.7.2]
 in this document, because each release can take a word, and nothing warns us — we find out by reading a
 design that used it.
 
-**One collision to watch, not yet a problem:** *lattice*. 0.7.2 names a player-facing station the
+**`sigil` is not "a word to watch" — the collision is already live in our code.** `stormseeker` ships
+`SIGIL_FLOWING` and `SIGIL_ANCHORED` as both `ResourceId`s and item ids
+(`stormseeker:sigil_flowing`, `stormseeker:sigil_anchored`), chosen when `sigil` had **zero**
+occurrences in `server.lang`. 0.7.2 now ships the *"Enkindled Sigil"*, so a word picked precisely
+because the game did not use it is now a word the game does use — and ours are player-facing item
+names. Nothing breaks; the ids are namespaced. But the fiction now implies a connection to Hypixel
+content we do not control, which is the cost an invented word was chosen to avoid. Worth a deliberate
+keep-or-rename decision rather than discovering it in a player's inventory.
+
+**One further collision to watch, not yet a problem:** *lattice*. 0.7.2 names a player-facing station the
 **Runebinder's Lattice**, and the residue design's candidate generator is also called a lattice (that
 spec's §4, *"the lattice proposes, terrain disposes"*). Ours is internal geometry and theirs is a
 building, so nothing breaks today — but the word is no longer neutral, and any player-facing residue
