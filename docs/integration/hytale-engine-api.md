@@ -125,16 +125,52 @@ figure at dusk.
 environment natively distinguishes surface from underground and shades between cave types vertically,
 which means it already supplies some of what a terrain derivation would otherwise compute.
 
+### Sky light is immune to player-placed light — measured, with a verified control
+
+Client-attached readings underground in `Env_Zone1_Caves_Volcanic_T1`, 2026-10-21: [measured]
+
+| Position | light source | `getSkyLight` | `rgb` (r·100+g·10+b) | `packed` |
+|---|---|---|---|---|
+| `-1002,50,107` | beside a candle | **0** | 987 (r9 g8 b7) | 1929 = `0x0789` |
+| `-985,53,97` | beside a torch | **0** | 987 (r9 g8 b7) | 1929 = `0x0789` |
+| `-986,51,96` | ~2 blocks further off | **0** | **765** (r7 g6 b5) | **1383** = `0x0567` |
+
+**Sky stays 0 while the colour channels track distance from the light.** That is §5's *"immune to a
+player lighting a cave"* claim, measured — and the control that makes it mean anything is itself
+verified, which took one extra reading.
+
+**Why the extra reading was needed.** The candle and torch readings were byte-for-byte identical at
+two different positions with two different sources, and `9, 8, 7` is a descending sequence — which
+looks far more like a constant than a measurement. Had it been one, "rgb is non-zero" would not have
+been evidence that light reached that cell, and the sky-0 reading would have proved nothing. Stepping
+~2 blocks away moved it to `765`, so the read is genuinely per-cell. **The identical pair was a
+coincidence**: both sources are warm lights with the same profile and the player was at equivalent
+distance from each.
+
+Two further facts from the same readings:
+
+- **Light colour profile is `r = g+1 = b+2`** for both candle and torch, and attenuation reduced all
+  three channels equally (−2 over ~2 blocks). So these sources are near-white with a slight warm bias,
+  not strongly tinted.
+- **Packed nibble layout is `0x0bgr`** — sky in the high nibble, then blue, green, red. `0x0789` with
+  r9 g8 b7, and `0x0567` with r7 g6 b5. Note this is **not** independent corroboration of the sky
+  reading: `getBlockLight` and the three colour getters read the same underlying data, so their
+  agreement shows self-consistency only. An earlier version of this section claimed independence; it
+  was wrong.
+- **`getGlobalLight()` and `getLocalLight()` are indistinguishable on read** — identical in sky, every
+  colour channel and the packed value across **six** readings, now including three beside a live block
+  light. So the distinction is not about read content; the write/invalidation pairs
+  (`setLocalLight`/`setGlobalLight`, `invalidateLocalLight`/`invalidateGlobalLight`) are the likelier
+  locus. **Either accessor is safe for a derivation that only reads.**
+
 **Still open after these readings:**
 
 - **The `y+12` series (9 → 12 → 15) is confounded** and is *not* evidence of time-modulation. Position
   changed along with time across the three readings, so the variation cannot be attributed; overhead
   terrain differing per spot is the likelier cause. Recorded unexplained rather than explained — one
   reading with position held fixed across a time change would settle it.
-- **`getGlobalLight()` and `getLocalLight()` have never diverged**, agreeing at 15/15, 12/12, 0/0 and
-  15/15. So which one "carries" sky is still undetermined — apparently both do. The discriminating
-  test is a reading beside a light source underground with the RGB channels also read, which requires
-  the probe build that adds them.
+- ~~Which of global/local carries sky.~~ **Answered above** — indistinguishable on read across six
+  readings including three beside a live block light.
 
 Three further facts worth keeping:
 
