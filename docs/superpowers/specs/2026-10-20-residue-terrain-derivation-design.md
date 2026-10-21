@@ -156,8 +156,16 @@ The fit is mechanical, not merely thematic:
 the "five-plus-one" the title already names; what changes is that it now rests on the essence layer
 rather than the rune layer. The API keeps the word **essence**. Drop Ice and Life; add Wind and Earth.
 
-**Still not implemented.** This section records a recommendation and the reasoning behind it; changing
-`:core`'s element identity is a separate, authorised step. §9 question 5 is narrowed, not closed.
+> **✅ DECIDED 2026-10-21 — this recommendation was adopted.** See
+> [`2026-10-21-residue-roster-decision.md`](2026-10-21-residue-roster-decision.md), which is the
+> authority on it. Recorded there as a **reversible modelling default** rather than a taxonomy claim,
+> with an anchor and a falsifier for each piece we invented, and with the opaque `elementId` named as
+> the mechanism that keeps it reversible. One argument from this section's neighbourhood was
+> **withdrawn** there: weighing rosters by shipped creature-drop counts measures build order, not
+> taxonomy. §9 question 5 is now closed. The rest of this document remains PROPOSED.
+
+**Nothing was implemented, because there is nothing to implement.** Changing `:core`'s element
+identity turned out to be a no-op: `elementId` is opaque and has zero production consumers.
 
 **This does not affect Stormseeker.** Lightning is in the cosmological roster, the shipped roster, and
 the abilities tree. The questline under construction is untouched.
@@ -645,7 +653,9 @@ mathematics is wasted.
    changes the character from *the world does this* to *we stage it*. Blocks §6.
 4. **How long does a Void event last?** Readable from config rather than guessed. Blocks §6's harvest
    loop being a window rather than a chore.
-5. **Roster decision.** **Narrowed 2026-10-21, not closed.** No longer "rune roster or essence
+5. **Roster decision. ✅ CLOSED 2026-10-21** — adopted as a reversible modelling default; see
+   [`2026-10-21-residue-roster-decision.md`](2026-10-21-residue-roster-decision.md). History below.
+   **Narrowed earlier the same day, then closed.** No longer "rune roster or essence
    roster" — that was a false pair (§3: runes are notation, not a taxonomy). The vocabulary is settled as
    *essence*; what remains is **which essence roster** — Gaia's cosmological five, or the six shipped as
    items. §3 recommends the former and gives the mechanical reason. **There is no `:core` change to
