@@ -301,6 +301,10 @@ public class TerrainSignalProbeCommand extends AbstractWorldCommand {
         int skyGlobalLocal = -1;
         int skyLocalWorld = -1;
         boolean skyResolved;
+        int rgbGlobal = -1;
+        int rgbLocal = -1;
+        int packedGlobal = -1;
+        int packedLocal = -1;
 
         String oneLine() {
             if (!loaded) {
@@ -356,6 +360,21 @@ public class TerrainSignalProbeCommand extends AbstractWorldCommand {
                     .append("   max=")
                     .append(ChunkLightData.MAX_VALUE)
                     .append('\n');
+            b.append(indent)
+                    .append("rgb(r*100+g*10+b) global=")
+                    .append(rgbGlobal)
+                    .append(" local=")
+                    .append(rgbLocal)
+                    .append("   packed global=")
+                    .append(packedGlobal)
+                    .append(" local=")
+                    .append(packedLocal)
+                    .append('\n');
+            b.append(indent)
+                    .append("-> CONTROL: a nearby light source must show in rgb. ")
+                    .append(rgbGlobal > 0 || rgbLocal > 0 ? "rgb is NON-ZERO here" : "rgb is zero here")
+                    .append(". A sky reading of 0 means \"immune\" only if rgb is non-zero;")
+                    .append(" sky 0 with rgb 0 proves nothing.\n");
             return b.toString();
         }
     }
@@ -390,12 +409,31 @@ public class TerrainSignalProbeCommand extends AbstractWorldCommand {
             ChunkLightData global = section.getGlobalLight();
             r.skyGlobalWorld = global.getSkyLight(x, y, z);
             r.skyGlobalLocal = global.getSkyLight(x & 31, y & 31, z & 31);
+            r.rgbGlobal = rgb(global, x, y, z);
+            r.packedGlobal = global.getBlockLight(x, y, z);
             r.skyResolved = true;
         }
         if (r.hasLocal) {
-            r.skyLocalWorld = section.getLocalLight().getSkyLight(x, y, z);
+            ChunkLightData local = section.getLocalLight();
+            r.skyLocalWorld = local.getSkyLight(x, y, z);
+            r.rgbLocal = rgb(local, x, y, z);
+            r.packedLocal = local.getBlockLight(x, y, z);
         }
         return r;
+    }
+
+    /**
+     * Packs the three colour channels into one printable integer, {@code r*100 + g*10 + b}.
+     *
+     * <p>This is the <strong>positive control</strong> for the sky-light question, and without it the
+     * answer is ambiguous. §5 claims sky light is "immune to a player lighting a cave". Testing that
+     * means reading sky beside a light source underground — but a sky value of 0 there is equally
+     * consistent with *sky is correctly immune* and with *this accessor returns nothing useful*. A
+     * candle showing up in RGB while sky stays 0 distinguishes them; sky 0 with RGB also 0 proves
+     * nothing at all.
+     */
+    private static int rgb(ChunkLightData d, int x, int y, int z) {
+        return d.getRedBlockLight(x, y, z) * 100 + d.getGreenBlockLight(x, y, z) * 10 + d.getBlueBlockLight(x, y, z);
     }
 
     private static long timeEnvironment(SectionReader reader, int x, int y, int z) {
