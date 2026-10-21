@@ -26,6 +26,8 @@ package io.github.legendaryforge.legendary.core.api.residue;
  *     specific block the player can see, which is the strongest evidence of a site's character
  * @param environmentWeight weight for a qualifying environment at the candidate
  * @param skyWeight weight for sky light falling in a rule's range
+ * @param stormWeight multiplier on storm probability for a {@link ElementGrounding.Weather}
+ *     grounding, so a 50%-storm environment contributes {@code 0.5 * stormWeight}
  * @param qualifyingScore the score at or above which a typing counts as a real site. Two typings
  *     over this threshold is a mixed site
  */
@@ -38,6 +40,7 @@ public record LatticeParameters(
         double fluidWeight,
         double environmentWeight,
         double skyWeight,
+        double stormWeight,
         double qualifyingScore) {
 
     public LatticeParameters {
@@ -66,6 +69,6 @@ public record LatticeParameters(
      * microseconds. These are the numbers the first run exists to argue with.
      */
     public static LatticeParameters defaults() {
-        return new LatticeParameters(256, 0.35, 24, 8, 16, 2.0, 1.0, 1.0, 2.0);
+        return new LatticeParameters(256, 0.35, 24, 8, 16, 2.0, 1.0, 1.0, 2.0, 2.0);
     }
 }

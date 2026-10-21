@@ -118,6 +118,65 @@ It is also not throwaway. The scoring is the real implementation: `:core` holds 
 code; `mod/hytale` holds the adapter, the roster's rules and the command. What a bad probe run would
 change is the rules and the dials, which are data.
 
+## Restructured the same day: elements are not grounded the same way
+
+**The uniform rule was wrong in both directions, and it shipped that way before being corrected.**
+One record with fluids, environments and a sky range meant an environment match plus exposure reached
+the qualifying threshold exactly — so `Env_Zone4_Volcanoes` with no lava anywhere scored as a Fire
+site, while Wind and Lightning could *only* ever qualify that way, having no physical feature to
+require. One shape, two opposite failures.
+
+`ElementRule` is replaced by a sealed `ElementGrounding`, so `SiteScorer` dispatches on type and
+cannot forget the distinction:
+
+| Grounding | Elements | Qualifies on |
+|---|---|---|
+| `Physical` | Fire, Water | the fluid is **required**; environment only corroborates |
+| `Geometric` | Earth, Wind | environment **and** exposure; either alone scores below threshold |
+| `Weather` | **Lightning** | storm probability past a gate, **and** exposure |
+| *(none)* | Void | nothing — a staged Fragment incursion, not a terrain feature |
+
+### Lightning is the one Stormseeker needs, and its signal is authored data
+
+Lightning has no physical presence: it is not a thing that *is* somewhere, it is a thing that
+*happens* somewhere. So its grounding reads storm probability, and that probability is in the asset:
+`Env_Zone4_Crucible.json` carries `WeatherForecasts` with `Zone4_Swamp_Storm` at weight **50** against
+`Zone4_Swamp_Gloomy` at **50** — session 16's measured 50% share, authored rather than inferred.
+
+Reachable at runtime, now `[compiled]`: `Environment.getWeatherForecasts()`,
+`getWeatherForecast(int)`, `WeatherForecast.getWeatherId()`, `getWeight()`, and
+`IWeightedMap.forEachEntry` — which is the only way to see the weights rather than sample from them.
+
+**So for Lightning an environment id is not a coarse proxy, it is the carrier of the primary signal.**
+The reliability concern inverts: it bites hardest for Fire and Water, where a physical check exists as
+a backstop, and least for Lightning, where environment *is* the data.
+
+### Three approximations in the Lightning signal, each deliberate
+
+- **Storm is not lightning.** `Zone2_Sand_Storm` and `Zone3_Snow_Storm` carry no thunder, so counting
+  every `Storm` would site Lightning in a desert. Weather *tags* discriminate cleanly —
+  `Rain:[Storm]` and `Thunderstorm` against `Sandstorm` and `Snow:[Storm]` — but there is **no tag
+  accessor on the runtime `Weather` object**, so the id is all there is. `Zone4_Storm` is genuinely
+  ambiguous (tagged only `Zone4:[Storm]`, no precipitation group) and is counted.
+- **The forecast key's meaning is unverified.** `getWeatherForecasts()` is an `Int2ObjectMap` keyed
+  0,1,2,3… — season, day index, or something else. All slots are averaged equally, which is correct
+  if it is a season and reasonable otherwise.
+- **It is the environment's share, not the column's.** Weather is regional; no per-position storm
+  probability exists to read.
+
+### Environment tags: the right key, unavailable and incomplete
+
+Measured rather than assumed, because the question was whether to switch off name matching:
+
+- **No tag accessor on the runtime `Environment` object.** Only `getId()`. Tags are an
+  authoring-time concept that does not survive to the object.
+- **And they are incomplete.** 105 of 134 environments carry any sub-tag; **29 carry none**. Volcanic
+  is **11 by name against 5 by tag**, and the six gaps are exactly the `_T2` and `_T3` tiers with
+  `_T1` tagged in every zone.
+
+So name substrings are both the only runtime option and the more complete one. The fragility is in
+our parsing of an undocumented convention, not in the engine's data.
+
 ## Corrections made while building it
 
 Two claims in this work were wrong and were caught by tests rather than review, which is worth
@@ -137,7 +196,7 @@ recording because both were stated confidently first.
 
 ```
 BUILD SUCCESSFUL           (all eight guards, including :core:checkNoPlatformImports)
-CENSUS_VERDICT:   GREEN | 375 tests | 0 failures          (was 356; +19 for the derivation)
+CENSUS_VERDICT:   GREEN | 385 tests | 0 failures          (was 356; +29 for the derivation)
 COVERAGE_VERDICT: GREEN | 4/4 modules | 0 exempt          (mod/hytale compiled against the real jar)
 DOCS_VERDICT:     GREEN | dirs=9 curated=12 dated=21 links=34 specs=15 stamped=6
 ```
