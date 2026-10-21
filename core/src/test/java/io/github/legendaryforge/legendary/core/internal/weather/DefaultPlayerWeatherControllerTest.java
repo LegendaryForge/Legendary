@@ -159,7 +159,9 @@ class DefaultPlayerWeatherControllerTest {
         controller.forget(ALICE);
 
         assertEquals(Optional.empty(), controller.holder(ALICE));
-        assertEquals(WeatherClaimStatus.GRANTED, controller.claim(ALICE, RAIN, ENCOUNTER).status());
+        assertEquals(
+                WeatherClaimStatus.GRANTED,
+                controller.claim(ALICE, RAIN, ENCOUNTER).status());
     }
 
     @Test

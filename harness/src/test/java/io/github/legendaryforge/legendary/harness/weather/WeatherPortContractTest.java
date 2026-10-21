@@ -44,7 +44,9 @@ class WeatherPortContractTest {
     void a_questline_can_storm_gate_one_player_without_touching_the_world() {
         assertFalse(WeatherKinds.isStorm(gate.effective(ALICE).orElseThrow()));
 
-        assertEquals(WeatherClaimStatus.GRANTED, controller.claim(ALICE, STORM, QUESTLINE).status());
+        assertEquals(
+                WeatherClaimStatus.GRANTED,
+                controller.claim(ALICE, STORM, QUESTLINE).status());
 
         assertTrue(WeatherKinds.isStorm(gate.effective(ALICE).orElseThrow()));
         assertFalse(

@@ -29,8 +29,10 @@ class WeatherClaimResultTest {
         assertTrue(WeatherClaimResult.of(WeatherClaimStatus.GRANTED).isSuccess());
         assertTrue(WeatherClaimResult.of(WeatherClaimStatus.UPDATED).isSuccess());
         assertFalse(WeatherClaimResult.of(WeatherClaimStatus.UNKNOWN_WEATHER).isSuccess());
-        assertFalse(WeatherClaimResult.of(WeatherClaimStatus.UNSUPPORTED_WEATHER).isSuccess());
-        assertFalse(WeatherClaimResult.of(WeatherClaimStatus.SUBJECT_UNAVAILABLE).isSuccess());
+        assertFalse(
+                WeatherClaimResult.of(WeatherClaimStatus.UNSUPPORTED_WEATHER).isSuccess());
+        assertFalse(
+                WeatherClaimResult.of(WeatherClaimStatus.SUBJECT_UNAVAILABLE).isSuccess());
         assertFalse(WeatherClaimResult.refusedHeldBy(OWNER).isSuccess());
     }
 
