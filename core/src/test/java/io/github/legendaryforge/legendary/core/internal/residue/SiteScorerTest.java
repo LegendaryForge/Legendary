@@ -39,6 +39,10 @@ class SiteScorerTest {
     private static final ElementGrounding LIGHTNING = new ElementGrounding.Weather("lightning", 0.10, 13, 15);
     private static final List<ElementGrounding> ALL = List.of(FIRE, WATER, WIND, EARTH, LIGHTNING);
 
+    /** Mirrors the real rules' shape: one element, two spellings of the same fluid. */
+    private static final ElementGrounding TWO_VARIANT_WATER =
+            new ElementGrounding.Physical("water", Set.of("Water_Source", "Water"), Set.of("Shores"));
+
     private static final class FakeTerrain implements TerrainSample {
         private final Map<String, String> fluids = new HashMap<>();
         private final Map<String, Integer> surfaces = new HashMap<>();
@@ -117,6 +121,10 @@ class SiteScorerTest {
         return SiteScorer.scoreAll(new WorldPoint2d(0, 0), terrain, P, ALL);
     }
 
+    private static List<SiteTyping> scoreOnly(FakeTerrain terrain, ElementGrounding grounding) {
+        return SiteScorer.scoreAll(new WorldPoint2d(0, 0), terrain, P, List.of(grounding));
+    }
+
     private static Optional<SiteTyping> typing(List<SiteTyping> typings, String element) {
         return typings.stream().filter(t -> t.elementId().equals(element)).findFirst();
     }
@@ -173,6 +181,49 @@ class SiteScorerTest {
     void physical_lavaBelowTheSurface_isStillFound() {
         FakeTerrain t = new FakeTerrain().surface(0, 0, 64).fluid(0, 56, 0, "Fluid_Lava");
         assertTrue(typing(score(t), "fire").isPresent());
+    }
+
+    @Test
+    void physical_twoVariantsOfTheSameFluid_addTheFluidWeightOnce() {
+        // Reachable in production, not hypothetical: HytaleDerivationRules requires
+        // Set.of("Water_Source", "Water") for water and Set.of("Lava_Source", "Lava") for fire,
+        // because getFluidId reports the flowing variant as readily as the source. A site holding
+        // both therefore scored 2 x fluidWeight and outranked a genuine shoreline — ranking only,
+        // since one source already meets the threshold, but the ordering is what the probe is read
+        // for.
+        FakeTerrain both = new FakeTerrain()
+                .surface(0, 0, 64)
+                .fluid(0, 64, 8, "Water_Source")
+                .fluid(8, 64, 0, "Water");
+        FakeTerrain one = new FakeTerrain().surface(0, 0, 64).fluid(0, 64, 8, "Water_Source");
+
+        double bothScore = typing(scoreOnly(both, TWO_VARIANT_WATER), "water")
+                .orElseThrow()
+                .score();
+        double oneScore =
+                typing(scoreOnly(one, TWO_VARIANT_WATER), "water").orElseThrow().score();
+
+        assertEquals(oneScore, bothScore, 1e-9, "a second matching variant must not add a second fluidWeight");
+        assertEquals(P.fluidWeight(), bothScore, 1e-9, "one fluid contribution, whatever matched");
+    }
+
+    @Test
+    void physical_everyMatchedVariant_isStillNamedInTheReasons() {
+        // Scoring once must not cost the operator the detail. The probe is judged by walking to the
+        // site, so which variants were found is exactly what makes a reading interpretable.
+        FakeTerrain both = new FakeTerrain()
+                .surface(0, 0, 64)
+                .fluid(0, 64, 8, "Water_Source")
+                .fluid(8, 64, 0, "Water");
+        List<String> reasons = typing(scoreOnly(both, TWO_VARIANT_WATER), "water")
+                .orElseThrow()
+                .reasons();
+        assertTrue(
+                reasons.stream().anyMatch(r -> r.contains("Water_Source")),
+                "source variant must appear in reasons, got " + reasons);
+        assertTrue(
+                reasons.stream().anyMatch(r -> r.contains("Water")),
+                "flowing variant must appear in reasons, got " + reasons);
     }
 
     // --- Geometric: both halves needed ----------------------------------------------------------
