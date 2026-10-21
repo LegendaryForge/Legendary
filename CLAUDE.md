@@ -187,11 +187,9 @@ was deleted once it was a strict ancestor of `main` with zero unmerged commits.
 A global pre-push hook at `~/.config/git/hooks` also blocks it client-side, before the
 network call. Do not bypass either layer.
 
-Note that `.git/hooks/pre-push` in this repo is a **dead Spotless hook**: `core.hooksPath`
-points at the global hooks directory, which overrides repo-local hooks, and its
-`SPOTLESS_EXECUTOR` path (`/home/stephaneb/Projects/Hytale/Legendary/gradlew`) is missing the
-`Workspace/` segment and does not exist. It has never run. Spotless is enforced by `check`
-instead.
+**Spotless is enforced by `check`, not by any hook.** `core.hooksPath` points at the global
+hooks directory, so repo-local hooks in `.git/hooks/` are overridden and never run — worth
+knowing before adding one there and expecting it to fire.
 
 ### Build guards — all wired into `check`
 
@@ -398,7 +396,13 @@ building on it:
 
 ---
 
-*Last updated: 2026-10-21 (third change that day) — the repository moved from
+*Last updated: 2026-10-21 (fourth change that day) — the dead repo-local `.git/hooks/pre-push`
+was deleted from disk and this file's paragraph describing it removed; what survives is the fact
+that paragraph existed to convey, that `core.hooksPath` overrides repo-local hooks and Spotless is
+enforced by `check`. The hook had never run, and its `SPOTLESS_EXECUTOR` path was wrong twice over
+after the morning's relocation — a guard whose condition cannot occur reads as live to the next
+reader, which is the same reason the launch blockquote was deleted rather than reworded earlier the
+same day. Earlier 2026-10-21 (third change that day) — the repository moved from
 `Projects/Hytale/Legendary` to `Projects/Hytale`, so the launch directory and the repository root
 are the same path and the mislaunch condition no longer exists. The launch blockquote was deleted
 rather than reworded, the four archived working copies were deleted (one stash bundled first), and
