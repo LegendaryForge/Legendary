@@ -6,6 +6,11 @@ import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Int
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
+import io.github.legendaryforge.legendary.core.api.weather.PlayerWeatherController;
+import io.github.legendaryforge.legendary.core.api.weather.WeatherGate;
+import io.github.legendaryforge.legendary.core.internal.weather.DefaultPlayerWeatherController;
+import io.github.legendaryforge.legendary.core.internal.weather.DefaultWeatherGate;
+import io.github.legendaryforge.legendary.core.internal.weather.OverrideRegistry;
 import io.github.legendaryforge.legendary.mod.hytale.command.BeamProbeCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.BlockPlacementProbeCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.BlockSpoofProbeCommand;
@@ -21,6 +26,7 @@ import io.github.legendaryforge.legendary.mod.hytale.command.WeatherPortProbeCom
 import io.github.legendaryforge.legendary.mod.hytale.stormseeker.HytaleStormseekerHost;
 import io.github.legendaryforge.legendary.mod.hytale.stormseeker.StormseekerStartLineInteraction;
 import io.github.legendaryforge.legendary.mod.hytale.stormseeker.StormseekerTickSystem;
+import io.github.legendaryforge.legendary.mod.hytale.weather.HytaleWeatherBackend;
 import io.github.legendaryforge.legendary.quests.stormseeker.persistence.PropertiesProgressStore;
 import java.nio.file.Path;
 import javax.annotation.Nonnull;
@@ -28,6 +34,9 @@ import javax.annotation.Nonnull;
 public class LegendaryHytalePlugin extends JavaPlugin {
 
     private HytaleStormseekerHost stormseekerHost;
+    private HytaleWeatherBackend weatherBackend;
+    private WeatherGate weatherGate;
+    private PlayerWeatherController playerWeather;
 
     public LegendaryHytalePlugin(@Nonnull JavaPluginInit init) {
         super(init);
@@ -56,10 +65,18 @@ public class LegendaryHytalePlugin extends JavaPlugin {
         PropertiesProgressStore progressStore = new PropertiesProgressStore(dataDir);
         getLogger().atInfo().log("Progress store: " + dataDir.toAbsolutePath());
 
+        weatherBackend = new HytaleWeatherBackend();
+        // ONE registry instance shared by both halves. Given separate ones nothing fails --
+        // effective() simply stops seeing claims and quietly reports world weather instead.
+        OverrideRegistry overrideRegistry = new OverrideRegistry();
+        weatherGate = new DefaultWeatherGate(weatherBackend, overrideRegistry);
+        playerWeather = new DefaultPlayerWeatherController(weatherBackend, overrideRegistry);
+        getLogger().atInfo().log("Weather port wired (WeatherGate + PlayerWeatherController).");
+
         stormseekerHost = new HytaleStormseekerHost(progressStore);
         getLogger().atInfo().log("Stormseeker host runtime created.");
 
-        StormseekerTickSystem tickSystem = new StormseekerTickSystem(stormseekerHost);
+        StormseekerTickSystem tickSystem = new StormseekerTickSystem(stormseekerHost, weatherBackend);
         getEntityStoreRegistry().registerSystem(tickSystem);
         getLogger().atInfo().log("Stormseeker tick system registered.");
 
@@ -91,6 +108,7 @@ public class LegendaryHytalePlugin extends JavaPlugin {
         String username = playerRef.getUsername();
 
         stormseekerHost.addPlayer(playerId, playerRef);
+        weatherBackend.track(playerId, playerRef);
         getLogger().atInfo().log("Player joined: " + username + " (" + playerId + ") — quest tracking started.");
     }
 
@@ -100,6 +118,11 @@ public class LegendaryHytalePlugin extends JavaPlugin {
         String username = playerRef.getUsername();
 
         stormseekerHost.removePlayer(playerId);
+        // Both halves together, because they are one lifecycle: untrack drops the engine ref,
+        // forget drops our owner registry entry. Dropping only the first leaks an owner per
+        // departed player, after which the next claim on a recycled id is wrongly refused.
+        weatherBackend.untrack(playerId);
+        playerWeather.forget(new io.github.legendaryforge.legendary.core.api.questline.runtime.PlayerRef(playerId));
         getLogger().atInfo().log("Player left: " + username + " (" + playerId + ") — quest tracking paused.");
     }
 
