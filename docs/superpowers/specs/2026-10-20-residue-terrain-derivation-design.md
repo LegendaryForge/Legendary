@@ -1,6 +1,15 @@
 # Residue network — terrain derivation, and the five-plus-one roster
 
-**Status: PROPOSED DIRECTION. Not decided, not approved, nothing implemented.**
+**Status: DIRECTION ADOPTED 2026-10-21.** See
+[`2026-10-21-residue-terrain-derivation-adoption.md`](2026-10-21-residue-terrain-derivation-adoption.md),
+which is the authority. The convergence star retires; the placed-nexus model is approved; derivation is
+pure `:core` code behind an injected terrain port, with **no residue authored into worldgen JSON** (that
+declines §7's trap by construction). §3's roster and §5's two-arrow chain were decided separately the
+same day, and §9 q1–q5 are closed.
+
+**What is still proposed:** §6 (Void) in its specifics, and §9 q6 and q7. The first deliverable of the
+adoption is `/residueprobe`, which places nothing — the capability question is answered, the question of
+whether the scoring sites things a player would recognise is not, and it cannot be answered from the jar.
 
 This records a design conversation on 2026-10-20 that arrived at a different model from the one three
 committed specs describe. It is written down because the alternative was losing it to scrollback, not

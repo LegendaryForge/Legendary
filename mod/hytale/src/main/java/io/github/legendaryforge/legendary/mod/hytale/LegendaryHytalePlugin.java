@@ -18,6 +18,7 @@ import io.github.legendaryforge.legendary.mod.hytale.command.MarkerProbeCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.PointStoreProbeCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.PrefabPasteProbeCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.ResidueParticleProbeCommand;
+import io.github.legendaryforge.legendary.mod.hytale.command.ResidueSiteProbeCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.StormseekerAdvanceCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.StormseekerStatusCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.StormseekerTrialCommand;
@@ -94,6 +95,7 @@ public class LegendaryHytalePlugin extends JavaPlugin {
         getCommandRegistry().registerCommand(new WeatherOverrideProbeCommand());
         getCommandRegistry().registerCommand(new WeatherPortProbeCommand());
         getCommandRegistry().registerCommand(new ResidueParticleProbeCommand());
+        getCommandRegistry().registerCommand(new ResidueSiteProbeCommand());
         getCommandRegistry().registerCommand(new BlockPlacementProbeCommand());
         getCommandRegistry().registerCommand(new BlockSpoofProbeCommand());
         getCommandRegistry().registerCommand(new PrefabPasteProbeCommand());
