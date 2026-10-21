@@ -102,6 +102,40 @@ Three caveats, because the verdict line is cleaner than the data:
 Sky light does vary usefully with depth (15 surface → 0 at −12), so it is a real terrain signal
 regardless of how those three resolve.
 
+### Sky light is time-independent, and environment is 3D
+
+Further client-attached readings, same session, 2026-10-21: [measured]
+
+| Reading | In-game time | Position | `getEnvironment` | sky at player | sky at y+12 | sky at y−12 |
+|---|---|---|---|---|---|---|
+| surface 1 | unknown | `-982,121,103` | 78 `Env_Zone1_Plains` | **15** | 9 | 0 |
+| surface 2 | **night** | `-990,121,79` | 78 `Env_Zone1_Plains` | **15** | 12 | 0 |
+| surface 3 | **midday** | `-997,120,87` | 78 `Env_Zone1_Plains` | **15** | 15 | 0 |
+| underground | night | `-931,64,135` | 106 `Env_Zone1_Caves_Plains` | **0** | 0 (env 23 `Env_Zone1_Caves`) | 0 (env 23) |
+
+**Sky light is sky *access*, not current brightness.** 15 at an open-sky surface position at **both**
+night and midday, with time changed deliberately via `time set midday` between readings as the single
+varied input. This is what the residue design needs: a channel that is identical for every player and
+constant across the day/night cycle. A brightness-modulated value would shift every derived residue
+figure at dusk.
+
+**Environment varies with Y — it is not a 2D biome map.** Underground at `y=64` the environment is
+`Env_Zone1_Caves_Plains` (106) while twelve blocks above and below, at the same x/z, it is
+`Env_Zone1_Caves` (23). At the surface all three samples returned the same `Env_Zone1_Plains`. So
+environment natively distinguishes surface from underground and shades between cave types vertically,
+which means it already supplies some of what a terrain derivation would otherwise compute.
+
+**Still open after these readings:**
+
+- **The `y+12` series (9 → 12 → 15) is confounded** and is *not* evidence of time-modulation. Position
+  changed along with time across the three readings, so the variation cannot be attributed; overhead
+  terrain differing per spot is the likelier cause. Recorded unexplained rather than explained — one
+  reading with position held fixed across a time change would settle it.
+- **`getGlobalLight()` and `getLocalLight()` have never diverged**, agreeing at 15/15, 12/12, 0/0 and
+  15/15. So which one "carries" sky is still undetermined — apparently both do. The discriminating
+  test is a reading beside a light source underground with the RGB channels also read, which requires
+  the probe build that adds them.
+
 Three further facts worth keeping:
 
 1. **The world is 320 blocks tall and starts at y=0**, confirmed by the engine's own predicate rather
