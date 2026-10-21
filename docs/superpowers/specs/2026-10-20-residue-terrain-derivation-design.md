@@ -273,7 +273,8 @@ reimplement. [jar]
 
 ## 5. Per-element derivation [proposed]
 
-Assuming the rune roster of §3:
+Assuming the cosmological essence roster recommended in §3 — Fire, Water, Lightning, Wind, Earth,
+with Void separate (§6):
 
 | element | nexus sites | lines |
 |---|---|---|
@@ -297,6 +298,58 @@ Two of these are **conditional rather than locational**, and both conditions are
 
 `IHeightmap.getHeight(int x, int z)` supplies terrain height at any column [jar], and `HeightmapColumn`
 separates `CLASS_COLLIDES` from `CLASS_OPAQUE` — a walkable top distinct from a light-blocking top.
+
+### Terrain is the first arrow of a two-arrow chain
+
+**The game does not put essence in the ground. It puts essence in living things.** Every shipped
+description locates it that way: Fire *"lingers in the creatures that dwell amid the desolated volcanic
+regions"*, Lightning's *"elementals born from its lingering traces still wander the lands"*, Water's
+*"as water filters through their gills, the concentration grows"*, Life *"found in abundance around
+plant life on Orbis"*. [jar]
+
+That is not only flavour text — it is the economy. Essences are obtained from drop tables, and the
+tables are creature-typed and the creatures are biome-typed: [jar]
+
+| essence | NPC drop tables | what they are |
+|---|---|---|
+| Fire | **20** | Emberwulf, Firesteel golem, Burnt + Incandescent skeletons, Magma slug/snail, Ember spirit |
+| Ice | **12** | Frost skeletons, Yeti, Frost snail/spirit/zombie |
+| Void | **12** | Void crawler/eye/spawn/spectre/tentacle, Outlander cultists, Voidtaken goblin |
+| Life | **1** + 64 crop tables | Root spirit; otherwise farmed |
+| Lightning | **1** | `Drop_Spirit_Thunder` |
+| Water | **0** | none |
+
+So the world's actual chain is **terrain → creatures → essence**, and §5 as written reads the first
+arrow and skips the second. Two consequences, one reassuring and one not.
+
+**The correlation is real**, which is why the shortcut works at all. Fire's twenty sources are volcanic
+creatures and Ice's twelve are frozen ones; deriving Fire from lava lands in the same places the game
+already puts fire-essence mobs. Terrain is a sound *proxy* for the intermediary here.
+
+**But the chain is not uniform, and it is thinnest exactly where we need it.** Lightning has **one** NPC
+source in the entire game and Water has **none** — and Lightning is Stormseeker's element. Terrain
+derivation will therefore site Lightning and Water residue across large regions in which the shipped
+game places no essence creatures at all. Our field would be making a claim about the world that the
+world's own content does not corroborate, for two of the five roster members.
+
+**Proposed resolution: put residue upstream of the creatures rather than beside them.** [proposed]
+Residue is the **field**; essence items are what the field's creatures yield. Terrain shapes residue,
+residue explains why those creatures live there, creatures drop the items the player collects:
+
+```
+terrain  →  residue field (ours)  →  creatures (the game's)  →  essence items (the game's)
+```
+
+Read that way the mod is not bypassing the chain — it is supplying the missing causal first term for
+data the game already ships, and the Fire and Ice drop tables become corroboration rather than
+coincidence. It also absorbs the uneven-supply problem instead of tripping on it: thin Lightning and
+Water sourcing becomes *content not yet built on top of a field that is already there*, which is a
+coherent thing for a mod to say and a natural hook for questline content.
+
+**This is a fiction decision, not a mechanism change** — nothing in §5's derivation moves. What it fixes
+is what the derivation *means*, and it needs settling before the roster is implemented rather than
+discovered later as a lore inconsistency. Per `CLAUDE.md` § "Lore first", where lore speaks we follow;
+here it speaks about the source of essence, and §5 had quietly answered differently.
 
 ### The anchor question this also answers
 
@@ -459,6 +512,11 @@ mathematics is wasted.
    *essence*; what remains is **which essence roster** — Gaia's cosmological five, or the six shipped as
    items. §3 recommends the former and gives the mechanical reason. What is still open is the authorised
    change to `:core`'s element identity. Cheap until questline #2, then not.
+   **Precondition added 2026-10-21:** settle §5's *"Terrain is the first arrow of a two-arrow chain"*
+   first. The game sources essence from creatures, not ground, and two roster members (Lightning, Water)
+   have almost no creature sourcing at all — so what the derived field *means* has to be decided before
+   the roster it is keyed to is baked into the API. It is a fiction decision, costs no mechanism change,
+   and is cheap now in exactly the way the roster is.
 6. **Does placement need a terrain scan, and at what cost?** **Partly answered — see §4's
    "lattice proposes, terrain disposes".** A jittered lattice bounds the work to scoring N candidate
    neighbourhoods rather than scanning a world. What remains open is the empty-candidate case, and
