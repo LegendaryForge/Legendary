@@ -2,6 +2,12 @@
 calibration: restore=0.012 maxPitch=0.44 pitchJitter=0.15 heightBand=96 influence=24
 VALIDATION crossing-height p5..p95: -157 .. 154  (spec reports -155 .. +158)
 
+=== WORLD FIT -- 320-block world, relative y anchored at mid-height (+/-160) ===
+                       n   full range        p1..p99      outside world
+  crossings       300716     -409 .. 433      -224 .. 221       27173 ( 9.04%)
+  arm vertices   2602800     -417 .. 438      -234 .. 233      296990 (11.41%)
+WORLDFIT_VERDICT: OVERFLOWS | crossings outside a 320-block world: 9.04%
+
 1. SUPPLY — nexuses per world
                                        median      p10      p90
   same-element only (today)                62       47       82

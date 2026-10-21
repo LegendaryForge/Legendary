@@ -27,7 +27,16 @@ public final class N9Scan {
     static final long ELEMENT_DOMAIN = 0x456C656DL;
 
     static final double STEP = 16.0, JITTER = 0.35, INFLUENCE = 24.0;
-    static final double PITCH_JITTER = 0.15, HEIGHT_BAND = 96.0;
+    static final double PITCH_JITTER = 0.15;
+
+    /**
+     * Mean-reversion scale for the height walk. Optional 7th CLI arg; defaults to the published
+     * 96.0 so every invocation in README.md reproduces unchanged.
+     *
+     * <p>NOT a bound. The walk is mean-reverting toward y=0, not clamped, so the realised
+     * excursion is far wider than this number suggests -- see the WORLD FIT section.
+     */
+    static double HEIGHT_BAND = 96.0;
     static final double CELL = 32.0;
 
     static final String[] ELEMENTS = {
@@ -63,8 +72,12 @@ public final class N9Scan {
         double restore = Double.parseDouble(args[3]);
         double maxPitch = Double.parseDouble(args[4]);
         String label = args[5];
+        if (args.length > 6) {
+            HEIGHT_BAND = Double.parseDouble(args[6]);
+        }
 
         List<Double> heights = new ArrayList<>();
+        List<Double> armY = new ArrayList<>();   // every arm vertex, for WORLD FIT
         List<Double> sameCount = new ArrayList<>(), allCount = new ArrayList<>();
         Map<Double, List<Double>> gatedCount = new LinkedHashMap<>();
         for (double g : GATES) gatedCount.put(g, new ArrayList<>());
@@ -92,6 +105,7 @@ public final class N9Scan {
                 for (int a = 0; a < armCount; a++) {
                     List<P> arm = buildArm(elementSeed, headingOffset, a, armCount, stepsPerArm, gx, gz, restore, maxPitch);
                     for (int i = 1; i < arm.size(); i++) segs.add(new Seg(e, arm.get(i - 1), arm.get(i), (i - 0.5) * STEP));
+                    for (P pt : arm) armY.add(pt.y());
                 }
             }
 
@@ -159,6 +173,24 @@ public final class N9Scan {
                 restore, maxPitch, PITCH_JITTER, HEIGHT_BAND, INFLUENCE);
         System.out.printf("VALIDATION crossing-height p5..p95: %.0f .. %.0f  (spec reports -155 .. +158)%n%n",
                 pct(heights, 5), pct(heights, 95));
+        // === WORLD FIT ===
+        // Added 2026-10-20. Hytale's chunk storage is EnvironmentSection[10] at 32 blocks per
+        // section (BlockChunk allocates `new EnvironmentSection[10]`; EnvironmentSection reports
+        // COLUMNS=1024 and LAST_RUN_MAX_Y=31), so the world is 320 blocks tall. That is a real
+        // engine constraint and no residue document had ever referenced one.
+        //
+        // Relative y=0 is the arm's origin, so anchoring the network at mid-height gives a
+        // half-extent of 160. This section exists because the p5..p95 line above -- which three
+        // committed specs validated against -- hides the tails: it reports a ~311-block band while
+        // the realised range runs past +/-400.
+        Collections.sort(armY);
+        System.out.println("=== WORLD FIT -- 320-block world, relative y anchored at mid-height (+/-160) ===");
+        System.out.printf("  %-13s %8s %12s %14s %18s%n", "", "n", "full range", "p1..p99", "outside world");
+        reportFit("crossings", heights);
+        reportFit("arm vertices", armY);
+        long xOut = heights.stream().filter(v -> Math.abs(v) > WORLD_HALF_EXTENT).count();
+        System.out.printf("WORLDFIT_VERDICT: %s | crossings outside a 320-block world: %.2f%%%n%n",
+                xOut == 0 ? "FITS" : "OVERFLOWS", 100.0 * xOut / heights.size());
 
         System.out.println("1. SUPPLY — nexuses per world");
         System.out.printf("  %-34s %8s %8s %8s%n", "", "median", "p10", "p90");
@@ -373,6 +405,17 @@ public final class N9Scan {
         List<Double> c = new ArrayList<>(v); Collections.sort(c);
         System.out.printf("  %-34s %8.0f %8.0f %8.0f%n", name, pct(c, 50), pct(c, 10), pct(c, 90));
     }
+    /** Half the engine's 320-block vertical extent -- see the WORLD FIT section. */
+    static final double WORLD_HALF_EXTENT = 160.0;
+
+    /** One WORLD FIT row. {@code values} must already be sorted. */
+    static void reportFit(String which, List<Double> values) {
+        long out = values.stream().filter(v -> Math.abs(v) > WORLD_HALF_EXTENT).count();
+        System.out.printf("  %-13s %8d   %6.0f .. %-5.0f  %6.0f .. %-5.0f   %7d (%5.2f%%)%n",
+                which, values.size(), values.get(0), values.get(values.size() - 1),
+                pct(values, 1), pct(values, 99), out, 100.0 * out / values.size());
+    }
+
     static double pct(List<Double> sorted, int p) {
         if (sorted.isEmpty()) return Double.NaN;
         int i = (int) Math.round((p / 100.0) * (sorted.size() - 1));
