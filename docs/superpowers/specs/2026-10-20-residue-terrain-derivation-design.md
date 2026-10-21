@@ -12,8 +12,13 @@ Read §11 before acting on any of it: this document would supersede substantial 
 
 **Provenance discipline.** Claims here are tagged: **[measured]** means executed against the shipped
 build or computed from committed data; **[jar]** means read off `HytaleServer.jar` or `Assets.zip` with
-no execution; **[lore]** means community-wiki sourced, which is the weakest tier here — see §12;
+no execution; **[lore-1p]** means a first-party lore artifact — Hypixel's own concept art, site or
+in-game text; **[lore]** means community-wiki sourced, which is the weakest tier here — see §12;
 **[proposed]** means it came out of the conversation and rests on nothing yet.
+
+**Lore outranks the jar on questions of meaning** (see `CLAUDE.md` § "Lore first"). The jar is
+authoritative about what the engine *does* and carries no authority about what anything *is*. §3 is the
+worked example: five asset files corroborated a roster and the roster was still wrong.
 
 ---
 
@@ -64,35 +69,117 @@ is what generates it.
 
 ---
 
-## 3. The roster is probably wrong, and that is a bigger finding than the derivation
+## 3. The roster is wrong in its membership, not in its vocabulary
 
-`:core` currently keys residue to six elements taken from the shipped **essence items**: Fire, Ice,
-Life, Lightning, Void, Water. [jar]
+**Revised 2026-10-21.** The first version of this section reached the right destination by the wrong
+road. It argued the roster against **runes**, and so implied `:core` should stop speaking of essences.
+That is backwards: *essence* is the lore's own word for the layer residue models, and the word should
+stay. Only the membership changes. The original reasoning is preserved at the end of this section
+because the mistake is instructive.
 
-**Hytale's six elemental runes are Wind (Freedom), Earth, Lightning, Water, Fire, Void**, and *five are
-connected to Gaia — all except the Void*. Water officially *"represents the magic of water and ice"*, so
-ice is subsumed under Water rather than standing alone. [lore]
+### Three layers, not two
 
-Against that, our roster is four right, with **Ice and Life that are not runes** and **Wind and Earth
-missing**.
+Lore distinguishes them, and the project had collapsed them:
 
-**Asset corroboration, and a correction.** `Server/Abilities/Elements/` ships exactly five: **Earth,
-Fire, Lightning, Water, Wind** — the five Gaia runes, with Void absent because Void is not Gaia's and is
-not a player element. [jar] Earlier the same day this was examined and dismissed in
-`2026-10-20-hytale-0.7.2-capability-assessment-design.md` §5.8 as *"a damage-type list for combat"*
-whose overlap with our essences was *"coincidental naming"*. The content reading was right — an element
-there is `{"DamageCause": "Lightning"}` — but the **roster** reading was wrong: that is the rune list,
-and it corroborates the lore independently of any wiki.
+| Layer | What it is | Source |
+|---|---|---|
+| **Essence** | the world-substance — *"five magic essences that **compose life on Orbis**"* | *"Gaia and the Elemental Essences"*, concept art on Hytale.com, by technical artist Thomas Frick [lore-1p] |
+| **Element** | the natural force; *"come in six forms"* | Element, Hytale Documentation Wiki [lore] |
+| **Rune** | the **written character** that represents an element | *"These natural forces are **represented by** runes"* [lore] |
 
-Our own setting brief had already flagged the hole it left: *"**There is no Air or Wind essence.**
-[gap]"*. The gap was noticed; the conclusion that essences were nonetheless the roster was not revisited.
+A rune is a sigil, not a substance. The Rune page defines one as *"a General Term that describes any
+ancient character which have a purpose or meaning"* — and elements are only its *"first known example"*:
+Trorks, Fauns and Slothians have faction runes, and Gaia, Varyn and the Sand Empress each have their
+own. [lore] So "rune" is a notation system with elemental members, not an elemental taxonomy. Asking it
+for a roster is a category error.
 
-**This does not affect Stormseeker.** Lightning is in the essence roster, the rune roster, and the
-abilities tree. The questline under construction is untouched by the conflict.
+The shipped build agrees, and says so twice. `Server/Abilities/Elements/*.json` are five one-line files,
+each `{"DamageCause": "X"}` — elements are a **damage taxonomy**. [jar] And the shipped runes are an
+ability-socket system — `Rune_Fireball`, `Rune_ChainHook`, `Rune_Aoe_Up` ("Colossal"), `Rune_Thrift` —
+crafted at a goblin tinkerer's bench, whose only elemental contact is `Rune_Convert_Wind`: *"Converts a
+supported ability's damage type to wind."* [jar] A rune **points at** an element. Nothing in the engine
+treats a rune as world-substance, so nothing in the engine supports keying a residue field to one.
+
+Essence, by contrast, is already residue in the game's own words:
+
+> **Lightning** — *"the true source of such magic is nowhere to be found, the elementals born from its
+> **lingering traces** still wander the lands."*
+> **Fire** — *"This energy once gave form to the dreams of Crucible's artisans. Today it merely
+> **lingers** in the creatures that dwell amid the desolated volcanic regions."* [jar]
+
+Those are `server.lang` strings, not wiki prose. The vocabulary question is therefore settled in favour
+of essence on first-party evidence alone.
+
+### There are two essence rosters, and the first version merged them
+
+|  | Fire | Water | Lightning | Wind | Earth | Ice | Life | Void |
+|---|---|---|---|---|---|---|---|---|
+| **Cosmological** — Gaia's five pearls | ✓ | ✓ | ✓ | ✓ | ✓ | | | |
+| **Shipped essence items** — 0.7.2 [jar] | ✓ | ✓ | ✓ | | | ✓ | ✓ | ✓ |
+| **`:core` today** | ✓ | ✓ | ✓ | | | ✓ | ✓ | ✓ |
+
+They overlap on **three**. So `:core` is not wrong by accident — it matches the shipped item roster
+exactly. It diverges from the **cosmological** one, and the earlier "four right" figure came from
+comparing against the six *elements* (Void included) rather than the five *essences* (Void excluded,
+because Void is neither Gaia's nor native to Orbis).
+
+### The derivation mechanism picks the roster
+
+This document proposes deriving residue from **terrain**, and that choice decides the question. Lore
+puts elements in the ground: *"some zones of Orbis appear to follow a possible elemental theme, with
+earth, fire, water, and lightning depicted"*, and *"each of the elements appear to be strongly connected
+to specific Alterverses."* [lore]
+
+The fit is mechanical, not merely thematic:
+
+- **Wind and Earth are the two elements terrain reads best** — sky exposure and stone are the cheapest
+  signals in §5, and they are exactly the two the shipped item roster lacks.
+- **Ice and Life are the two it reads worst.** Water's own lore *"represents the magic of water and
+  ice"*, so Ice is already subsumed rather than standing alone. Life is *"found in abundance around plant
+  life on Orbis"* — present almost everywhere vegetation is, which makes it a constant rather than a
+  field, and a field is the whole mechanism.
+- **Void is not a roster member at all.** It is a staged incursion (§6), and its own item text makes it
+  a property of creatures rather than of ground: *"unclear whether creatures of the Void produce this
+  essence, or if its presence is required to sustain their existence."* [jar]
+
+### Recommendation
+
+**Roster: Fire, Water, Lightning, Wind, Earth — plus Void handled separately as an incursion.** This is
+the "five-plus-one" the title already names; what changes is that it now rests on the essence layer
+rather than the rune layer. The API keeps the word **essence**. Drop Ice and Life; add Wind and Earth.
+
+**Still not implemented.** This section records a recommendation and the reasoning behind it; changing
+`:core`'s element identity is a separate, authorised step. §9 question 5 is narrowed, not closed.
+
+**This does not affect Stormseeker.** Lightning is in the cosmological roster, the shipped roster, and
+the abilities tree. The questline under construction is untouched.
 
 **But it is cheap now and expensive later.** Element identity became a first-class constructor argument
 in `f8a26be`, so the roster is baked into `:core`'s API — with exactly one consumer today. N9 §9 already
 names this window: *"the last window before questline #2."*
+
+### What the first version got wrong, and why it is worth recording
+
+It asserted *"Hytale's six elemental runes are Wind, Earth, Lightning, Water, Fire, Void"* and concluded
+*"our roster is four right, with Ice and Life that are not runes and Wind and Earth missing."* Both
+halves mislead: runes are not a roster, and the comparison set was the elements rather than the essences.
+
+The cause is traceable. `hytalewiki.org`'s Element page — fetched and verified — carries the
+rune-representation and zone-element claims **and omits the essence framing entirely**. A reader working
+from that page alone sees runes and no essences, which is precisely the conclusion that was drawn. The
+essence framing lives on the Hytale Documentation Wiki and on the concept art it cites.
+
+It also overturned a correct reading. `2026-10-20-hytale-0.7.2-capability-assessment-design.md` §5.8 had
+examined the same five files hours earlier and dismissed them as *"a damage-type list for combat"* whose
+overlap with our essences was *"coincidental naming"*. The first §3 accepted the content reading and
+rejected the roster reading — *"that is the rune list"*. **§5.8 was right on both counts and is hereby
+reinstated**; the entry for it in §11 is withdrawn.
+
+The generalisable form: **the first version corroborated its roster against the assets and still got the
+roster wrong**, because asset corroboration can only confirm that a list exists — it cannot tell you
+that the list answers a different question than the one you are asking. `Server/Abilities/Elements/` does
+name five things that match the lore's five. They are damage types. And the cost of that error was not
+only a wrong roster: it was confident enough to overturn a colleague document that had the answer.
 
 ---
 
@@ -367,8 +454,11 @@ mathematics is wasted.
    changes the character from *the world does this* to *we stage it*. Blocks §6.
 4. **How long does a Void event last?** Readable from config rather than guessed. Blocks §6's harvest
    loop being a window rather than a chore.
-5. **Roster decision.** Rune roster or essence roster. Cheap until questline #2, then not. Blocks §3,
-   §5, and `:core`'s element identity.
+5. **Roster decision.** **Narrowed 2026-10-21, not closed.** No longer "rune roster or essence
+   roster" — that was a false pair (§3: runes are notation, not a taxonomy). The vocabulary is settled as
+   *essence*; what remains is **which essence roster** — Gaia's cosmological five, or the six shipped as
+   items. §3 recommends the former and gives the mechanical reason. What is still open is the authorised
+   change to `:core`'s element identity. Cheap until questline #2, then not.
 6. **Does placement need a terrain scan, and at what cost?** **Partly answered — see §4's
    "lattice proposes, terrain disposes".** A jittered lattice bounds the work to scoring N candidate
    neighbourhoods rather than scanning a world. What remains open is the empty-candidate case, and
@@ -383,8 +473,11 @@ mathematics is wasted.
 - Nothing here is probed. §5 and §6 are proposals resting on jar reads and one conversation.
 - The engine using a jittered lattice for its own generation is evidence about **what its authors found
   workable**, not evidence about this design.
-- The lore tier is the weakest (see §12), and the roster question should not be settled on wiki
-  authority alone — the asset corroboration in §3 is the part that stands without it.
+- The community-wiki tier is the weakest (see §12). But the roster question is **not** settled on wiki
+  authority: the essence framing traces to a first-party concept-art title, and the residue-shaped
+  essence text is in `server.lang`. Note the inversion §3 earned — the asset corroboration was the part
+  believed to stand without lore, and it is the part that misled; the assets confirmed a list without
+  revealing it answered a different question.
 
 ---
 
@@ -393,10 +486,10 @@ mathematics is wasted.
 | Document | If this direction is adopted |
 |---|---|
 | `2026-08-27-residue-network-design.md` | §2's generation model superseded; the convergence-star premise retires |
-| `2026-08-29-six-element-residue-framework-design.md` | roster superseded by §3; the essence derivation becomes a rejected reading |
+| `2026-08-29-six-element-residue-framework-design.md` | roster **membership** superseded by §3; its essence *vocabulary* is vindicated, not rejected — Ice and Life retire, Wind and Earth arrive |
 | `2026-08-30-n9-all-crossings-are-nexuses-design.md` | §1's crossing-as-nexus definition demoted (§4); §8's supply arithmetic and §10's wild-availability problem both moot, since extent is no longer bounded |
 | `2026-08-28-graded-nexuses-design.md` | §3's height calibration re-derived against terrain anchoring |
-| `2026-10-20-hytale-0.7.2-capability-assessment-design.md` | §5.8's abilities row needs the §3 correction — its roster reading was wrong |
+| `2026-10-20-hytale-0.7.2-capability-assessment-design.md` | **no change needed — §5.8 was right.** The first §3 "corrected" it; the revised §3 withdraws that. See below |
 | `scripts/residue-scans/` | measures the retiring model; keep as the record of why it retires |
 
 **None of those have been retired.** Until a decision is taken, they remain the committed design and
@@ -418,6 +511,24 @@ revised repeatedly across development:
 - [Element — hytalewiki.org](https://hytalewiki.org/w/Element)
 - [Water Element — Hytale Wiki](https://hytale.fandom.com/wiki/Water_Element)
 
-Treat the rune roster as strong but not final. What makes it more than wiki-deep is the convergence:
-the lore roster and the shipped `Server/Abilities/Elements/` tree name the same five Gaia elements, and
-that agreement is verifiable without trusting any wiki.
+**Revised 2026-10-21.** The previous verdict — *"treat the rune roster as strong … the lore roster and
+the shipped `Server/Abilities/Elements/` tree name the same five Gaia elements"* — read a real agreement
+and drew the wrong conclusion from it. The five asset files are damage types (§3). Convergence between a
+roster and an asset list is not evidence that the asset list is a roster.
+
+Two source notes worth keeping for the next reader:
+
+- **`hytalewiki.org`'s Element page omits the essence framing**, while carrying the rune-representation
+  and zone-element claims. Verified by fetch. It is the likeliest origin of the original error.
+- **Fandom returns HTTP 402 to automated fetching.** The Rune definition and the concept-art title are
+  therefore quoted from search snippets, corroborated across four independent sites
+  (`hytale-game.fandom`, `hytalewiki.org`, `hytalespy.com`, `g-portal`) plus the gamepedia mirror. Treat
+  them as well-attested but not fetch-verified; re-check by hand before anything irreversible rests on
+  the exact wording.
+
+Added sources:
+
+- [Element — Hytale Documentation Wiki](https://hytale-game.fandom.com/wiki/Element) — the essence framing
+- [Rune — Hytale Wiki](https://hytale.fandom.com/wiki/Rune) — the general definition of a rune
+- [Gaia — Hytale Wiki](https://hytale.fandom.com/wiki/Gaia) — the five ponytails and their elements
+- *"Gaia and the Elemental Essences"* — concept art, Hytale.com (cited by the above; **first-party**)
