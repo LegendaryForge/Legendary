@@ -10,6 +10,7 @@ import com.hypixel.hytale.server.core.universe.world.chunk.section.ChunkLightDat
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import io.github.legendaryforge.legendary.core.api.residue.TerrainSample;
 import java.util.Optional;
+import java.util.OptionalDouble;
 import java.util.OptionalInt;
 
 /**
@@ -111,6 +112,95 @@ public final class SectionReaderTerrainSample implements TerrainSample {
     @Override
     public OptionalInt surfaceHeightAt(int x, int z) {
         return isLoaded(x, referencePlaneY, z) ? OptionalInt.of(referencePlaneY) : OptionalInt.empty();
+    }
+
+    /**
+     * Mean lightning-bearing-weather share across all of this environment's forecast slots.
+     *
+     * <p>Read from the environment's own {@code WeatherForecasts} weights, so this is authored data
+     * rather than inference: {@code Env_Zone4_Crucible} carries {@code Zone4_Swamp_Storm} at weight
+     * 50 against {@code Zone4_Swamp_Gloomy} at 50.
+     *
+     * <p><strong>Three approximations, each deliberate and each the probe's to expose.</strong>
+     *
+     * <p>First, <strong>storm is not lightning.</strong> {@code Zone2_Sand_Storm} and
+     * {@code Zone3_Snow_Storm} are storms with no thunder, so counting every {@code Storm} would
+     * site Lightning in a desert. The weather <em>tags</em> discriminate cleanly —
+     * {@code Rain:[Storm]} and {@code Thunderstorm} against {@code Sandstorm} and
+     * {@code Snow:[Storm]} — but there is no tag accessor on the runtime {@code Weather} object
+     * either, so the id is all there is. {@link #isLightningBearing} therefore matches on name and
+     * excludes the two known non-thunder forms by name as well.
+     *
+     * <p>Second, <strong>the forecast key's meaning is unverified.</strong>
+     * {@code getWeatherForecasts()} is an {@code Int2ObjectMap} keyed 0,1,2,3… — season, day index,
+     * or something else. All slots are averaged with equal weight, which is the right answer if the
+     * key is a season (it becomes the annual share) and merely a reasonable one otherwise.
+     *
+     * <p>Third, it is the <strong>environment's</strong> share, not this column's. Weather is
+     * regional; there is no per-position storm probability to read.
+     */
+    @Override
+    public OptionalDouble stormProbabilityAt(int x, int y, int z) {
+        if (!isLoaded(x, y, z)) {
+            return OptionalDouble.empty();
+        }
+        try {
+            Environment asset = Environment.getAssetMap().getAsset(reader.getEnvironment(x, y, z));
+            if (asset == null) {
+                return OptionalDouble.empty();
+            }
+            var forecasts = asset.getWeatherForecasts();
+            if (forecasts == null || forecasts.isEmpty()) {
+                // No forecast at all is a real zero rather than an unknown: an environment that
+                // authors no weather has no storms.
+                return OptionalDouble.of(0);
+            }
+            double shareSum = 0;
+            int slots = 0;
+            for (var entry : forecasts.values()) {
+                if (entry == null) {
+                    continue;
+                }
+                // forEachEntry hands over (element, weight), which is the only way to see the
+                // weights rather than sample from them. The array is the usual dodge for mutating
+                // from a lambda; index 0 is the total weight and index 1 the lightning-bearing part.
+                double[] acc = {0, 0};
+                entry.forEachEntry((forecast, weight) -> {
+                    acc[0] += weight;
+                    if (forecast != null && isLightningBearing(forecast.getWeatherId())) {
+                        acc[1] += weight;
+                    }
+                });
+                double total = acc[0];
+                double lightning = acc[1];
+                if (total > 0) {
+                    shareSum += lightning / total;
+                    slots++;
+                }
+            }
+            return slots == 0 ? OptionalDouble.of(0) : OptionalDouble.of(shareSum / slots);
+        } catch (RuntimeException e) {
+            return OptionalDouble.empty();
+        }
+    }
+
+    /**
+     * Names that count as lightning-bearing, and the two that explicitly do not.
+     *
+     * <p>Name matching, because the asset tags that would do this properly are not on the runtime
+     * object. {@code Zone4_Storm} is genuinely ambiguous — tagged only {@code Zone4:[Storm]} with no
+     * precipitation group — and is counted, which is a choice the probe should be allowed to
+     * contradict.
+     */
+    private static boolean isLightningBearing(String weatherId) {
+        if (weatherId == null) {
+            return false;
+        }
+        String id = weatherId.toLowerCase(java.util.Locale.ROOT);
+        if (id.contains("sand") || id.contains("snow") || id.contains("dust")) {
+            return false;
+        }
+        return id.contains("storm") || id.contains("thunder") || id.contains("lightning");
     }
 
     /** The plane this sample reads, for the probe to report rather than leave implicit. */

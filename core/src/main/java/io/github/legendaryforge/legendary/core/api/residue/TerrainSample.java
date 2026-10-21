@@ -1,6 +1,7 @@
 package io.github.legendaryforge.legendary.core.api.residue;
 
 import java.util.Optional;
+import java.util.OptionalDouble;
 import java.util.OptionalInt;
 
 /**
@@ -53,4 +54,23 @@ public interface TerrainSample {
 
     /** Terrain surface height for this column, or empty when unloaded. */
     OptionalInt surfaceHeightAt(int x, int z);
+
+    /**
+     * Probability in {@code [0,1]} that this position's environment has lightning-bearing weather,
+     * or empty when unloaded or unresolved.
+     *
+     * <p>This exists because Lightning has <strong>no physical presence to read</strong> — it is not
+     * a thing that is somewhere, it is a thing that happens somewhere. The signal is authored data
+     * rather than inference: an environment carries {@code WeatherForecasts} as weighted entries, so
+     * {@code Env_Zone4_Crucible} is 50% storm by weight while Zone 1 is near 1.4%.
+     *
+     * <p>Two honest limits on the adapter's side of this, both of which belong to the reader of the
+     * number rather than to its producer. <strong>Storm is not the same as lightning</strong> —
+     * {@code Zone2_Sand_Storm} and {@code Zone3_Snow_Storm} carry no thunder — and separating them
+     * relies on weather ids, because the asset-level tags that would discriminate cleanly
+     * ({@code Rain:[Storm]} against {@code Sandstorm}) are not exposed on the runtime object. And
+     * {@code WeatherForecasts} is keyed by an integer whose meaning — season, day index, something
+     * else — is unverified.
+     */
+    OptionalDouble stormProbabilityAt(int x, int y, int z);
 }

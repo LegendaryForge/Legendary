@@ -11,7 +11,7 @@ import com.hypixel.hytale.server.core.modules.entity.component.TransformComponen
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-import io.github.legendaryforge.legendary.core.api.residue.ElementRule;
+import io.github.legendaryforge.legendary.core.api.residue.ElementGrounding;
 import io.github.legendaryforge.legendary.core.api.residue.LatticeParameters;
 import io.github.legendaryforge.legendary.core.api.residue.SiteTyping;
 import io.github.legendaryforge.legendary.core.api.residue.WorldPoint2d;
@@ -80,7 +80,7 @@ public class ResidueSiteProbeCommand extends AbstractWorldCommand {
     @Override
     protected void execute(CommandContext context, World world, Store<EntityStore> store) {
         LatticeParameters parameters = LatticeParameters.defaults();
-        List<ElementRule> rules = HytaleDerivationRules.cosmologicalFive();
+        List<ElementGrounding> groundings = HytaleDerivationRules.cosmologicalFive();
 
         StringBuilder sb = new StringBuilder();
         sb.append("--- residue site probe (terrain derivation, nothing placed) ---\n");
@@ -98,8 +98,8 @@ public class ResidueSiteProbeCommand extends AbstractWorldCommand {
                 .append(" qualify>=")
                 .append(parameters.qualifyingScore())
                 .append('\n');
-        sb.append("rules: ")
-                .append(rules.size())
+        sb.append("groundings: ")
+                .append(groundings.size())
                 .append(" elements, seed=")
                 .append(PROBE_SEED)
                 .append('\n');
@@ -173,7 +173,7 @@ public class ResidueSiteProbeCommand extends AbstractWorldCommand {
                 int cz = (int) Math.floor(candidate.z());
                 double distance = Math.hypot(cx - (double) px, cz - (double) pz);
 
-                List<SiteTyping> typings = SiteScorer.scoreAll(candidate, sample, parameters, rules);
+                List<SiteTyping> typings = SiteScorer.scoreAll(candidate, sample, parameters, groundings);
                 sb.append("   ")
                         .append(cx)
                         .append(',')
