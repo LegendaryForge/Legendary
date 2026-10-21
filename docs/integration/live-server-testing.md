@@ -45,7 +45,7 @@ the harness is now ~24K. **Reuse this directory rather than making a new one per
 what accumulated.
 
 ```bash
-cd /home/stephaneb/Workspace/Projects/Hytale/Legendary
+cd /home/stephaneb/Workspace/Projects/Hytale
 ./gradlew :mod:hytale:shadowJar
 cp mod/hytale/build/libs/*-all.jar .scratch/hytale-server/mods/
 bash .scratch/hytale-server/run-server.sh
