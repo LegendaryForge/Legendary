@@ -382,14 +382,31 @@ its own tests, it is a design, not a mechanism.
 
 ---
 
-## Residue network: direction changed, old specs not retired
+## Residue network: direction changed, old specs bannered
 
 **Read `docs/superpowers/specs/2026-10-20-residue-terrain-derivation-design.md` before any
 residue work.** The three committed residue specs (`2026-08-27-residue-network-design.md`,
 `2026-08-29-six-element-residue-framework-design.md`,
 `2026-08-30-n9-all-crossings-are-nexuses-design.md`) describe a **single-convergence seeded-walk**
-model keyed to the **six essence items**. That direction was superseded in discussion on 2026-10-20
-and nothing was retired, so those specs still read as current. They are not.
+model keyed to the **six essence items**. That direction was superseded in discussion on 2026-10-20.
+
+**They now carry `⚠️ SUPERSEDED IN DIRECTION` banners** — added 2026-10-21, on those three plus
+`2026-08-28-graded-nexuses-design.md`, four in total. Each banner names what is specifically
+superseded and what survives (the measurements, and the reasoning about why each choice was made),
+so the specs are safe to open; read the 2026-10-20 document first for the direction, not because the
+old ones will mislead you about their own standing.
+
+> **This paragraph said the opposite until 2026-10-22**, and the stale half was the warning: *"nothing
+> was retired, so those specs still read as current. They are not."* True when written on 2026-10-20,
+> fixed the next day by the bannering, and left here — while § "Lore first" two sections up already
+> described "four residue specs ... bannered as superseded that same day." So this file contradicted
+> itself, and the half a reader acts on was the one sending them to audit a hazard that had been
+> closed. **Third instance of that shape in this project on 2026-10-22**, after
+> `Project_Dependencies.md`'s claim that `.ai/workspace_graph.json` was a seven-month-old snapshot
+> (it was a day old) and the launch guard deleted rather than reworded once the relocation made its
+> condition impossible. The lesson is the one that blockquote states: a warning about a hazard that
+> no longer exists reads as live until someone spends the time to disprove it. **When a fix lands,
+> the pointer that sent people looking is part of what the fix has to touch.**
 
 Three facts from the new document that are easy to re-derive wrongly:
 
@@ -458,7 +475,15 @@ building on it:
 
 ---
 
-*Last updated: 2026-10-22 — § Project overview's language sentence was stale in both halves: "353
+*Last updated: 2026-10-22 (second change that day) — § "Residue network" claimed the three superseded
+residue specs carry no banner and "still read as current. They are not." They have carried
+`⚠️ SUPERSEDED IN DIRECTION` banners since 2026-10-21 — those three plus
+`2026-08-28-graded-nexuses-design.md`, four in all — and § "Lore first", two sections above, already
+said so. The file contradicted itself, and the half a reader acts on was the stale one, sending them
+to audit a hazard already closed. Third instance of that shape in this project in one day, after
+`Project_Dependencies.md`'s seven-months-stale claim about a day-old file and the launch guard
+deleted rather than reworded. Heading changed from "old specs not retired" to "old specs bannered",
+since the heading carried the wrong claim too. Earlier 2026-10-22 — § Project overview's language sentence was stale in both halves: "353
 Java files" against a measured **426**, and `ModuleCoverageExtension.kt` named as the only `buildSrc`
 Kotlin file when **9** now sit there, one per guard — each guard since arrived as another `.kt` beside
 it and the sentence was never revisited. Both now carry their re-derivation recipe. The count also
