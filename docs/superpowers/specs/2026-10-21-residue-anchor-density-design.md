@@ -371,6 +371,16 @@ a single session, and the only self-inflicted one.
 
 ## 9. Open numbers, named rather than guessed
 
+> **Four of these five are now decided** —
+> [`2026-10-22-residue-sizing-decision.md`](2026-10-22-residue-sizing-decision.md). `w = 8`,
+> measurement radius `128`, suppression radius `512` for all five elements as a starting vector,
+> `D = 8` (`= w`, a correctness bound rather than a preference). Item 3 is **struck as not a
+> decision** — nothing gates on it, so it stays a deferred measurement with this section's own
+> trigger. The coverage target it all derives from, ~15%, is provisional by the operator's framing.
+> Read that document for what each value rests on and what would move it; the items below stand as
+> the statement of *why* each number was open.
+
+
 1. **Per-element suppression radii.** Five values, kilometre-scale per §3. Earth and Wind saturate
    first, Fire starves first. Expected to need iteration against real terrain; §3's `2w/R` table is
    the starting frame, not an answer. The **empty case** lives here too: an element with no qualifying
