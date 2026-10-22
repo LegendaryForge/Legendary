@@ -197,6 +197,28 @@ Not stale — unauditable by construction. It is the third document found on 202
 git state that nothing re-derives, after the session-init orientation head (stale: it described
 the pre-relocation layout) and this recipe (wrong).
 
+**`--delete-branch` destroys a stacked PR, and `gh` cannot undo it.** If PR *B* is based on
+PR *A*'s branch, merging *A* with `--delete-branch` **closes** *B* rather than retargeting it:
+deleting the base leaves *B* `CLOSED` and `CONFLICTING`. It is then unrecoverable through `gh` —
+`gh pr edit --base` refuses (*"Cannot change the base branch of a closed pull request"*) and
+`gh pr reopen` refuses because the base branch no longer exists. The branch and its commits are
+untouched, so the work survives; what is lost is the PR record and its review thread.
+
+Before merging a base branch that anything is stacked on, do **one** of:
+
+```bash
+gh pr list --base <base-branch>          # is anything stacked on it? check FIRST
+gh pr edit <dependent> --base main       # retarget the dependent, THEN merge the base
+# or: merge the dependent first, so nothing is stacked when the base goes
+```
+
+This happened on 2026-10-21 to PR #136, hours after `--delete-branch` was added to the recipe
+above — by the same session that added it. #136 was a guard PR stacked on the fix it asserted,
+which was correct authoring: against `main` it would have failed. It was reopened as #137 from the
+same branch. Recorded here because the recipe above now carries a flag that silently destroys
+stacked PRs, and the flag is still right — the alternative strands every branch, since
+`deleteBranchOnMerge` is `false`.
+
 **Branches are short-lived, and that is load-bearing.** Until 2026-08-24 this project used a
 long-lived `feat/stormseeker-bridge`. Because `main` can only be updated by merging *into*
 it, that branch diverged from trunk on every cycle — it accumulated the merge commits it had
@@ -417,7 +439,21 @@ building on it:
 
 ---
 
-*Last updated: 2026-10-21 (fifth change that day) — § Pushing's copy-pasteable recipe gained the
+*Last updated: 2026-10-22 — § Pushing gained the stacked-PR hazard it had been missing: `--delete-branch`
+**closes** a PR stacked on the branch being merged rather than retargeting it, and `gh` can undo neither
+half (`pr edit --base` refuses on a closed PR, `pr reopen` refuses because the base is gone). That cost
+PR #136 on 2026-10-21, hours after the same session added the flag to the recipe. The flag stays — without
+it every branch is stranded, since `deleteBranchOnMerge` is `false` — so the note is a precondition to
+check, not a reversal. Also this day: `scripts/live-probes/server-up.sh` now runs **both** the FIFO holder
+and the server under `setsid`, because the non-expiring holder was still dying with its launching shell and
+the server then read EOF and **kicked the connected player**; the script prints `HOLDER alive`, since the
+holder's death is what ends a live session. `docs/integration/live-server-testing.md` had recorded that as
+"presenting as a hung server" — the understatement that sent a reader after a hung console instead of a dead
+holder — and, three lines below, still recommended `ss -ltn` for liveness, which `server-up.sh` already
+documented as a **false negative** on a healthy server because Hytale's transport is QUIC. Both corrected;
+both had failed by reporting absence. Verification stamp deliberately NOT bumped: these are harness and
+documentation fixes, not a re-verification against a newer game build, and the doc remains stamped `0.6.1`.
+Previously 2026-10-21 (fifth change that day) — § Pushing's copy-pasteable recipe gained the
 `--delete-branch` it had always been missing, and the "Eight for eight" claim beneath it was
 replaced by a derived 130-of-130 plus a note on what that figure does not prove. The recipe was
 producing the failure its own next paragraph warned about, while that paragraph blamed the checkout
