@@ -81,8 +81,27 @@ The boundary rule is mechanical: **`core` holds frameworks; `quests/<name>/` hol
 of them.** The question to ask of any file is "does it know about a specific questline?"
 That rule is enforced by the build, not by judgement — see the guards below.
 
-Language is **Java 25** (353 Java files). The only Kotlin is Gradle build logic
-(`*.gradle.kts` plus `buildSrc/src/main/kotlin/ModuleCoverageExtension.kt`).
+Language is **Java 25** — **426** tracked `.java` files as of 2026-10-22: `core` 225,
+`quests/stormseeker` 111, `harness` 66, `mod/hytale` 23, and one outside every module (below).
+272 under `src/main`, 153 under `src/test`. The only Kotlin is Gradle build logic: 9 `*.gradle.kts`
+plus **9** files under `buildSrc/src/main/kotlin/` — one per guard, plus `ModuleCoverageExtension.kt`.
+
+> **Both figures in this sentence were stale, and re-derive them rather than trusting these.**
+> It read "353 Java files" and named `ModuleCoverageExtension.kt` as the *only* `buildSrc` Kotlin
+> file — written when that was true, and left alone as every guard since arrived as another `.kt`
+> beside it. `git ls-files '*.java' | wc -l` is the recipe; the per-module split above is
+> `git ls-files '<module>/**/*.java' | wc -l`.
+>
+> **The 426th file is `scripts/residue-scans/N9Scan.java`, and no module contains it**, so
+> `./gradlew check` never compiles it. `COVERAGE_VERDICT: 4/4 modules reported | 0 exempt` is
+> true and silent about it, because `checkModuleCoverage` classifies *modules* and this file is
+> in none. It is not incidental: `scripts/residue-scans/README.md` states the residue specs'
+> credibility "rests entirely on `N9Scan.java`", and it is what re-derives the committed
+> `out-chosen.txt` §7 figures — the measurement that retired the convergence-star model. It is
+> run as a single-file program (`java N9Scan.java …` from `sweep-heightband.sh`), not built.
+> **Verified compiling 2026-10-22** under the pinned JDK 25 (`javac` exit 0, no warnings), so this
+> records a detection gap rather than a breakage: nothing would report it breaking, and the
+> discovery point would be someone trying to re-derive a figure and failing.
 
 **Session status doc:** `Knowledge/MainVault/GameDev/Hytale/Hytale_Session_Status.md` —
 read this before starting Hytale work (workspace `CLAUDE.md` Session Initialization step 8).
@@ -196,6 +215,28 @@ repository: no history, no diff, and no origin date for "since adopting" that ca
 Not stale — unauditable by construction. It is the third document found on 2026-10-21 asserting
 git state that nothing re-derives, after the session-init orientation head (stale: it described
 the pre-relocation layout) and this recipe (wrong).
+
+**`--delete-branch` destroys a stacked PR, and `gh` cannot undo it.** If PR *B* is based on
+PR *A*'s branch, merging *A* with `--delete-branch` **closes** *B* rather than retargeting it:
+deleting the base leaves *B* `CLOSED` and `CONFLICTING`. It is then unrecoverable through `gh` —
+`gh pr edit --base` refuses (*"Cannot change the base branch of a closed pull request"*) and
+`gh pr reopen` refuses because the base branch no longer exists. The branch and its commits are
+untouched, so the work survives; what is lost is the PR record and its review thread.
+
+Before merging a base branch that anything is stacked on, do **one** of:
+
+```bash
+gh pr list --base <base-branch>          # is anything stacked on it? check FIRST
+gh pr edit <dependent> --base main       # retarget the dependent, THEN merge the base
+# or: merge the dependent first, so nothing is stacked when the base goes
+```
+
+This happened on 2026-10-21 to PR #136, hours after `--delete-branch` was added to the recipe
+above — by the same session that added it. #136 was a guard PR stacked on the fix it asserted,
+which was correct authoring: against `main` it would have failed. It was reopened as #137 from the
+same branch. Recorded here because the recipe above now carries a flag that silently destroys
+stacked PRs, and the flag is still right — the alternative strands every branch, since
+`deleteBranchOnMerge` is `false`.
 
 **Branches are short-lived, and that is load-bearing.** Until 2026-08-24 this project used a
 long-lived `feat/stormseeker-bridge`. Because `main` can only be updated by merging *into*
@@ -417,7 +458,29 @@ building on it:
 
 ---
 
-*Last updated: 2026-10-21 (fifth change that day) — § Pushing's copy-pasteable recipe gained the
+*Last updated: 2026-10-22 — § Project overview's language sentence was stale in both halves: "353
+Java files" against a measured **426**, and `ModuleCoverageExtension.kt` named as the only `buildSrc`
+Kotlin file when **9** now sit there, one per guard — each guard since arrived as another `.kt` beside
+it and the sentence was never revisited. Both now carry their re-derivation recipe. The count also
+surfaced that the 426th file, `scripts/residue-scans/N9Scan.java`, is in **no module**, so
+`./gradlew check` never compiles it while `COVERAGE_VERDICT: 4/4 modules | 0 exempt` reads clean —
+and `scripts/residue-scans/README.md` says the residue specs' credibility rests entirely on that
+file. Verified compiling, so what is recorded is a detection gap, not a breakage. Also this day:
+§ Pushing gained the stacked-PR hazard it had been missing: `--delete-branch`
+**closes** a PR stacked on the branch being merged rather than retargeting it, and `gh` can undo neither
+half (`pr edit --base` refuses on a closed PR, `pr reopen` refuses because the base is gone). That cost
+PR #136 on 2026-10-21, hours after the same session added the flag to the recipe. The flag stays — without
+it every branch is stranded, since `deleteBranchOnMerge` is `false` — so the note is a precondition to
+check, not a reversal. Also this day: `scripts/live-probes/server-up.sh` now runs **both** the FIFO holder
+and the server under `setsid`, because the non-expiring holder was still dying with its launching shell and
+the server then read EOF and **kicked the connected player**; the script prints `HOLDER alive`, since the
+holder's death is what ends a live session. `docs/integration/live-server-testing.md` had recorded that as
+"presenting as a hung server" — the understatement that sent a reader after a hung console instead of a dead
+holder — and, three lines below, still recommended `ss -ltn` for liveness, which `server-up.sh` already
+documented as a **false negative** on a healthy server because Hytale's transport is QUIC. Both corrected;
+both had failed by reporting absence. Verification stamp deliberately NOT bumped: these are harness and
+documentation fixes, not a re-verification against a newer game build, and the doc remains stamped `0.6.1`.
+Previously 2026-10-21 (fifth change that day) — § Pushing's copy-pasteable recipe gained the
 `--delete-branch` it had always been missing, and the "Eight for eight" claim beneath it was
 replaced by a derived 130-of-130 plus a note on what that figure does not prove. The recipe was
 producing the failure its own next paragraph warned about, while that paragraph blamed the checkout

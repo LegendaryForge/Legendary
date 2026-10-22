@@ -117,21 +117,41 @@ The server console needs a **real TTY**. Launched with plain redirected stdin, J
 script -qfc 'bash .scratch/hytale-server/run-server.sh' /dev/null < fifo
 ```
 
-**The FIFO holder must not expire.** `( sleep 3600 > fifo )` died mid-session; the console silently
-stopped accepting commands, `stop` never arrived, and the failure presented as a hung server. Use a
-holder that cannot time out:
+**The FIFO holder must not expire, and must not share your shell's process group.** Two
+requirements, each learned from its own failure, and the first fix was mistaken for sufficient:
+
+1. `( sleep 3600 > fifo )` expired mid-session; the console stopped accepting commands, `stop` never
+   arrived, and it presented as a hung server. Fixed with a holder that cannot time out.
+2. The non-expiring holder then **died anyway** on 2026-10-21, signalled along with its launching
+   shell. **The server read EOF on stdin, shut down gracefully, and kicked the connected player** —
+   `Console executed command: stop` appears zero times in that log.
 
 ```bash
-tail -f /dev/null > fifo
+setsid nohup tail -f /dev/null > fifo 2>/dev/null &
 ```
+
+> **This document described failure 2 as failure 1 for a session** — "the console silently stopped
+> accepting commands, presenting as a hung server." That understates it: the server *exits*. The two
+> are indistinguishable from the console side, which is exactly why the wrong one was recorded, and
+> it sent the next reader looking for a hung console rather than a dead holder. Run the **server**
+> under `setsid` too — `scripts/live-probes/server-up.sh` does both and prints `HOLDER alive`, since
+> the holder's death is what ends a live session. *(Corrected 2026-10-22.)*
 
 **Check liveness by port, not by process name.** `pgrep -f` / `pkill -f` match the shell running
 them — that killed one of our own commands and, separately, reported an already-dead server as
 "STILL ALIVE".
 
+**Use `-u` (UDP), not `-t` (TCP).** Hytale's transport is QUIC, so `ss -ltn` reports NOT LISTENING
+against a perfectly healthy server — a false negative that cost a round trip on 2026-10-21.
+
 ```bash
-ss -ltn | grep 5520
+ss -lun | grep 5520
 ```
+
+> This line read `ss -ltn | grep 5520` until 2026-10-22, while `server-up.sh` had already carried the
+> `-u` correction and its reason in a comment. A doc recommending a check its own script documents as
+> wrong is worse than no recipe: both failures here — the hung-console misattribution above and this
+> one — report **absence**, and an absence is what a reader stops on. *(Corrected 2026-10-22.)*
 
 ---
 
