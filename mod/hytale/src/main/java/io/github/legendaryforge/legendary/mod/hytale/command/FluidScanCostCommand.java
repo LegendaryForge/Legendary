@@ -139,32 +139,51 @@ public class FluidScanCostCommand extends AbstractWorldCommand {
                 .append(who)
                 .append("]\n");
 
-        sb.append(String.format("%-6s %10s %10s %12s %14s%n", "step", "points", "hits", "ms/cand", "ms/run(25)"));
+        sb.append(String.format(
+                "%-6s %10s %10s %10s %12s %14s%n", "step", "points", "loaded", "hits", "ms/cand", "ms/run(25)"));
         for (int step : STEPS) {
             for (int w = 0; w < WARMUP; w++) {
                 scan(reader, anchorX, anchorY, anchorZ, step);
             }
-            long points = 0;
-            long hits = 0;
+            Counts counts = null;
             long t0 = System.nanoTime();
             for (int i = 0; i < ITERATIONS; i++) {
-                long packed = scan(reader, anchorX, anchorY, anchorZ, step);
-                points = packed >>> 32;
-                hits = packed & 0xFFFFFFFFL;
+                counts = scan(reader, anchorX, anchorY, anchorZ, step);
             }
             double msPerCandidate = (System.nanoTime() - t0) / 1e6 / ITERATIONS;
             sb.append(String.format(
-                    "%-6d %10d %10d %12.3f %14.1f%n",
-                    step, points, hits, msPerCandidate, msPerCandidate * CANDIDATES_PER_RUN));
+                    "%-6d %10d %10d %10d %12.3f %14.1f%n",
+                    step,
+                    counts.points(),
+                    counts.loaded(),
+                    counts.hits(),
+                    msPerCandidate,
+                    msPerCandidate * CANDIDATES_PER_RUN));
+            if (counts.loaded() < counts.points()) {
+                sb.append(String.format(
+                        "       ^ only %.0f%% of the box was loaded; the timing is diluted by cheap misses%n",
+                        100.0 * counts.loaded() / counts.points()));
+            }
         }
 
         sb.append("FLUIDSCAN_VERDICT: COMPLETE\n");
         send(context, sb.toString());
     }
 
-    /** Returns points in the high 32 bits, fluid hits in the low 32. */
-    private static long scan(SectionReader reader, int x, int surfaceY, int z, int step) {
+    /**
+     * Sample points visited, points whose storage was resident, and fluid hits.
+     *
+     * <p>{@code loaded} is reported because an unloaded point costs only the {@code
+     * hasStorageInMemory} check and never the {@code getFluidId} read, so a box that is mostly
+     * unloaded times fast for the wrong reason -- the failure the anchor check guards against,
+     * one scope wider. The anchor being resident says nothing about the ±24/±16 box around it,
+     * and without this column a diluted run is indistinguishable from a cheap one.
+     */
+    private record Counts(long points, long loaded, long hits) {}
+
+    private static Counts scan(SectionReader reader, int x, int surfaceY, int z, int step) {
         long points = 0;
+        long loaded = 0;
         long hits = 0;
         for (int dx = -RADIUS; dx <= RADIUS; dx += step) {
             for (int dz = -RADIUS; dz <= RADIUS; dz += step) {
@@ -174,6 +193,7 @@ public class FluidScanCostCommand extends AbstractWorldCommand {
                     int pz = z + dz;
                     points++;
                     if (reader.hasStorageInMemory(px, py, pz)) {
+                        loaded++;
                         if (reader.getFluidId(px, py, pz) != 0) {
                             hits++;
                         }
@@ -181,7 +201,7 @@ public class FluidScanCostCommand extends AbstractWorldCommand {
                 }
             }
         }
-        return (points << 32) | hits;
+        return new Counts(points, loaded, hits);
     }
 
     private static void send(CommandContext context, String text) {
