@@ -207,19 +207,74 @@ design needs direction to mean something, and a graph with cycles has no consist
 **cross-element crossings are the only crossings there are**, which is what §7's mixed sites want.
 How often different elements' trees interleave is unmeasured — §9 item 3.
 
-### Crystals mark currents uniformly
+### What currents produce: crystals, and geodes where they cross
 
 [`2026-08-27-residue-network-design.md`](2026-08-27-residue-network-design.md) N6 records a
 measurement: `densityAt` is *"exactly 1.0 at every point on the network — verified at a Circle and at
 a plain segment."* A plateau. Nothing distinguished a nexus, so §4's *"walk uphill to a maximum"* was
-never implemented and could not be.
+never implemented and could not be. N6 offers three ways out and **this spec takes the second** —
+crystals mark currents rather than peaking at nexuses — because it is the only one its own
+measurement supports. Literacy becomes *find a line, then follow it*, with direction from the needle
+exactly as §5 of that document intends.
 
-N6 lists three ways out. **This spec takes the second** — *"revise §4 so crystals mark currents
-uniformly and Circles are found by following one"* — because it is the only one its own measurement
-already supports. Literacy becomes *find a line, then follow it*, with direction supplied by the
-needle exactly as §5 intends.
+**Crystals do not mark a current uniformly, though. They need earth.**
 
----
+> **A crystal may spawn where a current passes within `w` of earth.**
+
+The current is the subject and earth proximity is a gate on its path — **not** a terrain predicate.
+That distinction is load-bearing and was got wrong once in drafting: phrased as "crystals spawn where
+rock meets void" it becomes a property of places, independent of any current, and then every rocky
+surface in the world is a candidate. Phrased current-first, the crystal-bearing set is
+`(band along currents) ∩ (near earth)`, and intersecting a bounded band with a gate can only shrink
+it. §3's `2w/R` therefore remains an upper bound on crystal coverage, not a figure the gate can
+exceed.
+
+What the gate is for:
+
+| Current | Near earth? | Crystals |
+|---|---|---|
+| water current through open ocean, well above the seabed | no | **none** |
+| wind current high in open sky | no | **none** |
+| water current along a seabed or shore | yes | yes |
+| wind current close over a ridge | yes | yes |
+| fire current in volcanic rock | always | yes |
+| earth current through rock | always | yes |
+
+So it removes exactly the two cases that motivated it — kilometres of open water and open air seeding
+crystals — and touches nothing else. **Literacy is not meaningfully harmed**: a current under a
+meadow is still near earth and still crystallises, so the only unreadable places are open water and
+open air, where there is no ground to read.
+
+### Geodes: a crossing in earth makes its own cavity
+
+> **Where two different elements' currents pass within `D` of each other, inside earth, a geode
+> forms** — a cavity lined with crystals of both.
+
+This is what makes a crossing *consequential*, which was otherwise undefined: crossings were
+nominated as "places that mean something" with nothing attached to them.
+
+**The cavity is created by the crossing, not found in the terrain.** That is the difference between
+this and an earlier draft of the crystal rule, which tried to make terrain supply a void for crystals
+to grow into and drifted into terrain-as-subject as a result. A geode needs no pre-existing void
+because it *is* one.
+
+Hytale already understands geodes, which keeps this in the engine's idiom rather than inventing:
+`Rocks/Geodes/` ships **ten colour families** (Blue, Cyan, Green, Pink, Pink_S, Purple, Purple_S,
+Red, White, Yellow) at 5–6 variants each; `Rocks/Gems/Geodes/` adds Diamond, Emerald, Ruby, Sapphire,
+Topaz, **Voidstone** and **Zephyr**; `Geode_Floating/` is composable from `Roof`/`Wall`/`Spawner`
+parts in Base, Forest, Volcanic and Crystal themes; and `Zone4_Tier5/PrefabPatterns/Jungle_Crystal_Geodes.json`
+shows they are placed by zone-and-tier prefab patterns. [asset, 0.7.3]
+
+Ten colours and seven gems is ample for pairs drawn from five elements, so an element-pair → geode
+mapping is available without new art. Which pair gets which is content design and is not decided here.
+
+**A crossing outside earth produces nothing.** Two currents meeting in open ocean or high air have
+nowhere to crystallise, and they take the same gate as ordinary crystals rather than a special case.
+Wasteful of a rare event; cheaper than a second rule.
+
+**Anything we ship needs our own prefix.** `checkAssetPackIntegrity` requires a Stormseeker-scoped
+prefix on every asset in this mod, so our geodes are named variants of our own and cannot override
+`Rocks/Geodes/*`. The guard enforces it; that is what it is for.
 
 ## 6. Cost, measured
 
@@ -257,53 +312,60 @@ terrain ──▶ per-element VOLUME counts ──▶ (strength, hash) suppressi
                                                │
                         ┌──────────────────────┴───────────────────────┐
                         ▼                                              ▼
-            crystals near currents                    two elements' currents CROSS
-            (uniform density, N6)                     ──▶ a mixed place of consequence
+         current passes near EARTH                    two elements' currents cross,
+              ──▶ crystals                                 in earth  ──▶ GEODE
+         (nothing in open water or sky)                   (mixed-element, a find)
                         │                                              │
-                        └──────────▶ literacy: find a line, follow it ◀┘
-                                               │
-                                               ▼
-                                    our STORM CIRCLE, the sixth
-                                    — holds the needle's Recipe_
+                        └────▶ literacy: find a line, follow it ◀─────┘
 ```
 
-**The progression gate stays where the design put it**, and for the reason the design gives: the
-needle is what reaches the workshop, so the needle's recipe cannot be *in* the workshop. It is
-recovered at a Circle. We author the Storm Circle on a strong Lightning anchor, in the shipped idiom
-— three tiers, per-zone NPC spawn beacons.
+**Nexuses are gone as a placed entity.** Anchors are invisible geometry with no gameplay meaning;
+geodes are the places that mean something, and they are derived rather than authored — which
+satisfies R4's *"not authored individually"* for the one thing still derived.
 
-**Nexuses are gone as a placed entity.** Anchors are geometry with no gameplay meaning; crossings are
-derived, which satisfies R4's *"not authored individually"* for the one thing still derived.
+**Circles are gone too** (§8), so nothing in this design is authored except the prefab variants a
+geode is built from.
 
 ---
 
-## 8. Declined: anchoring on the game's own Elemental Circles
+## 8. Out of scope: Elemental Circles, in both roles
 
-The base game **does** ship Elemental Circle monuments — `Server/Prefabs/Monuments/Unique/Elemental_Circles/`
-holds **Earth** (Druid Circles), **Fire** (Firelands StoneCircle), **Frost**, **Poison** and **Sand**,
-each composed from `Circles`/`Middle`/`Pillars` parts across three tiers, with nine matching NPC spawn
-beacons under `Server/NPC/Spawn/Beacons/Zone{1,2,3}/Zone{N}_Elemental_Circle_Tier{1,2,3}.json`.
-[asset, 0.7.3] There is **no Storm circle**, which is the gap this questline fills — now confirmed
-from the assets rather than asserted.
+The base game **does** ship Elemental Circle monuments —
+`Server/Prefabs/Monuments/Unique/Elemental_Circles/` holds **Earth** (Druid Circles), **Fire**
+(Firelands StoneCircle), **Frost**, **Poison** and **Sand**, each composed from
+`Circles`/`Middle`/`Pillars` parts across three tiers, with nine matching NPC spawn beacons under
+`Server/NPC/Spawn/Beacons/Zone{1,2,3}/Zone{N}_Elemental_Circle_Tier{1,2,3}.json`. [asset, 0.7.3]
+There is **no Storm circle**, which earlier drafts treated as the gap this questline fills — now
+confirmed from the assets rather than asserted.
 
-Using them as anchors was considered and **declined by the operator**: that roster is Earth, Fire,
-Frost, Poison, Sand, while the residue roster decided in
-[`2026-10-21-residue-roster-decision.md`](2026-10-21-residue-roster-decision.md) is the cosmological
-five — Fire, Water, Lightning, Wind, Earth. **Two rows overlap.** Anchoring there would supply Fire
-and Earth, drag in three elements the framework does not model, and leave Water, Lightning and Wind
-with nothing.
+They were considered in two roles and **both are out, by operator decision**:
+
+- **As anchors.** Declined on roster grounds: that set is Earth, Fire, Frost, Poison, Sand, while the
+  residue roster decided in
+  [`2026-10-21-residue-roster-decision.md`](2026-10-21-residue-roster-decision.md) is the
+  cosmological five — Fire, Water, Lightning, Wind, Earth. **Two rows overlap.** Anchoring there
+  supplies Fire and Earth, drags in three elements the framework does not model, and leaves Water,
+  Lightning and Wind with nothing.
+- **As content we author.** A Storm Circle as the sixth monument was drafted and then removed:
+  *"Forget the circles. We're not using them for now."*
+
+**Where the needle's recipe lives is therefore undecided, and deliberately left so.** The network
+design's circularity still binds — the needle is what reaches the workshop, so its recipe cannot be
+*in* the workshop, and must sit somewhere findable by literacy alone. A geode satisfies that, and so
+would other things. It is **out of scope here** rather than answered, because nothing in this spec
+depends on the answer.
 
 > **Deferral, with a real trigger.** Revisit if Hytale ships Elemental Circle prefabs for **Water,
-> Lightning or Wind**. The observation point is one command against the asset tree, and the game ships
-> every 2–6 weeks while still adding elements. Until then, anchors come from terrain and this design
-> depends on nothing Hypixel has not shipped.
+> Lightning or Wind**. The observation point is one command against the asset tree, and the game
+> ships every 2–6 weeks while still adding elements. Until then this design depends on nothing
+> Hypixel has not shipped, and authors no monument of its own.
 
 **A correction worth keeping.** This section first claimed the Circles *do not ship*, twice. The first
-search read `WorldStructureAsset`s (the wrong asset type); the second searched prefabs but ended in
+search read `WorldStructureAsset`s — the wrong asset type. The second searched prefabs but ended in
 `| head -20`, and `Server/Prefabs/Cave/…` sorts before `Server/Prefabs/Monuments/…`, so the answer was
-truncated out of view. The terrain-derivation design records that exact failure mode one page earlier
-— *"an absence produced by a pipe"* — which is the fifth instance of a clean-zero-from-a-surface-that-
-cannot-hold-the-answer in a single session, and the only self-inflicted one.
+truncated out of view. The terrain-derivation design records that exact failure mode — *"an absence
+produced by a pipe"* — making this the fifth clean-zero-from-a-surface-that-cannot-hold-the-answer in
+a single session, and the only self-inflicted one.
 
 ---
 
@@ -316,26 +378,35 @@ cannot-hold-the-answer in a single session, and the only self-inflicted one.
    tolerable for Fire, probably not for Lightning, which Stormseeker needs.
 2. **Measurement radius.** Wide enough that a lake outweighs a puddle — a judgement about what "an
    area" means to a player, not a derivable quantity. Independent of the suppression radius.
-3. **Crossing frequency.** Unmeasured, and it gates §7's progression: too few and the needle's recipe
-   is unobtainable, too many and nothing is special. The old model's N1 asked this of *self*-crossings;
-   trees have no cycles, so the question moves entirely to cross-element crossings — which the old
-   model explicitly did not model.
+3. **Crossing frequency.** Unmeasured. It sets how rare geodes are, and since the recipe's home is
+   out of scope (§8) nothing gates on it — too few means geodes are rare, which is acceptable. **It
+   becomes a gating number the moment anything required is placed in a geode**, so measure it before
+   that happens rather than after. The old model's N1 asked this of *self*-crossings; trees have no
+   cycles, so the question moves entirely to cross-element crossings, which the old model explicitly
+   did not model.
 4. **Crossing tolerance.** Two polylines crossing *exactly* in 3D is measure-zero, so "cross" has to
    mean "pass within `D` of one another." `D` is undecided.
 5. **Influence radius `w`.** Appears in §3's sizing ratio and sets how wide a crystal band reads on
    the ground. Taken as 16 blocks for the table; not chosen.
 
 **Decided here, previously open:** strength is volume (§2); saturation is handled by
-`(strength, hash)` suppression rather than a cleverer measure (§3); topology is a per-element minimum
-spanning tree (§5); crystals mark currents uniformly (§5, taking N6's second option); nexuses are not
-a placed entity (§7).
+`(strength, hash)` suppression rather than a cleverer measure (§3); anchors carry their own y (§4);
+topology is a per-element minimum spanning tree (§5); crystals mark currents **where a current passes
+near earth**, taking N6's second option but gated rather than uniform (§5); a crossing inside earth
+makes a geode, the cavity created by the crossing rather than found in terrain (§5); nexuses are not a
+placed entity (§7); Elemental Circles are out of scope in both roles (§8).
+
+**Deliberately not decided:** where the needle's recipe lives (§8), and which element pair maps to
+which geode colour (§5). Neither is depended on by anything above.
 
 ---
 
 ## 10. What would change this decision
 
-- **Crossings turn out to be vanishingly rare or everywhere.** Either breaks §7's progression without
-  touching anchors, and would reopen whether consequence should be derived from crossings at all.
+- **Crossings turn out to be vanishingly rare or everywhere.** Neither breaks anything while the
+  recipe's home is out of scope — rare geodes are acceptable and common ones are merely dull — but
+  both would reopen whether consequence should be derived from crossings at all, and either would
+  become urgent the moment something required is placed in a geode.
 - **Per-element suppression cannot be tuned to satisfy both Earth and Fire.** Then volume is
   insufficient alone and needs a per-element normalisation term — the first thing to try before
   abandoning the approach, and cheaper than the interface/prominence measures §2 rejected.
