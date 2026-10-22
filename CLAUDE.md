@@ -389,6 +389,13 @@ its own tests, it is a design, not a mechanism.
 anchor-density spec is **PROPOSED**, is the current model, and supersedes the *placement half* of the
 2026-10-21 adoption further down this section. Nothing in it is implemented.
 
+**Its §9 numbers are supplied** by `2026-10-22-residue-sizing-decision.md`: `w = 8`, measurement
+radius `128`, suppression radius `512` for all five elements as a starting vector, `D = 8`. Crossing
+frequency is **struck as not a decision** — nothing gates on it until something required is placed in
+a geode. The whole set derives from one provisional operator judgement, *~15% of the world near some
+current*, through `R = 10w/C`; `verticalSpan` is **not** among them and needs its own decision before
+implementation, because §4 gives each element its own y while the span is still one global value.
+
 > **Until 2026-10-22 that pointer named only the 2026-10-20 design, and the anchor-density spec was
 > not mentioned anywhere in this file.** So the document every session loads first sent readers to a
 > superseded placement model and omitted the one that replaced it — the same shape as the four stale
