@@ -384,8 +384,19 @@ its own tests, it is a design, not a mechanism.
 
 ## Residue network: direction changed, old specs bannered
 
-**Read `docs/superpowers/specs/2026-10-20-residue-terrain-derivation-design.md` before any
-residue work.** The three committed residue specs (`2026-08-27-residue-network-design.md`,
+**Read `docs/superpowers/specs/2026-10-21-residue-anchor-density-design.md` first, then
+`2026-10-20-residue-terrain-derivation-design.md` for the direction it builds on.** The
+anchor-density spec is **PROPOSED**, is the current model, and supersedes the *placement half* of the
+2026-10-21 adoption further down this section. Nothing in it is implemented.
+
+> **Until 2026-10-22 that pointer named only the 2026-10-20 design, and the anchor-density spec was
+> not mentioned anywhere in this file.** So the document every session loads first sent readers to a
+> superseded placement model and omitted the one that replaced it — the same shape as the four stale
+> warnings this file and `Project_Dependencies.md` corrected on 2026-10-20 and 2026-10-21, arriving
+> through the opposite door: not a hazard note outliving its hazard, but a *current* pointer
+> outliving its currency. Both read as live; only the second sends you somewhere.
+
+The three committed residue specs (`2026-08-27-residue-network-design.md`,
 `2026-08-29-six-element-residue-framework-design.md`,
 `2026-08-30-n9-all-crossings-are-nexuses-design.md`) describe a **single-convergence seeded-walk**
 model keyed to the **six essence items**. That direction was superseded in discussion on 2026-10-20.
@@ -456,8 +467,16 @@ Three facts from the new document that are easy to re-derive wrongly:
 
 **The direction was ADOPTED 2026-10-21** — `docs/superpowers/specs/2026-10-21-residue-terrain-derivation-adoption.md`.
 The convergence star retires (measured: 0.00 nexuses/km² beyond 3 km, and tuning is exhausted); the
-placed-nexus model is approved; §9 q1–q5 are closed. Three things from that decision bind anyone
-building on it:
+placed-nexus model is approved; its own §9 q1–q5 are closed.
+
+> **Its placement half is already superseded**, by `2026-10-21-residue-anchor-density-design.md`
+> (same day, PR #138). *"Candidates come from a seed-hashed jittered lattice"* is replaced: nexus
+> stops being a placed entity, currents become the only generated geometry, strength is **volume**
+> (a count of sample points satisfying each element's predicate), and anchors are **3D** with a y
+> per element. **Mind which §9 a sentence means** — the adoption's §9 q1–q5 are closed; the
+> anchor-density spec has its *own* §9, holding five numbers that are open and blocked on operator
+> judgement. Everything else the adoption settled stands, and the three bullets below are part of
+> that:
 
 - **Derivation is pure `:core` code behind an injected terrain port, and no residue is authored into
   worldgen JSON.** That declines §7's two-implementations trap by construction. It also costs nothing
@@ -470,12 +489,29 @@ building on it:
 - **The first deliverable is `/residueprobe`, which places nothing.** The capability question is
   answered — lava, water, environment and exposure reads all compile against the real jar. What no jar
   read can answer is whether the scoring puts a Fire nexus *at* the lava lake, so the probe prints its
-  opinion about ground you can walk to and judge. River-versus-ocean is not expressible at all, and
-  Lightning over-reports until storm frequency reaches the port.
+  opinion about ground you can walk to and judge. Lightning over-reports until storm frequency
+  reaches the port.
+
+  **This bullet used to end "River-versus-ocean is not expressible at all," and the anchor-density
+  spec's §2 makes it expressible** — as a *strength* difference rather than a type distinction: an
+  ocean fills the measurement window and a river crosses a corner of it, so counting
+  predicate-satisfying points separates them by exactly the margin §2 wants ("a lake, an ocean, a
+  caldera — not a 2×2 puddle"). It does not *label* either; it ranks them.
 
 ---
 
-*Last updated: 2026-10-22 (second change that day) — § "Residue network" claimed the three superseded
+*Last updated: 2026-10-22 (third change that day) — § "Residue network" pointed every session at
+`2026-10-20-residue-terrain-derivation-design.md` "before any residue work" and never mentioned
+`2026-10-21-residue-anchor-density-design.md`, which supersedes the placement half of the adoption
+this section presents as current. Cost, measured rather than supposed: session 25 read the session
+status doc's head at init, surfaced "decide the `Physical` sampling fork" as the live item, got
+operator approval, and spent its first research block rediscovering that the anchor-density spec's
+§1 had closed **both** arms of that fork a day earlier — a finer `sampleStep` "changes nothing here"
+(lava sat at `d=130b` against a 24-block radius) and "ask the engine where lava is" is verified
+absent. The four derived sections of `Hytale_Session_Status.md` were two sessions stale in the same
+way and were refreshed the same session. Also corrected the river-versus-ocean limitation, which §2
+resolves. Fifth and sixth instances of a stale-pointer-reads-as-live failure in this project in two
+days. Previously 2026-10-22 (second change that day) — § "Residue network" claimed the three superseded
 residue specs carry no banner and "still read as current. They are not." They have carried
 `⚠️ SUPERSEDED IN DIRECTION` banners since 2026-10-21 — those three plus
 `2026-08-28-graded-nexuses-design.md`, four in all — and § "Lore first", two sections above, already
