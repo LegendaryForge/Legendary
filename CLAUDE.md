@@ -81,8 +81,27 @@ The boundary rule is mechanical: **`core` holds frameworks; `quests/<name>/` hol
 of them.** The question to ask of any file is "does it know about a specific questline?"
 That rule is enforced by the build, not by judgement — see the guards below.
 
-Language is **Java 25** (353 Java files). The only Kotlin is Gradle build logic
-(`*.gradle.kts` plus `buildSrc/src/main/kotlin/ModuleCoverageExtension.kt`).
+Language is **Java 25** — **426** tracked `.java` files as of 2026-10-22: `core` 225,
+`quests/stormseeker` 111, `harness` 66, `mod/hytale` 23, and one outside every module (below).
+272 under `src/main`, 153 under `src/test`. The only Kotlin is Gradle build logic: 9 `*.gradle.kts`
+plus **9** files under `buildSrc/src/main/kotlin/` — one per guard, plus `ModuleCoverageExtension.kt`.
+
+> **Both figures in this sentence were stale, and re-derive them rather than trusting these.**
+> It read "353 Java files" and named `ModuleCoverageExtension.kt` as the *only* `buildSrc` Kotlin
+> file — written when that was true, and left alone as every guard since arrived as another `.kt`
+> beside it. `git ls-files '*.java' | wc -l` is the recipe; the per-module split above is
+> `git ls-files '<module>/**/*.java' | wc -l`.
+>
+> **The 426th file is `scripts/residue-scans/N9Scan.java`, and no module contains it**, so
+> `./gradlew check` never compiles it. `COVERAGE_VERDICT: 4/4 modules reported | 0 exempt` is
+> true and silent about it, because `checkModuleCoverage` classifies *modules* and this file is
+> in none. It is not incidental: `scripts/residue-scans/README.md` states the residue specs'
+> credibility "rests entirely on `N9Scan.java`", and it is what re-derives the committed
+> `out-chosen.txt` §7 figures — the measurement that retired the convergence-star model. It is
+> run as a single-file program (`java N9Scan.java …` from `sweep-heightband.sh`), not built.
+> **Verified compiling 2026-10-22** under the pinned JDK 25 (`javac` exit 0, no warnings), so this
+> records a detection gap rather than a breakage: nothing would report it breaking, and the
+> discovery point would be someone trying to re-derive a figure and failing.
 
 **Session status doc:** `Knowledge/MainVault/GameDev/Hytale/Hytale_Session_Status.md` —
 read this before starting Hytale work (workspace `CLAUDE.md` Session Initialization step 8).
@@ -439,7 +458,15 @@ building on it:
 
 ---
 
-*Last updated: 2026-10-22 — § Pushing gained the stacked-PR hazard it had been missing: `--delete-branch`
+*Last updated: 2026-10-22 — § Project overview's language sentence was stale in both halves: "353
+Java files" against a measured **426**, and `ModuleCoverageExtension.kt` named as the only `buildSrc`
+Kotlin file when **9** now sit there, one per guard — each guard since arrived as another `.kt` beside
+it and the sentence was never revisited. Both now carry their re-derivation recipe. The count also
+surfaced that the 426th file, `scripts/residue-scans/N9Scan.java`, is in **no module**, so
+`./gradlew check` never compiles it while `COVERAGE_VERDICT: 4/4 modules | 0 exempt` reads clean —
+and `scripts/residue-scans/README.md` says the residue specs' credibility rests entirely on that
+file. Verified compiling, so what is recorded is a detection gap, not a breakage. Also this day:
+§ Pushing gained the stacked-PR hazard it had been missing: `--delete-branch`
 **closes** a PR stacked on the branch being merged rather than retargeting it, and `gh` can undo neither
 half (`pr edit --base` refuses on a closed PR, `pr reopen` refuses because the base is gone). That cost
 PR #136 on 2026-10-21, hours after the same session added the flag to the recipe. The flag stays — without
