@@ -1,14 +1,19 @@
 package io.github.legendaryforge.legendary.mod.hytale.command;
 
+import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.math.util.MathUtil;
 import com.hypixel.hytale.protocol.FormattedMessage;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
 import com.hypixel.hytale.server.core.command.system.basecommands.AbstractWorldCommand;
+import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.accessor.SectionReader;
 import com.hypixel.hytale.server.core.universe.world.storage.ChunkStore;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import org.joml.Vector3d;
 
 /**
  * Debug command: {@code /fluidscancost}
@@ -23,9 +28,21 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
  * plausible range spans two orders of magnitude: at 100 ns a step-2 run costs 53 ms, at 10 us it
  * costs 5.3 s. The first is free, the second rules the approach out for anything but a manual probe.
  *
- * <p>Headless on purpose, following {@code TerrainSignalProbeCommand}: it reads at offsets from the
- * origin rather than at a player position, because a client login on this harness needs
- * browser-approved server auth that a FIFO console cannot perform.
+ * <p><b>Anchored on a connected player, and it has to be.</b> This command originally read at
+ * offsets from the origin, documented as "headless on purpose ... because a client login on this
+ * harness needs browser-approved server auth that a FIFO console cannot perform." That premise was
+ * falsified by measurement on 2026-10-21: a headless server holds <b>no loaded region at any offset
+ * from 0 to 4096</b>, confirmed against {@code signalprobe}'s own logs. So the origin scan could
+ * only ever find nothing and return INCONCLUSIVE -- the convenience it bought did not exist, and the
+ * session that produced the real figures attached a client anyway.
+ *
+ * <p>The origin-offset fallback is deliberately <b>not</b> retained. Its success condition was
+ * measured not to occur, and a branch that cannot be reached reads to the next author as a supported
+ * mode. {@code ResidueSiteProbeCommand} takes the same position for the same reason.
+ *
+ * <p>This also fixes what the command measured. Anchoring on "wherever storage happens to be
+ * resident" answers a different question from "what does a scan cost where the scan would run";
+ * under the old anchor the two were only ever the same by accident.
  *
  * <p>Prints {@code FLUIDSCAN_VERDICT:} as its last line.
  */
@@ -58,40 +75,80 @@ public class FluidScanCostCommand extends AbstractWorldCommand {
         ChunkStore chunkStore = world.getChunkStore();
         SectionReader reader = new SectionReader(chunkStore);
 
-        // Anchor on a position whose storage is actually in memory. An unloaded anchor would make
-        // every read a cheap miss and the measurement would read fast for the wrong reason.
-        int anchorX = Integer.MIN_VALUE;
-        int anchorY = 64;
-        for (int off : new int[] {0, 32, 64, 128, 256}) {
-            if (reader.hasStorageInMemory(off, anchorY, off)) {
-                anchorX = off;
-                break;
-            }
-        }
-        if (anchorX == Integer.MIN_VALUE) {
-            sb.append("no loaded storage found at any probed offset; cannot measure\n");
-            sb.append("FLUIDSCAN_VERDICT: INCONCLUSIVE (nothing loaded)\n");
+        var playerRefs = world.getPlayerRefs();
+        if (playerRefs.isEmpty()) {
+            sb.append("\nno players connected.\n")
+                    .append("A headless server loads no chunk region at all, so every read would be a cheap\n")
+                    .append("miss and the timing would come back fast for the wrong reason. Connect a client.\n")
+                    .append("FLUIDSCAN_VERDICT: INCONCLUSIVE | no players\n");
             send(context, sb.toString());
             return;
         }
+
+        // Anchor where the question is: the scan this times would run around a player, so measure
+        // there. Reading "wherever storage is resident" answers a different question.
+        String who = null;
+        int anchorX = 0;
+        int anchorY = 0;
+        int anchorZ = 0;
+        for (PlayerRef playerRef : playerRefs) {
+            Ref<EntityStore> ref = playerRef.getReference();
+            TransformComponent transform =
+                    ref == null ? null : store.getComponent(ref, TransformComponent.getComponentType());
+            if (transform == null) {
+                sb.append("[").append(playerRef.getUsername()).append("] TransformComponent ABSENT\n");
+                continue;
+            }
+            Vector3d pos = transform.getPosition();
+            who = playerRef.getUsername();
+            anchorX = MathUtil.floor(pos.x);
+            anchorY = MathUtil.floor(pos.y);
+            anchorZ = MathUtil.floor(pos.z);
+            break;
+        }
+        if (who == null) {
+            sb.append("no player had a TransformComponent; cannot anchor\n");
+            sb.append("FLUIDSCAN_VERDICT: INCONCLUSIVE | no transform\n");
+            send(context, sb.toString());
+            return;
+        }
+
+        // An unloaded anchor would make every read a cheap miss, so say so rather than timing it.
+        if (!reader.hasStorageInMemory(anchorX, anchorY, anchorZ)) {
+            sb.append("anchor: ")
+                    .append(anchorX)
+                    .append(',')
+                    .append(anchorY)
+                    .append(',')
+                    .append(anchorZ)
+                    .append(" [")
+                    .append(who)
+                    .append("] has NO storage in memory; cannot measure\n");
+            sb.append("FLUIDSCAN_VERDICT: INCONCLUSIVE | anchor unloaded\n");
+            send(context, sb.toString());
+            return;
+        }
+
         sb.append("anchor: ")
                 .append(anchorX)
                 .append(',')
                 .append(anchorY)
                 .append(',')
-                .append(anchorX)
-                .append('\n');
+                .append(anchorZ)
+                .append(" [")
+                .append(who)
+                .append("]\n");
 
         sb.append(String.format("%-6s %10s %10s %12s %14s%n", "step", "points", "hits", "ms/cand", "ms/run(25)"));
         for (int step : STEPS) {
             for (int w = 0; w < WARMUP; w++) {
-                scan(reader, anchorX, anchorY, anchorX, step);
+                scan(reader, anchorX, anchorY, anchorZ, step);
             }
             long points = 0;
             long hits = 0;
             long t0 = System.nanoTime();
             for (int i = 0; i < ITERATIONS; i++) {
-                long packed = scan(reader, anchorX, anchorY, anchorX, step);
+                long packed = scan(reader, anchorX, anchorY, anchorZ, step);
                 points = packed >>> 32;
                 hits = packed & 0xFFFFFFFFL;
             }
