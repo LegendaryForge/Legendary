@@ -98,11 +98,20 @@ public final class HytaleDerivationRules {
                 // --- Geometric: terrain shape, no marker to require. Both halves needed.
                 // Open sky is the discriminator, so the band is tight.
                 new ElementGrounding.Geometric(
-                        "wind", Set.of("Mountains", "Peaks", "Highlands", "Plateaus", "Cliffs"), 12, 15),
+                        "wind",
+                        Set.of("Mountains", "Peaks", "Highlands", "Plateaus", "Cliffs"),
+                        12,
+                        15,
+                        ElementGrounding.Occupancy.OPEN_ABOVE_SOLID),
 
                 // Deliberately the inverse exposure band: enclosed stone, not open ground. A cave
                 // environment read at high sky light is a cave mouth, and scores lower for it.
-                new ElementGrounding.Geometric("earth", Set.of("Caves", "Deserts", "Badlands", "Mineshafts"), 0, 6),
+                // Earth is rock, and rock needs no environment label and no darkness. The cave
+                // environment set and the 0..6 sky band this once carried were the inverted framing
+                // §2 rejected: they excluded a mountain's bulk, the clearest case of a lot of earth.
+                // Sky 0..15 and a substring every environment id carries keep the record's non-empty
+                // invariant while gating on occupancy alone.
+                new ElementGrounding.Geometric("earth", Set.of("Env_"), 0, 15, ElementGrounding.Occupancy.SOLID),
 
                 // --- Weather: no physical presence at all. Storm probability comes from the
                 // environment's own WeatherForecasts weights, which is why this is the one grounding

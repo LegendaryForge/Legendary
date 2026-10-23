@@ -110,6 +110,18 @@ public final class SectionReaderTerrainSample implements TerrainSample {
     }
 
     @Override
+    public boolean isSolidAt(int x, int y, int z) {
+        // Deliberately not implemented yet. The engine's getBlock returns an int whose id
+        // resolution is unverified, and a wrong air id inverts Earth and Wind SIMULTANEOUSLY while
+        // still compiling and still producing plausible-looking anchors. Throwing rather than
+        // returning a guess: /blockidprobe measures it against three positions whose answers are
+        // known from standing there. See Task 6 of
+        // docs/superpowers/plans/2026-10-22-residue-anchor-selection.md.
+        throw new UnsupportedOperationException(
+                "isSolidAt awaits the measured air block id; run /blockidprobe on a live server");
+    }
+
+    @Override
     public OptionalInt surfaceHeightAt(int x, int z) {
         return isLoaded(x, referencePlaneY, z) ? OptionalInt.of(referencePlaneY) : OptionalInt.empty();
     }

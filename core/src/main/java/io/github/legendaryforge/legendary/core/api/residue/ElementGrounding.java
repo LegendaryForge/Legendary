@@ -63,6 +63,39 @@ public sealed interface ElementGrounding {
     }
 
     /**
+     * What counts as the element being present at a sampled point, for a {@link Geometric}
+     * grounding.
+     *
+     * <p>Earth and Wind are the same grounding scored by the same rule, and the only thing that
+     * differs is this. Anchor-density design §2: Earth counts points where "the point is rock", Wind
+     * counts points that are "open air in a matching environment". Without this the scorer needs an
+     * {@code elementId} branch, which is exactly the per-element special-casing the sealed hierarchy
+     * exists to prevent.
+     */
+    enum Occupancy {
+        /**
+         * The point counts when it is solid.
+         *
+         * <p>A concentration of earth is a lot of rock, and that already discriminates without any
+         * baseline: measured at sample step 8 over the full column, a column is 20% solid over an
+         * ocean floor, 37.5% over a plain and 80% over a peak. "A lot of rock" is "the ground is
+         * high here".
+         */
+        SOLID,
+        /**
+         * The point counts when it is open <strong>and the point one sample below it is solid</strong>
+         * — the exposed surface layer.
+         *
+         * <p>Not plain "open", which is inverted: counting all open air in a column gives 62.5% over
+         * a plain against 20% over a peak, ranking a valley above a summit. Wind is a condition at a
+         * surface rather than a substance filling volume, so what it measures is exposed
+         * <em>area</em> — high terrain under open sky, which is §2's "a high plateau or ridge system
+         * — not a lone crag".
+         */
+        OPEN_ABOVE_SOLID
+    }
+
+    /**
      * An element with a physical presence: the fluid is required, the environment only corroborates.
      *
      * <p>This asymmetry is the whole point of the type. A region labelled volcanic with no lava in it
@@ -93,12 +126,14 @@ public sealed interface ElementGrounding {
      * mountain's interior. Sky light alone qualifies nothing anywhere, by design — it would make
      * every open column in the world a Wind site.
      */
-    record Geometric(String elementId, Set<String> environments, int minSkyLight, int maxSkyLight)
+    record Geometric(
+            String elementId, Set<String> environments, int minSkyLight, int maxSkyLight, Occupancy occupancy)
             implements ElementGrounding {
         public Geometric {
             requireElementId(elementId);
             environments = Set.copyOf(Objects.requireNonNull(environments, "environments"));
             requireSkyRange(minSkyLight, maxSkyLight);
+            Objects.requireNonNull(occupancy, "occupancy");
             if (environments.isEmpty()) {
                 throw new IllegalArgumentException(
                         "Geometric grounding for " + elementId + " names no environment, so only its sky range "
