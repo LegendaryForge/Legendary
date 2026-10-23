@@ -17,8 +17,10 @@ import io.github.legendaryforge.legendary.mod.hytale.command.BlockIdProbeCommand
 import io.github.legendaryforge.legendary.mod.hytale.command.BlockPlacementProbeCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.BlockSpoofProbeCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.ChunkHookProbeCommand;
+import io.github.legendaryforge.legendary.mod.hytale.command.FluidCensusCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.FluidScanCostCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.MarkerProbeCommand;
+import io.github.legendaryforge.legendary.mod.hytale.command.PartitionGapCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.PointStoreProbeCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.PrefabPasteProbeCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.ResidueAnchorsCommand;
@@ -121,10 +123,12 @@ public class LegendaryHytalePlugin extends JavaPlugin {
         getCommandRegistry().registerCommand(new WorldGenQueryCommand());
         getCommandRegistry().registerCommand(new WorldGenHeightCommand());
         getCommandRegistry().registerCommand(new ChunkHookProbeCommand());
+        getCommandRegistry().registerCommand(new FluidCensusCommand());
+        getCommandRegistry().registerCommand(new PartitionGapCommand());
         getLogger()
                 .atInfo()
                 .log(
-                        "Commands registered: /stormseeker, /ss-advance, /ss-trial, /weatherprobe, /weatheroverrideprobe, /weatherportprobe, /residueparticleprobe, /residueprobe, /blockprobe, /blockspoofprobe, /prefabprobe, /beamprobe, /pointprobe, /markerprobe, /signalprobe, /fluidscancost, /blockidprobe, /residueanchors, /residuescale, /worldgenquery, /worldgenheight, /chunkhookprobe");
+                        "Commands registered: /stormseeker, /ss-advance, /ss-trial, /weatherprobe, /weatheroverrideprobe, /weatherportprobe, /residueparticleprobe, /residueprobe, /blockprobe, /blockspoofprobe, /prefabprobe, /beamprobe, /pointprobe, /markerprobe, /signalprobe, /fluidscancost, /blockidprobe, /residueanchors, /residuescale, /worldgenquery, /worldgenheight, /chunkhookprobe, /fluidcensus, /partitiongap");
     }
 
     private void onPlayerConnect(PlayerConnectEvent event) {
