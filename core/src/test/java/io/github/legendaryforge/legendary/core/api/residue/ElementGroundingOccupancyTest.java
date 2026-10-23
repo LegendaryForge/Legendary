@@ -25,7 +25,6 @@ class ElementGroundingOccupancyTest {
     @Test
     void occupancyIsRequired() {
         assertThrows(
-                NullPointerException.class,
-                () -> new ElementGrounding.Geometric("earth", Set.of("Caves"), 0, 6, null));
+                NullPointerException.class, () -> new ElementGrounding.Geometric("earth", Set.of("Caves"), 0, 6, null));
     }
 }

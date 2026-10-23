@@ -142,9 +142,8 @@ class VolumeStrengthTest {
     @Test
     void anchorElevationIsTheModalLevelNotTheMidpoint() {
         // A dense body at y=80 and one stray point at y=240. The anchor must sit at 80, not at 160.
-        FakeTerrain twoBodies = new FakeTerrain()
-                .fluidEverywhereAtLevel(80, "Water_Source")
-                .fluidAtOnePoint(0, 240, 0, "Water_Source");
+        FakeTerrain twoBodies =
+                new FakeTerrain().fluidEverywhereAtLevel(80, "Water_Source").fluidAtOnePoint(0, 240, 0, "Water_Source");
         Anchor anchor = VolumeStrength.measure(twoBodies, P, WATER, ORIGIN).orElseThrow();
         assertEquals(10, anchor.strength());
         assertEquals(80.0, anchor.position().y(), 1e-9);
@@ -186,16 +185,20 @@ class VolumeStrengthTest {
 
     @Test
     void earthCountsRockAndWindCountsTheExposedSurface() {
-        FakeTerrain rock =
-                new FakeTerrain().solidEverywhereAtLevel(80).environment("Env_Zone1_Caves").sky(0);
+        FakeTerrain rock = new FakeTerrain()
+                .solidEverywhereAtLevel(80)
+                .environment("Env_Zone1_Caves")
+                .sky(0);
         Anchor earth = VolumeStrength.measure(rock, P, EARTH, ORIGIN).orElseThrow();
         assertEquals(9, earth.strength());
 
         // Same world read as Wind. Only y=160 counts: it is open and the sample one step below
         // (y=80) is solid. y=0 has nothing below it; y=240's neighbour below is open air.
         // Counting every open level instead would give 27 and rank a valley above a summit.
-        FakeTerrain ridge =
-                new FakeTerrain().solidEverywhereAtLevel(80).environment("Env_Zone1_Mountains").sky(15);
+        FakeTerrain ridge = new FakeTerrain()
+                .solidEverywhereAtLevel(80)
+                .environment("Env_Zone1_Mountains")
+                .sky(15);
         Anchor wind = VolumeStrength.measure(ridge, P, WIND, ORIGIN).orElseThrow();
         assertEquals(9, wind.strength());
         assertEquals(160.0, wind.position().y(), 1e-9, "the Wind anchor sits on the exposed surface");
@@ -203,12 +206,16 @@ class VolumeStrengthTest {
 
     @Test
     void geometricRequiresBothEnvironmentAndSkyBand() {
-        FakeTerrain wrongSky =
-                new FakeTerrain().solidEverywhereAtLevel(80).environment("Env_Zone1_Caves").sky(15);
+        FakeTerrain wrongSky = new FakeTerrain()
+                .solidEverywhereAtLevel(80)
+                .environment("Env_Zone1_Caves")
+                .sky(15);
         assertTrue(VolumeStrength.measure(wrongSky, P, EARTH, ORIGIN).isEmpty());
 
-        FakeTerrain wrongEnvironment =
-                new FakeTerrain().solidEverywhereAtLevel(80).environment("Env_Zone1_Plains").sky(0);
+        FakeTerrain wrongEnvironment = new FakeTerrain()
+                .solidEverywhereAtLevel(80)
+                .environment("Env_Zone1_Plains")
+                .sky(0);
         assertTrue(VolumeStrength.measure(wrongEnvironment, P, EARTH, ORIGIN).isEmpty());
     }
 
@@ -218,19 +225,22 @@ class VolumeStrengthTest {
         // occupancy alone decides and a mountain's bulk is not excluded for lacking a cave label.
         ElementGrounding rockIsRock =
                 new ElementGrounding.Geometric("earth", Set.of("Env_"), 0, 15, ElementGrounding.Occupancy.SOLID);
-        FakeTerrain mountain =
-                new FakeTerrain().solidEverywhereAtLevel(80).environment("Env_Zone1_Mountains").sky(15);
+        FakeTerrain mountain = new FakeTerrain()
+                .solidEverywhereAtLevel(80)
+                .environment("Env_Zone1_Mountains")
+                .sky(15);
         Anchor earth = VolumeStrength.measure(mountain, P, rockIsRock, ORIGIN).orElseThrow();
         assertEquals(9, earth.strength(), "rock under a Mountains environment at full sky must still count");
     }
 
     @Test
     void weatherGroundingsThrowBecauseLightningAwaitsItsOwnTreatment() {
-        FakeTerrain stormy =
-                new FakeTerrain().solidEverywhereAtLevel(80).environment("Env_Zone4_Crucible").sky(15);
+        FakeTerrain stormy = new FakeTerrain()
+                .solidEverywhereAtLevel(80)
+                .environment("Env_Zone4_Crucible")
+                .sky(15);
         UnsupportedOperationException thrown = assertThrows(
-                UnsupportedOperationException.class,
-                () -> VolumeStrength.measure(stormy, P, LIGHTNING, ORIGIN));
+                UnsupportedOperationException.class, () -> VolumeStrength.measure(stormy, P, LIGHTNING, ORIGIN));
         assertTrue(thrown.getMessage().contains("lightning"), "the message must name the element");
     }
 }

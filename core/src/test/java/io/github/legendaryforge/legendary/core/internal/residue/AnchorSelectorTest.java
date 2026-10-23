@@ -119,7 +119,6 @@ class AnchorSelectorTest {
     @Test
     void selectionIsDeterministicAcrossRuns() {
         List<Anchor> uniform = List.of(at(0, 0, 900), at(100, 0, 900), at(200, 0, 900));
-        assertEquals(
-                AnchorSelector.select(SEED, P, uniform), AnchorSelector.select(SEED, P, uniform));
+        assertEquals(AnchorSelector.select(SEED, P, uniform), AnchorSelector.select(SEED, P, uniform));
     }
 }

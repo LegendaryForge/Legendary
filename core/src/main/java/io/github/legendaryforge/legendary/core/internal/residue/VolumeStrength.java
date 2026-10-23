@@ -87,15 +87,12 @@ public final class VolumeStrength {
      * demanding a rule for it — which is why the hierarchy is sealed.
      */
     private static boolean satisfies(
-            TerrainSample sample,
-            ElementGrounding grounding,
-            AnchorParameters parameters,
-            int x,
-            int y,
-            int z) {
+            TerrainSample sample, ElementGrounding grounding, AnchorParameters parameters, int x, int y, int z) {
         return switch (grounding) {
             case ElementGrounding.Physical physical ->
-                sample.fluidAt(x, y, z).filter(physical.requiredFluids()::contains).isPresent();
+                sample.fluidAt(x, y, z)
+                        .filter(physical.requiredFluids()::contains)
+                        .isPresent();
             case ElementGrounding.Geometric geometric -> satisfiesGeometric(sample, geometric, parameters, x, y, z);
             case ElementGrounding.Weather weather -> satisfiesWeather(weather);
         };
@@ -120,7 +117,8 @@ public final class VolumeStrength {
             int y,
             int z) {
         Optional<String> environment = sample.environmentAt(x, y, z);
-        if (environment.isEmpty() || !ElementGrounding.environmentMatches(environment.get(), geometric.environments())) {
+        if (environment.isEmpty()
+                || !ElementGrounding.environmentMatches(environment.get(), geometric.environments())) {
             return false;
         }
         int sky = sample.skyLightAt(x, y, z);

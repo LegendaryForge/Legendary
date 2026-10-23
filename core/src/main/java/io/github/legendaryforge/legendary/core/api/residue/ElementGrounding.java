@@ -126,8 +126,7 @@ public sealed interface ElementGrounding {
      * mountain's interior. Sky light alone qualifies nothing anywhere, by design — it would make
      * every open column in the world a Wind site.
      */
-    record Geometric(
-            String elementId, Set<String> environments, int minSkyLight, int maxSkyLight, Occupancy occupancy)
+    record Geometric(String elementId, Set<String> environments, int minSkyLight, int maxSkyLight, Occupancy occupancy)
             implements ElementGrounding {
         public Geometric {
             requireElementId(elementId);

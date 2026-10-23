@@ -33,9 +33,8 @@ class SiteScorerTest {
             new ElementGrounding.Physical("fire", Set.of("Fluid_Lava"), Set.of("Volcanoes", "Caves_Volcanic"));
     private static final ElementGrounding WATER =
             new ElementGrounding.Physical("water", Set.of("Fluid_Water"), Set.of("Shores", "Swamps"));
-    private static final ElementGrounding WIND =
-            new ElementGrounding.Geometric(
-                    "wind", Set.of("Mountains", "Plateaus"), 12, 15, ElementGrounding.Occupancy.OPEN_ABOVE_SOLID);
+    private static final ElementGrounding WIND = new ElementGrounding.Geometric(
+            "wind", Set.of("Mountains", "Plateaus"), 12, 15, ElementGrounding.Occupancy.OPEN_ABOVE_SOLID);
     private static final ElementGrounding EARTH =
             new ElementGrounding.Geometric("earth", Set.of("Caves"), 0, 6, ElementGrounding.Occupancy.SOLID);
     private static final ElementGrounding LIGHTNING = new ElementGrounding.Weather("lightning", 0.10, 13, 15);
@@ -113,12 +112,12 @@ class SiteScorerTest {
             return sky;
         }
 
-    
         @Override
         public boolean isSolidAt(int x, int y, int z) {
             return everythingLoaded && solids.contains(key(x, y, z));
         }
-    @Override
+
+        @Override
         public OptionalInt surfaceHeightAt(int x, int z) {
             Integer y = surfaces.get(x + ":" + z);
             return y == null ? OptionalInt.empty() : OptionalInt.of(y);
@@ -376,7 +375,10 @@ class SiteScorerTest {
 
     @Test
     void geometricGroundingWithoutAnEnvironment_isRejected() {
-        assertThrows(IllegalArgumentException.class, () -> new ElementGrounding.Geometric("wind", Set.of(), 12, 15, ElementGrounding.Occupancy.OPEN_ABOVE_SOLID));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new ElementGrounding.Geometric(
+                        "wind", Set.of(), 12, 15, ElementGrounding.Occupancy.OPEN_ABOVE_SOLID));
     }
 
     @Test
