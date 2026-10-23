@@ -45,12 +45,18 @@ public final class AnchorSelector {
 
         double radius = parameters.suppressionRadius();
         List<Anchor> selected = new ArrayList<>();
-        for (Anchor anchor : eligible) {
+        for (int i = 0; i < eligible.size(); i++) {
+            Anchor anchor = eligible.get(i);
             boolean beaten = false;
-            for (Anchor rival : eligible) {
-                if (rival == anchor) {
+            for (int j = 0; j < eligible.size(); j++) {
+                // Compared by index, not by identity or equality. "Skip myself" is a position in
+                // the list, and Anchor is a record: reference equality reads as a mistake to the
+                // next author (Error Prone flags it), while value equality would be wrong — two
+                // value-equal candidates are distinct competitors, not one entry seen twice.
+                if (i == j) {
                     continue;
                 }
+                Anchor rival = eligible.get(j);
                 if (anchor.position().horizontalDistanceTo(rival.position()) > radius) {
                     continue;
                 }
