@@ -83,16 +83,25 @@ public sealed interface ElementGrounding {
          */
         SOLID,
         /**
-         * The point counts when it is open <strong>and the point one sample below it is solid</strong>
-         * — the exposed surface layer.
+         * The point counts when it holds <strong>no block and no fluid</strong> — open space.
          *
-         * <p>Not plain "open", which is inverted: counting all open air in a column gives 62.5% over
-         * a plain against 20% over a peak, ranking a valley above a summit. Wind is a condition at a
-         * surface rather than a substance filling volume, so what it measures is exposed
-         * <em>area</em> — high terrain under open sky, which is §2's "a high plateau or ridge system
-         * — not a lone crag".
+         * <p>The exact complement of {@link #SOLID} minus fluid, which makes air and earth
+         * symmetric: earth is rock, air is not-rock-and-not-water. There is no sky gate and no
+         * environment list, so a cave counts as air — air is there, and the element is named for
+         * open space rather than for any wind mechanic the game does not have.
+         *
+         * <p><strong>The fluid exclusion is load-bearing, not defensive.</strong> {@code getBlock}
+         * reports 0 inside a fluid — measured on 0.7.4, {@code getBlock=0} alongside
+         * {@code getFluidId=8} — so {@code isSolidAt} is false there and "not solid" alone would
+         * count every submerged position as air. Water is not air.
+         *
+         * <p>Known consequence, recorded rather than discovered later: counting open space over the
+         * full column is inversely correlated with ground height, roughly 80% of a column over an
+         * ocean floor against 20% at a peak, which is the exact inverse of {@code SOLID}'s 20% to
+         * 80%. So air anchors favour valleys and lowlands while earth anchors favour high ground,
+         * and the two tile the world rather than competing for it.
          */
-        OPEN_ABOVE_SOLID
+        OPEN
     }
 
     /**

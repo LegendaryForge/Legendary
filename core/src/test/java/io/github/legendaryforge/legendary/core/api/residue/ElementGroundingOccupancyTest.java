@@ -16,10 +16,10 @@ class ElementGroundingOccupancyTest {
     void earthCountsSolidAndWindCountsTheExposedSurface() {
         ElementGrounding.Geometric earth =
                 new ElementGrounding.Geometric("earth", Set.of("Caves"), 0, 6, ElementGrounding.Occupancy.SOLID);
-        ElementGrounding.Geometric wind = new ElementGrounding.Geometric(
-                "wind", Set.of("Mountains"), 12, 15, ElementGrounding.Occupancy.OPEN_ABOVE_SOLID);
+        ElementGrounding.Geometric wind =
+                new ElementGrounding.Geometric("wind", Set.of("Mountains"), 12, 15, ElementGrounding.Occupancy.OPEN);
         assertEquals(ElementGrounding.Occupancy.SOLID, earth.occupancy());
-        assertEquals(ElementGrounding.Occupancy.OPEN_ABOVE_SOLID, wind.occupancy());
+        assertEquals(ElementGrounding.Occupancy.OPEN, wind.occupancy());
     }
 
     @Test

@@ -34,7 +34,7 @@ class SiteScorerTest {
     private static final ElementGrounding WATER =
             new ElementGrounding.Physical("water", Set.of("Fluid_Water"), Set.of("Shores", "Swamps"));
     private static final ElementGrounding WIND = new ElementGrounding.Geometric(
-            "wind", Set.of("Mountains", "Plateaus"), 12, 15, ElementGrounding.Occupancy.OPEN_ABOVE_SOLID);
+            "wind", Set.of("Mountains", "Plateaus"), 12, 15, ElementGrounding.Occupancy.OPEN);
     private static final ElementGrounding EARTH =
             new ElementGrounding.Geometric("earth", Set.of("Caves"), 0, 6, ElementGrounding.Occupancy.SOLID);
     private static final ElementGrounding LIGHTNING = new ElementGrounding.Weather("lightning", 0.10, 13, 15);
@@ -377,8 +377,7 @@ class SiteScorerTest {
     void geometricGroundingWithoutAnEnvironment_isRejected() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new ElementGrounding.Geometric(
-                        "wind", Set.of(), 12, 15, ElementGrounding.Occupancy.OPEN_ABOVE_SOLID));
+                () -> new ElementGrounding.Geometric("wind", Set.of(), 12, 15, ElementGrounding.Occupancy.OPEN));
     }
 
     @Test

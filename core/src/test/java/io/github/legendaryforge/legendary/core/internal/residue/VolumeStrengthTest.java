@@ -19,9 +19,8 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Volume counting, tested against a fake sample. A lake must out-score a puddle, the anchor's
- * elevation must land in a body rather than between two of them, and Wind must count the exposed
- * surface rather than every open point — the last being the inversion that would rank a valley
- * above a summit.
+ * elevation must land in a body rather than between two of them, and earth and air must come out as
+ * exact complements — rock against not-rock-and-not-water, partitioning the window between them.
  */
 class VolumeStrengthTest {
 
@@ -32,8 +31,8 @@ class VolumeStrengthTest {
             new ElementGrounding.Physical("water", Set.of("Water_Source"), Set.of("Shores"));
     private static final ElementGrounding EARTH =
             new ElementGrounding.Geometric("earth", Set.of("Caves"), 0, 6, ElementGrounding.Occupancy.SOLID);
-    private static final ElementGrounding WIND = new ElementGrounding.Geometric(
-            "wind", Set.of("Mountains"), 12, 15, ElementGrounding.Occupancy.OPEN_ABOVE_SOLID);
+    private static final ElementGrounding AIR =
+            new ElementGrounding.Geometric("wind", Set.of("Env_"), 0, 15, ElementGrounding.Occupancy.OPEN);
     private static final ElementGrounding LIGHTNING = new ElementGrounding.Weather("lightning", 0.10, 13, 15);
 
     private static final WorldPoint2d ORIGIN = new WorldPoint2d(0, 0);
@@ -195,26 +194,51 @@ class VolumeStrengthTest {
     }
 
     @Test
-    void earthCountsRockAndWindCountsTheExposedSurface() {
+    void earthCountsRockAndAirCountsOpenSpace() {
         FakeTerrain rock = new FakeTerrain()
                 .solidEverywhereAtLevel(80)
                 .environment("Env_Zone1_Caves")
                 .sky(0);
         Anchor earth =
                 VolumeStrength.measure(rock, P, EARTH, ORIGIN).asCandidate(0, 0).orElseThrow();
-        assertEquals(9, earth.strength());
+        assertEquals(9, earth.strength(), "one solid level, 3x3 columns");
 
-        // Same world read as Wind. Only y=160 counts: it is open and the sample one step below
-        // (y=80) is solid. y=0 has nothing below it; y=240's neighbour below is open air.
-        // Counting every open level instead would give 27 and rank a valley above a summit.
-        FakeTerrain ridge = new FakeTerrain()
+        // The same world read as air: the three OPEN levels count (0, 160, 240), the solid one does
+        // not. Earth and air are exact complements here -- 9 against 27 of 36 samples.
+        FakeTerrain sameWorld = new FakeTerrain()
                 .solidEverywhereAtLevel(80)
-                .environment("Env_Zone1_Mountains")
+                .environment("Env_Zone1_Plains")
                 .sky(15);
-        Anchor wind =
-                VolumeStrength.measure(ridge, P, WIND, ORIGIN).asCandidate(0, 0).orElseThrow();
-        assertEquals(9, wind.strength());
-        assertEquals(160.0, wind.position().y(), 1e-9, "the Wind anchor sits on the exposed surface");
+        Anchor air = VolumeStrength.measure(sameWorld, P, AIR, ORIGIN)
+                .asCandidate(0, 0)
+                .orElseThrow();
+        assertEquals(27, air.strength(), "three open levels, 3x3 columns");
+        assertEquals(36, air.samplesTaken());
+        assertEquals(36, earth.strength() + air.strength(), "earth and air partition the window");
+    }
+
+    @Test
+    void fluidIsNotAir() {
+        // getBlock reports 0 inside a fluid, so isSolidAt is false there and "not solid" alone would
+        // count every submerged position as air. Flood every non-solid level: nothing counts.
+        FakeTerrain flooded = new FakeTerrain()
+                .solidEverywhereAtLevel(80)
+                .fluidEverywhereAtLevel(0, "Water_Source")
+                .fluidEverywhereAtLevel(160, "Water_Source")
+                .fluidEverywhereAtLevel(240, "Water_Source")
+                .environment("Env_Zone1_Plains")
+                .sky(15);
+        ColumnMeasurement air = VolumeStrength.measure(flooded, P, AIR, ORIGIN);
+        assertEquals(0, air.strength(), "water is not air");
+        assertTrue(air.anythingRead(), "and the window was fully read, so this is a real absence");
+
+        // Control: the same world with the fluid removed does count those levels. Without it the
+        // zero above could come from the apparatus rather than from the fluid rule.
+        FakeTerrain dry = new FakeTerrain()
+                .solidEverywhereAtLevel(80)
+                .environment("Env_Zone1_Plains")
+                .sky(15);
+        assertEquals(27, VolumeStrength.measure(dry, P, AIR, ORIGIN).strength(), "control: dry counts");
     }
 
     @Test

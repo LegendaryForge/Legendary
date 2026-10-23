@@ -91,7 +91,7 @@ public final class VolumeStrength {
                 sample.fluidAt(x, y, z)
                         .filter(physical.requiredFluids()::contains)
                         .isPresent();
-            case ElementGrounding.Geometric geometric -> satisfiesGeometric(sample, geometric, parameters, x, y, z);
+            case ElementGrounding.Geometric geometric -> satisfiesGeometric(sample, geometric, x, y, z);
             case ElementGrounding.Weather weather -> satisfiesWeather(weather);
         };
     }
@@ -108,12 +108,7 @@ public final class VolumeStrength {
      * these gates stay here rather than being removed: Wind genuinely needs them.
      */
     private static boolean satisfiesGeometric(
-            TerrainSample sample,
-            ElementGrounding.Geometric geometric,
-            AnchorParameters parameters,
-            int x,
-            int y,
-            int z) {
+            TerrainSample sample, ElementGrounding.Geometric geometric, int x, int y, int z) {
         Optional<String> environment = sample.environmentAt(x, y, z);
         if (environment.isEmpty()
                 || !ElementGrounding.environmentMatches(environment.get(), geometric.environments())) {
@@ -123,33 +118,25 @@ public final class VolumeStrength {
         if (sky < geometric.minSkyLight() || sky > geometric.maxSkyLight()) {
             return false;
         }
-        return occupied(sample, geometric.occupancy(), parameters, x, y, z);
+        return occupied(sample, geometric.occupancy(), x, y, z);
     }
 
     /**
      * Whether the point satisfies the grounding's occupancy requirement.
      *
-     * <p>{@code OPEN_ABOVE_SOLID} looks one sample step down rather than one block: at the sampling
+     * <p>{@code OPEN} looks one sample step down rather than one block: at the sampling
      * resolution that is the adjacent sample the scan already visits, so the surface test is free.
      * Looking one <em>block</em> down would read a position the scan never samples and would miss a
      * surface whenever the step exceeds 1.
      */
-    private static boolean occupied(
-            TerrainSample sample,
-            ElementGrounding.Occupancy occupancy,
-            AnchorParameters parameters,
-            int x,
-            int y,
-            int z) {
+    private static boolean occupied(TerrainSample sample, ElementGrounding.Occupancy occupancy, int x, int y, int z) {
         boolean solid = sample.isSolidAt(x, y, z);
         if (occupancy == ElementGrounding.Occupancy.SOLID) {
             return solid;
         }
-        if (solid) {
-            return false;
-        }
-        int below = y - parameters.sampleStep();
-        return below >= 0 && sample.isLoaded(x, below, z) && sample.isSolidAt(x, below, z);
+        // Open means no block AND no fluid. getBlock reports 0 inside a fluid, so isSolidAt is
+        // false there and "not solid" alone would count submerged positions as air.
+        return !solid && sample.fluidAt(x, y, z).isEmpty();
     }
 
     /**
@@ -157,7 +144,7 @@ public final class VolumeStrength {
      *
      * <p>Throwing rather than returning a count or an empty result, deliberately. Under volume
      * counting the existing storm-plus-sky rule would tally all exposed air in a storm region, which
-     * carries the same valley-above-summit inversion {@code OPEN_ABOVE_SOLID} exists to fix — so any
+     * carries the same valley-above-summit inversion {@code OPEN} exists to fix — so any
      * number produced here would be known-wrong. An empty result would be worse: it reads as "no
      * qualifying terrain", which is the silent-zero failure this port's {@code isLoaded} exists to
      * prevent, one level up.
