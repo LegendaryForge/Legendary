@@ -178,6 +178,26 @@ class VolumeStrengthTest {
     }
 
     @Test
+    void aFullyLoadedWindowTakesExactlyWindowSampleCountSamples() {
+        // Pins this scan's loop bounds to AnchorParameters.windowSampleCount(), which is derived
+        // independently from the same two dials. A probe decides "was this window fully loaded" by
+        // comparing samplesTaken against that figure, so the two disagreeing would not fail
+        // anywhere -- it would quietly report every full window as partial, or the reverse.
+        ColumnMeasurement full =
+                VolumeStrength.measure(new FakeTerrain().fluidEverywhereAtLevel(80, "Water_Source"), P, WATER, ORIGIN);
+        assertEquals(P.windowSampleCount(), full.samplesTaken());
+        assertEquals(36, P.windowSampleCount(), "and the figure itself is the 3x3x4 window");
+    }
+
+    @Test
+    void aPartlyUnloadedWindowFallsShortOfWindowSampleCount() {
+        // The other half of the pin: the comparison must be able to come out false.
+        ColumnMeasurement partial = VolumeStrength.measure(
+                new FakeTerrain().fluidEverywhereAtLevel(80, "Water_Source").unload(0, 0, 0), P, WATER, ORIGIN);
+        assertTrue(partial.samplesTaken() < P.windowSampleCount());
+    }
+
+    @Test
     void unloadedPointsAreExcludedFromTheDenominator() {
         // An unloaded point counted as a real negative is the exact failure isLoaded exists to
         // prevent. Three of the 36 window positions are unloaded here.

@@ -79,11 +79,56 @@ public record AnchorParameters(
             throw new IllegalArgumentException("crossingTolerance " + crossingTolerance + " exceeds influenceRadius "
                     + influenceRadius + ", which would admit a geode outside both crystal bands");
         }
+        // A measurement reports samplesTaken as an int, so a window with more positions than an int
+        // can hold could never report itself fully loaded. Staged so no product overflows the long
+        // doing the checking: perAxis within an int bounds perAxis squared within a long, and
+        // perAxis squared within an int bounds the whole product.
+        long perAxis = horizontalPositions(measurementRadius, sampleStep);
+        if (perAxis > Integer.MAX_VALUE
+                || perAxis * perAxis > Integer.MAX_VALUE
+                || perAxis * perAxis * verticalPositions(sampleStep) > Integer.MAX_VALUE) {
+            throw new IllegalArgumentException("measurementRadius " + measurementRadius + " at sampleStep "
+                    + sampleStep + " describes a window of more sample positions than an int can count, "
+                    + "so no measurement of it could report itself fully loaded");
+        }
     }
 
     /** Hytale's world height in blocks. A full-column window spans {@code 0 .. worldHeight() - 1}. */
     public int worldHeight() {
         return WORLD_HEIGHT;
+    }
+
+    /**
+     * Sample positions one candidate's window holds when every one of them is loaded.
+     *
+     * <p>The denominator that makes a measurement's {@code samplesTaken} legible as a <em>fraction
+     * of the window</em> rather than as a bare count. A caller compares the two to answer the one
+     * question a count alone cannot: whether a low strength means the element is scarce there, or
+     * means most of the window was never resident. Those are different answers, and on a live
+     * server with one connected player the second is the common case.
+     *
+     * <p>Counts positions, so it truncates: the scan stops at the last offset within
+     * {@code measurementRadius}, and a radius that is not a whole number of steps contributes no
+     * extra position. Rounding up would make every fully-loaded window look partial.
+     *
+     * <p><strong>Derived here, iterated elsewhere.</strong> {@code VolumeStrength} walks these same
+     * bounds from its own arithmetic, and the two disagreeing would fail nothing — it would quietly
+     * report every full window as partial, or the reverse. They are pinned together by a test
+     * ({@code aFullyLoadedWindowTakesExactlyWindowSampleCountSamples}), not by this sentence.
+     */
+    public int windowSampleCount() {
+        long perAxis = horizontalPositions(measurementRadius, sampleStep);
+        return (int) (perAxis * perAxis * verticalPositions(sampleStep));
+    }
+
+    /** Sampled offsets in {@code -radius .. radius} at {@code step}, both ends included. */
+    private static long horizontalPositions(int radius, int step) {
+        return 2L * radius / step + 1;
+    }
+
+    /** Sampled levels in {@code 0 .. WORLD_HEIGHT - 1} at {@code step}. */
+    private static long verticalPositions(int step) {
+        return (long) (WORLD_HEIGHT - 1) / step + 1;
     }
 
     /**
