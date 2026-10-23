@@ -1,11 +1,10 @@
 package io.github.legendaryforge.legendary.core.internal.residue;
 
-import io.github.legendaryforge.legendary.core.api.residue.Anchor;
 import io.github.legendaryforge.legendary.core.api.residue.AnchorParameters;
+import io.github.legendaryforge.legendary.core.api.residue.ColumnMeasurement;
 import io.github.legendaryforge.legendary.core.api.residue.ElementGrounding;
 import io.github.legendaryforge.legendary.core.api.residue.TerrainSample;
 import io.github.legendaryforge.legendary.core.api.residue.WorldPoint2d;
-import io.github.legendaryforge.legendary.core.api.residue.WorldPoint3d;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -35,15 +34,14 @@ public final class VolumeStrength {
     /**
      * Measure one element at one candidate, before any floor or suppression is applied.
      *
-     * <p>Empty when no sampled point satisfied the predicate. That covers both "no qualifying
-     * terrain" and "nothing loaded", and the caller distinguishes them through
-     * {@link Anchor#samplesTaken} on a non-empty result — a probe should report a zero-sample window
-     * as unknown rather than as absent.
+     * <p>Always returns a measurement, even when nothing satisfied the predicate. The sample count
+     * is the only thing separating "terrain was read and the element is absent" from "nothing was
+     * loaded, so nothing was read", and an empty return value destroyed it.
      *
      * @throws UnsupportedOperationException for a {@code Weather} grounding; see
      *     {@link #satisfiesWeather}
      */
-    public static Optional<Anchor> measure(
+    public static ColumnMeasurement measure(
             TerrainSample sample, AnchorParameters parameters, ElementGrounding grounding, WorldPoint2d candidate) {
         int centreX = (int) Math.floor(candidate.x());
         int centreZ = (int) Math.floor(candidate.z());
@@ -72,12 +70,12 @@ public final class VolumeStrength {
             }
         }
 
-        if (satisfying == 0) {
-            return Optional.empty();
-        }
-        int anchorY = modalLevel(perLevel);
-        WorldPoint3d position = new WorldPoint3d(candidate.x(), anchorY, candidate.z());
-        return Optional.of(new Anchor(grounding.elementId(), position, satisfying, sampled));
+        // samplesTaken is reported whether or not anything satisfied the predicate. An empty
+        // Optional was the original shape and it destroyed the denominator: an element matching
+        // nothing became indistinguishable from an element nothing was read for. See
+        // ColumnMeasurement's javadoc for the live reading that exposed it.
+        int anchorY = satisfying == 0 ? -1 : modalLevel(perLevel);
+        return new ColumnMeasurement(grounding.elementId(), satisfying, sampled, anchorY);
     }
 
     /**

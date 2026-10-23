@@ -13,6 +13,7 @@ import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import io.github.legendaryforge.legendary.core.api.residue.Anchor;
 import io.github.legendaryforge.legendary.core.api.residue.AnchorParameters;
+import io.github.legendaryforge.legendary.core.api.residue.ColumnMeasurement;
 import io.github.legendaryforge.legendary.core.api.residue.ElementGrounding;
 import io.github.legendaryforge.legendary.core.api.residue.WorldPoint2d;
 import io.github.legendaryforge.legendary.core.internal.residue.AnchorSelector;
@@ -22,7 +23,6 @@ import io.github.legendaryforge.legendary.mod.hytale.residue.HytaleDerivationRul
 import io.github.legendaryforge.legendary.mod.hytale.residue.SectionReaderTerrainSample;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import org.joml.Vector3d;
 
 /**
@@ -162,11 +162,13 @@ public class ResidueAnchorsCommand extends AbstractWorldCommand {
             List<Anchor> measured = new ArrayList<>();
             long sampled = 0;
             for (WorldPoint2d candidate : candidates) {
-                Optional<Anchor> anchor = VolumeStrength.measure(sample, parameters, grounding, candidate);
-                if (anchor.isPresent()) {
-                    measured.add(anchor.get());
-                    sampled += anchor.get().samplesTaken();
-                }
+                ColumnMeasurement measurement = VolumeStrength.measure(sample, parameters, grounding, candidate);
+                // Accumulated unconditionally. Adding it only for successful measurements was the
+                // original bug: Wind matched nothing, reported sampled=0, and the guidance below
+                // read that as "nothing loaded" while three other elements had read 1.2M samples at
+                // the same candidates.
+                sampled += measurement.samplesTaken();
+                measurement.asCandidate(candidate.x(), candidate.z()).ifPresent(measured::add);
             }
             List<Anchor> selected = AnchorSelector.select(WORLD_SEED, parameters, measured);
             List<Anchor> inRegion = new ArrayList<>();

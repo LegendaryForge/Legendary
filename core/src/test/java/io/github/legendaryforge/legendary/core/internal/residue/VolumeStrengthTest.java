@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import io.github.legendaryforge.legendary.core.api.residue.Anchor;
 import io.github.legendaryforge.legendary.core.api.residue.AnchorParameters;
+import io.github.legendaryforge.legendary.core.api.residue.ColumnMeasurement;
 import io.github.legendaryforge.legendary.core.api.residue.ElementGrounding;
 import io.github.legendaryforge.legendary.core.api.residue.TerrainSample;
 import io.github.legendaryforge.legendary.core.api.residue.WorldPoint2d;
@@ -126,9 +127,11 @@ class VolumeStrengthTest {
     void aFullLevelOutScoresASinglePoint() {
         Anchor lake = VolumeStrength.measure(
                         new FakeTerrain().fluidEverywhereAtLevel(80, "Water_Source"), P, WATER, ORIGIN)
+                .asCandidate(0, 0)
                 .orElseThrow();
         Anchor puddle = VolumeStrength.measure(
                         new FakeTerrain().fluidAtOnePoint(0, 80, 0, "Water_Source"), P, WATER, ORIGIN)
+                .asCandidate(0, 0)
                 .orElseThrow();
         assertEquals(9, lake.strength());
         assertEquals(1, puddle.strength());
@@ -136,7 +139,8 @@ class VolumeStrengthTest {
 
     @Test
     void emptyWhenNothingSatisfiesThePredicate() {
-        assertTrue(VolumeStrength.measure(new FakeTerrain(), P, WATER, ORIGIN).isEmpty());
+        assertEquals(
+                0, VolumeStrength.measure(new FakeTerrain(), P, WATER, ORIGIN).strength());
     }
 
     @Test
@@ -144,7 +148,9 @@ class VolumeStrengthTest {
         // A dense body at y=80 and one stray point at y=240. The anchor must sit at 80, not at 160.
         FakeTerrain twoBodies =
                 new FakeTerrain().fluidEverywhereAtLevel(80, "Water_Source").fluidAtOnePoint(0, 240, 0, "Water_Source");
-        Anchor anchor = VolumeStrength.measure(twoBodies, P, WATER, ORIGIN).orElseThrow();
+        Anchor anchor = VolumeStrength.measure(twoBodies, P, WATER, ORIGIN)
+                .asCandidate(0, 0)
+                .orElseThrow();
         assertEquals(10, anchor.strength());
         assertEquals(80.0, anchor.position().y(), 1e-9);
     }
@@ -155,7 +161,9 @@ class VolumeStrengthTest {
         FakeTerrain twoEqualBodies = new FakeTerrain()
                 .fluidEverywhereAtLevel(80, "Water_Source")
                 .fluidEverywhereAtLevel(240, "Water_Source");
-        Anchor anchor = VolumeStrength.measure(twoEqualBodies, P, WATER, ORIGIN).orElseThrow();
+        Anchor anchor = VolumeStrength.measure(twoEqualBodies, P, WATER, ORIGIN)
+                .asCandidate(0, 0)
+                .orElseThrow();
         assertEquals(18, anchor.strength());
         assertEquals(80.0, anchor.position().y(), 1e-9);
     }
@@ -165,6 +173,7 @@ class VolumeStrengthTest {
         // x,z in {-80,0,80} = 3x3; y in {0,80,160,240} = 4 levels (320 is out of bounds).
         Anchor anchor = VolumeStrength.measure(
                         new FakeTerrain().fluidEverywhereAtLevel(80, "Water_Source"), P, WATER, ORIGIN)
+                .asCandidate(0, 0)
                 .orElseThrow();
         assertEquals(36, anchor.samplesTaken());
     }
@@ -178,7 +187,9 @@ class VolumeStrengthTest {
                 .unload(0, 0, 0)
                 .unload(0, 160, 0)
                 .unload(0, 240, 0);
-        Anchor anchor = VolumeStrength.measure(partlyUnloaded, P, WATER, ORIGIN).orElseThrow();
+        Anchor anchor = VolumeStrength.measure(partlyUnloaded, P, WATER, ORIGIN)
+                .asCandidate(0, 0)
+                .orElseThrow();
         assertEquals(33, anchor.samplesTaken());
         assertEquals(9, anchor.strength());
     }
@@ -189,7 +200,8 @@ class VolumeStrengthTest {
                 .solidEverywhereAtLevel(80)
                 .environment("Env_Zone1_Caves")
                 .sky(0);
-        Anchor earth = VolumeStrength.measure(rock, P, EARTH, ORIGIN).orElseThrow();
+        Anchor earth =
+                VolumeStrength.measure(rock, P, EARTH, ORIGIN).asCandidate(0, 0).orElseThrow();
         assertEquals(9, earth.strength());
 
         // Same world read as Wind. Only y=160 counts: it is open and the sample one step below
@@ -199,7 +211,8 @@ class VolumeStrengthTest {
                 .solidEverywhereAtLevel(80)
                 .environment("Env_Zone1_Mountains")
                 .sky(15);
-        Anchor wind = VolumeStrength.measure(ridge, P, WIND, ORIGIN).orElseThrow();
+        Anchor wind =
+                VolumeStrength.measure(ridge, P, WIND, ORIGIN).asCandidate(0, 0).orElseThrow();
         assertEquals(9, wind.strength());
         assertEquals(160.0, wind.position().y(), 1e-9, "the Wind anchor sits on the exposed surface");
     }
@@ -210,13 +223,14 @@ class VolumeStrengthTest {
                 .solidEverywhereAtLevel(80)
                 .environment("Env_Zone1_Caves")
                 .sky(15);
-        assertTrue(VolumeStrength.measure(wrongSky, P, EARTH, ORIGIN).isEmpty());
+        assertEquals(0, VolumeStrength.measure(wrongSky, P, EARTH, ORIGIN).strength());
 
         FakeTerrain wrongEnvironment = new FakeTerrain()
                 .solidEverywhereAtLevel(80)
                 .environment("Env_Zone1_Plains")
                 .sky(0);
-        assertTrue(VolumeStrength.measure(wrongEnvironment, P, EARTH, ORIGIN).isEmpty());
+        assertEquals(
+                0, VolumeStrength.measure(wrongEnvironment, P, EARTH, ORIGIN).strength());
     }
 
     @Test
@@ -229,8 +243,39 @@ class VolumeStrengthTest {
                 .solidEverywhereAtLevel(80)
                 .environment("Env_Zone1_Mountains")
                 .sky(15);
-        Anchor earth = VolumeStrength.measure(mountain, P, rockIsRock, ORIGIN).orElseThrow();
+        Anchor earth = VolumeStrength.measure(mountain, P, rockIsRock, ORIGIN)
+                .asCandidate(0, 0)
+                .orElseThrow();
         assertEquals(9, earth.strength(), "rock under a Mountains environment at full sky must still count");
+    }
+
+    @Test
+    void anAbsentElementStillReportsHowMuchTerrainWasRead() {
+        // The defect this type was introduced for, found by reading /residueanchors' own output:
+        // Wind matched nothing and the probe reported sampled=0, which its printed guidance read as
+        // "nothing loaded" — while Fire, Water and Earth each sampled ~1.2M at the same candidates.
+        // A fully loaded window with no matching fluid must still report its full denominator.
+        ColumnMeasurement absent = VolumeStrength.measure(new FakeTerrain(), P, WATER, ORIGIN);
+        assertEquals(0, absent.strength(), "no water in this fake");
+        assertEquals(36, absent.samplesTaken(), "but the whole window was read");
+        assertTrue(absent.anythingRead(), "so absence is distinguishable from not having looked");
+        assertEquals(-1, absent.modalLevel(), "and there is no level to report");
+        assertTrue(absent.asCandidate(0, 0).isEmpty(), "not a candidate, but still a measurement");
+    }
+
+    @Test
+    void anUnloadedWindowIsDistinguishableFromAnAbsentElement() {
+        FakeTerrain nothingLoaded = new FakeTerrain();
+        for (int x = -80; x <= 80; x += 80) {
+            for (int z = -80; z <= 80; z += 80) {
+                for (int y = 0; y <= 319; y += 80) {
+                    nothingLoaded.unload(x, y, z);
+                }
+            }
+        }
+        ColumnMeasurement unread = VolumeStrength.measure(nothingLoaded, P, WATER, ORIGIN);
+        assertEquals(0, unread.samplesTaken());
+        assertFalse(unread.anythingRead(), "nothing was loaded, so nothing is known");
     }
 
     @Test
