@@ -147,4 +147,14 @@ class CandidateLatticeTest {
     void emptyBounds_rejected() {
         assertThrows(IllegalArgumentException.class, () -> CandidateLattice.candidatesWithin(1L, P, 10, 0, 5, 0));
     }
+
+    @Test
+    void theValueOverloadAgreesWithTheParametersOverload() {
+        LatticeParameters p = LatticeParameters.defaults();
+        List<WorldPoint2d> viaRecord = CandidateLattice.candidatesWithin(0x5EEDL, p, 0, 0, 1000, 1000);
+        List<WorldPoint2d> viaValues =
+                CandidateLattice.candidatesWithin(0x5EEDL, p.cellSize(), p.jitterFraction(), 0, 0, 1000, 1000);
+        assertEquals(viaRecord, viaValues);
+        assertFalse(viaValues.isEmpty(), "a 1000x1000 region must contain candidates at cellSize 256");
+    }
 }

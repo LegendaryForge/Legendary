@@ -56,19 +56,31 @@ public final class CandidateLattice {
      */
     public static List<WorldPoint2d> candidatesWithin(
             long worldSeed, LatticeParameters parameters, double minX, double minZ, double maxX, double maxZ) {
+        return candidatesWithin(worldSeed, parameters.cellSize(), parameters.jitterFraction(), minX, minZ, maxX, maxZ);
+    }
+
+    /**
+     * Every candidate inside the bounds, taking the two dials the lattice actually uses.
+     *
+     * <p>Exists because the lattice is shared by two parameter records — {@link LatticeParameters}
+     * for the superseded weighted scorer and {@code AnchorParameters} for the volume model — and
+     * neither should have to depend on the other merely to propose a position. The extent guarantee
+     * and jitter reasoning documented on the overload above apply unchanged.
+     */
+    public static List<WorldPoint2d> candidatesWithin(
+            long worldSeed, int cellSize, double jitterFraction, double minX, double minZ, double maxX, double maxZ) {
         if (minX > maxX || minZ > maxZ) {
             throw new IllegalArgumentException("empty bounds: x " + minX + ".." + maxX + ", z " + minZ + ".." + maxZ);
         }
-        int cell = parameters.cellSize();
-        long firstCellX = Math.floorDiv((long) Math.floor(minX), cell) - 1;
-        long lastCellX = Math.floorDiv((long) Math.floor(maxX), cell) + 1;
-        long firstCellZ = Math.floorDiv((long) Math.floor(minZ), cell) - 1;
-        long lastCellZ = Math.floorDiv((long) Math.floor(maxZ), cell) + 1;
+        long firstCellX = Math.floorDiv((long) Math.floor(minX), cellSize) - 1;
+        long lastCellX = Math.floorDiv((long) Math.floor(maxX), cellSize) + 1;
+        long firstCellZ = Math.floorDiv((long) Math.floor(minZ), cellSize) - 1;
+        long lastCellZ = Math.floorDiv((long) Math.floor(maxZ), cellSize) + 1;
 
         List<WorldPoint2d> out = new ArrayList<>();
         for (long cx = firstCellX; cx <= lastCellX; cx++) {
             for (long cz = firstCellZ; cz <= lastCellZ; cz++) {
-                WorldPoint2d candidate = candidateInCell(worldSeed, parameters, cx, cz);
+                WorldPoint2d candidate = candidateInCell(worldSeed, cellSize, jitterFraction, cx, cz);
                 if (candidate.x() >= minX && candidate.x() <= maxX && candidate.z() >= minZ && candidate.z() <= maxZ) {
                     out.add(candidate);
                 }
@@ -85,10 +97,15 @@ public final class CandidateLattice {
      * correlate — the same mix with the same arguments would place every candidate on a diagonal.
      */
     public static WorldPoint2d candidateInCell(long worldSeed, LatticeParameters parameters, long cellX, long cellZ) {
-        int cell = parameters.cellSize();
-        double centreX = cellX * (double) cell + cell / 2.0;
-        double centreZ = cellZ * (double) cell + cell / 2.0;
-        double reach = parameters.jitterFraction() * cell;
+        return candidateInCell(worldSeed, parameters.cellSize(), parameters.jitterFraction(), cellX, cellZ);
+    }
+
+    /** The one candidate belonging to a cell, taking values rather than a parameter record. */
+    public static WorldPoint2d candidateInCell(
+            long worldSeed, int cellSize, double jitterFraction, long cellX, long cellZ) {
+        double centreX = cellX * (double) cellSize + cellSize / 2.0;
+        double centreZ = cellZ * (double) cellSize + cellSize / 2.0;
+        double reach = jitterFraction * cellSize;
         double jitterX = ResidueRandom.signed(worldSeed, cellX, cellZ) * reach;
         double jitterZ = ResidueRandom.signed(worldSeed ^ 0x5DEECE66DL, cellZ, cellX) * reach;
         return new WorldPoint2d(centreX + jitterX, centreZ + jitterZ);

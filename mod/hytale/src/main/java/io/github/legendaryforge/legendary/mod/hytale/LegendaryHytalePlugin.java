@@ -19,6 +19,7 @@ import io.github.legendaryforge.legendary.mod.hytale.command.FluidScanCostComman
 import io.github.legendaryforge.legendary.mod.hytale.command.MarkerProbeCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.PointStoreProbeCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.PrefabPasteProbeCommand;
+import io.github.legendaryforge.legendary.mod.hytale.command.ResidueAnchorsCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.ResidueParticleProbeCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.ResidueSiteProbeCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.StormseekerAdvanceCommand;
@@ -107,10 +108,11 @@ public class LegendaryHytalePlugin extends JavaPlugin {
         getCommandRegistry().registerCommand(new TerrainSignalProbeCommand());
         getCommandRegistry().registerCommand(new FluidScanCostCommand());
         getCommandRegistry().registerCommand(new BlockIdProbeCommand());
+        getCommandRegistry().registerCommand(new ResidueAnchorsCommand());
         getLogger()
                 .atInfo()
                 .log(
-                        "Commands registered: /stormseeker, /ss-advance, /ss-trial, /weatherprobe, /weatheroverrideprobe, /weatherportprobe, /residueparticleprobe, /residueprobe, /blockprobe, /blockspoofprobe, /prefabprobe, /beamprobe, /pointprobe, /markerprobe, /signalprobe, /fluidscancost, /blockidprobe");
+                        "Commands registered: /stormseeker, /ss-advance, /ss-trial, /weatherprobe, /weatheroverrideprobe, /weatherportprobe, /residueparticleprobe, /residueprobe, /blockprobe, /blockspoofprobe, /prefabprobe, /beamprobe, /pointprobe, /markerprobe, /signalprobe, /fluidscancost, /blockidprobe, /residueanchors");
     }
 
     private void onPlayerConnect(PlayerConnectEvent event) {
