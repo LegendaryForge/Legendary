@@ -80,7 +80,11 @@ public class BlockIdProbeCommand extends AbstractWorldCommand {
                     .append(z)
                     .append('\n');
             sb.append("  y   getBlock  getFluidId  loaded\n");
-            for (int y = 0; y <= 319; y += 16) {
+            // 0,16,...,304 plus the true ceiling at 319. The step alone never lands on 319, and
+            // an earlier version of this probe told the reader to compare a y=319 row it did not
+            // print — the ceiling is one of only three rows whose answer is known in advance, so it
+            // is sampled explicitly rather than left to the step.
+            for (int y = 0; y <= 319; y += (y == 304 ? 15 : 16)) {
                 boolean loaded = reader.canHoldY(y) && reader.hasStorageInMemory(x, y, z);
                 sb.append(String.format(
                         "  %3d %9s %11s %7b%n",
@@ -101,9 +105,9 @@ public class BlockIdProbeCommand extends AbstractWorldCommand {
                     feetLoaded));
 
             sb.append("\nEXPECTED, from the fact that you are standing on ground in the open:\n")
-                    .append("  y=319      air    (far above any terrain)\n")
+                    .append("  y=319      air    (the world ceiling, far above any terrain)\n")
                     .append("  feet row   air    (you are standing in it)\n")
-                    .append("  y=8        solid  (near bedrock)\n")
+                    .append("  y=0        solid  (bedrock depth)\n")
                     .append("The air id is the value the first two agree on AND the third differs from.\n")
                     .append("If no single value satisfies all three, STOP — getBlock does not mean what\n")
                     .append("this probe assumes, and isSolidAt must not be written from it.\n");
