@@ -95,14 +95,35 @@ public final class HytaleDerivationRules {
                         Set.of("Water_Source", "Water"),
                         Set.of("Shores", "Swamps", "Glacial", "Caves_Swamps", "Oasis")),
 
-                // --- Geometric: terrain shape, no marker to require. Both halves needed.
-                // Open sky is the discriminator, so the band is tight.
+                // --- Geometric: terrain shape, no marker to require.
+                //
+                // Wind is EXPOSURE, not air. Air is the absence of other blocks and is therefore
+                // everywhere -- open sky over a plain, and a cave underground -- so "a lot of air"
+                // is not a concentration of anything. A cave is full of air and has no wind in it.
+                // What distinguishes a windy place is being open to the sky and unsheltered, which
+                // is exactly what the sky band tests: sky light here is sky ACCESS, not brightness
+                // (15 at the surface at midnight, 0 beside a torch underground), so cave air fails
+                // it for the right reason.
+                //
+                // The environment set this once carried -- Mountains/Peaks/Highlands/Plateaus/
+                // Cliffs -- was removed 2026-10-23, and it was wrong identically to Earth's cave
+                // list below: both substituted a biome label for the physical property. It excluded
+                // an open plain, and prairies are among the windiest places there are. Measured the
+                // same day: /residueanchors reported ZERO wind anchors on plains while Earth and
+                // Water both produced two, because no environment in range contained any of those
+                // five substrings.
+                //
+                // Consequence, stated rather than discovered later: with the list gone nearly every
+                // open column contributes its one exposed surface point, so Wind lands around 2.5%
+                // of the window almost anywhere outdoors -- clearing the 1% floor but discriminating
+                // only weakly between a plain and a plateau. Broken terrain scores slightly higher
+                // (ledges and overhangs give more exposed transitions per column), shadowed canyons
+                // lower, caves zero. Wind anchors will therefore be largely hash-placed and evenly
+                // spread, which is the accepted outcome for an element that is everywhere, and the
+                // near-earth crystal gate is what makes the current visible only where it runs
+                // close over ground.
                 new ElementGrounding.Geometric(
-                        "wind",
-                        Set.of("Mountains", "Peaks", "Highlands", "Plateaus", "Cliffs"),
-                        12,
-                        15,
-                        ElementGrounding.Occupancy.OPEN_ABOVE_SOLID),
+                        "wind", Set.of("Env_"), 12, 15, ElementGrounding.Occupancy.OPEN_ABOVE_SOLID),
 
                 // Deliberately the inverse exposure band: enclosed stone, not open ground. A cave
                 // environment read at high sky light is a cave mouth, and scores lower for it.
