@@ -4,7 +4,22 @@
 
 **Goal:** Derive residue anchors from terrain — per-element volume strength over a full world column, an absolute floor, and uniform-radius local-winner selection — and report per-element anchor spacing over a real region so the operator can judge crystal density.
 
-**Architecture:** Pure `:core` logic behind the existing injected `TerrainSample` port, so every rule is testable with no game jar. Strength is a **count** of sample points satisfying an element's predicate across the whole 320-block column (§2 of the anchor-density spec), not a weighted sum. A candidate becomes an anchor when it clears an absolute floor **and** nothing within one uniform suppression radius beats it on `(strength, hash)`. The per-element differences — Fire's rarity, Earth's and Wind's abundance — emerge from the floor and the predicates rather than from five hand-tuned radii.
+**Architecture:** Pure `:core` logic behind the existing injected `TerrainSample` port, so every rule is testable with no game jar. Strength is a **count** of sample points satisfying an element's predicate across the whole 320-block column (§2 of the anchor-density spec), not a weighted sum. A candidate becomes an anchor when it clears an absolute floor **and** nothing within one uniform suppression radius beats it on `(strength, hash)`.
+
+**The per-element difference is whether the element is a substance or a condition at a surface.** That is not a dial; it is what each element *is*, and it decides what gets counted:
+
+| Element | What it is | Counted |
+|---|---|---|
+| Fire, Water, Earth | a **substance** filling volume | points holding it, through the whole column |
+| Wind, Lightning | a **condition at a surface** | points that are open **with solid directly below**, gated on environment and sky |
+
+Measured, not assumed. Earth's absolute count runs from **20%** of the column over an ocean floor to **80%** over a peak — a 4× range, so "a lot of rock" means "the ground is high here" and volume already discriminates it. Counting open air instead gives **62.5% over a plain against 20% over a peak**, which ranks a valley above a summit — inverted against §2's *"a high plateau or ridge system — not a lone crag."* Wind and Lightning are therefore area measures: exposed high terrain, and exposed storm belt, which is where lightning lands.
+
+The surface predicate costs nothing. At step 8, "solid directly below" is the next sample down in the same column, which the scan already visits — so ordering the per-column walk makes it free, with no extra reads, no new port method, and no per-element window height.
+
+**The hash stays as the tie-break it was designed to be.** In mid-ocean every point is water and every candidate ties, so the hash deciding is honest — there is no better place. What it is *not* is the mechanism Earth and Wind depend on; both have a real absolute measure. Anchors are invisible anyway (§7 removed nexus as a placed entity; §5 has players read crystal density), so arbitrary placement was permissible — the operator confirmed it on 2026-10-22 — but it is not needed, and a real measure gives a network with more character for the same cost.
+
+The remaining per-element work is in **drawing the currents**, which this plan does not build: a least-cost path weighted by element affinity is vacuous for Earth and Wind because their affinity is everywhere, so each needs a y-profile — Earth deep in the mass, Wind hugging high ground. §5's near-earth crystal gate already does most of that work.
 
 **Tech Stack:** Java 25, JUnit 5, Gradle multi-project. `:core` has no platform imports (enforced by `:core:checkNoPlatformImports`); the engine adapter lives in `:mod:hytale`.
 
@@ -491,9 +506,9 @@ class ElementGroundingOccupancyTest {
         ElementGrounding.Geometric earth =
                 new ElementGrounding.Geometric("earth", Set.of("Caves"), 0, 6, ElementGrounding.Occupancy.SOLID);
         ElementGrounding.Geometric wind =
-                new ElementGrounding.Geometric("wind", Set.of("Mountains"), 12, 15, ElementGrounding.Occupancy.OPEN);
+                new ElementGrounding.Geometric("wind", Set.of("Mountains"), 12, 15, ElementGrounding.Occupancy.OPEN_ABOVE_SOLID);
         assertEquals(ElementGrounding.Occupancy.SOLID, earth.occupancy());
-        assertEquals(ElementGrounding.Occupancy.OPEN, wind.occupancy());
+        assertEquals(ElementGrounding.Occupancy.OPEN_ABOVE_SOLID, wind.occupancy());
     }
 
     @Test
@@ -525,12 +540,29 @@ In `ElementGrounding.java`, add the enum inside the sealed interface, immediatel
      * Wind counts points that are "open air in a matching environment". Without this the scorer
      * needs an {@code elementId} branch, which is exactly the per-element special-casing the sealed
      * hierarchy exists to prevent.
+     *
+     * <p><strong>{@code SOLID} is expected to tie nearly everywhere, and that is the intent.</strong>
+     * Rock fills most of every column, so Earth's strength barely varies and the {@code (strength,
+     * hash)} tie-break decides — producing an even spread rather than a terrain-driven one. For a
+     * substance that is everywhere there is no better place, and an anchor is invisible, so there is
+     * nothing for a player to find unmotivating.
      */
     enum Occupancy {
-        /** The point counts when it is solid. A concentration of earth is a lot of rock. */
+        /**
+         * The point counts when it is solid. A concentration of earth is a lot of rock, and that
+         * already discriminates: a column is 20% solid over an ocean floor and 80% over a peak.
+         */
         SOLID,
-        /** The point counts when it is not solid. Wind is exposure, which is the absence of rock. */
-        OPEN
+        /**
+         * The point counts when it is open <strong>and the point one sample below it is solid</strong>
+         * — the exposed surface layer.
+         *
+         * <p>Not plain "open", which is inverted: counting all open air in a column scores 62.5%
+         * over a plain against 20% over a peak, ranking a valley above a summit. Wind and Lightning
+         * are conditions at a surface rather than substances filling volume, so what they measure is
+         * exposed <em>area</em>: high terrain under open sky, and storm belt where lightning lands.
+         */
+        OPEN_ABOVE_SOLID
     }
 ```
 
@@ -599,12 +631,12 @@ In `SiteScorerTest.java`'s `FakeTerrain`, add a solid-position set and the overr
         }
 ```
 
-In the same file, add `, ElementGrounding.Occupancy.OPEN` to the `WIND` constant and `, ElementGrounding.Occupancy.SOLID` to the `EARTH` constant:
+In the same file, add `, ElementGrounding.Occupancy.OPEN_ABOVE_SOLID` to the `WIND` constant and `, ElementGrounding.Occupancy.SOLID` to the `EARTH` constant:
 
 ```java
     private static final ElementGrounding WIND =
             new ElementGrounding.Geometric(
-                    "wind", Set.of("Mountains", "Plateaus"), 12, 15, ElementGrounding.Occupancy.OPEN);
+                    "wind", Set.of("Mountains", "Plateaus"), 12, 15, ElementGrounding.Occupancy.OPEN_ABOVE_SOLID);
     private static final ElementGrounding EARTH =
             new ElementGrounding.Geometric("earth", Set.of("Caves"), 0, 6, ElementGrounding.Occupancy.SOLID);
 ```
@@ -617,7 +649,7 @@ In `HytaleDerivationRules.java`, update both `Geometric` constructions:
                         Set.of("Mountains", "Peaks", "Highlands", "Plateaus", "Cliffs"),
                         12,
                         15,
-                        ElementGrounding.Occupancy.OPEN),
+                        ElementGrounding.Occupancy.OPEN_ABOVE_SOLID),
 
                 new ElementGrounding.Geometric(
                         "earth",
@@ -626,6 +658,20 @@ In `HytaleDerivationRules.java`, update both `Geometric` constructions:
                         6,
                         ElementGrounding.Occupancy.SOLID),
 ```
+
+**Earth's environment set and sky band must then come off, and this is the substantive rule change in the task.** They are leftovers from the rejected cave framing: requiring a `Caves`/`Deserts`/`Badlands`/`Mineshafts` environment and sky light 0–6 excludes **a mountain's bulk**, which is the one case §2 names as strong Earth. Rock does not need the game to label the area a cave, and it certainly does not need darkness. Since `Geometric` requires a non-empty environment set by construction, express "rock is rock" by widening the gates to accept everything rather than by weakening the record's invariant:
+
+```java
+                // Earth is rock, and rock needs no environment label and no darkness. The cave
+                // environment set and the 0..6 sky band this once carried were the inverted framing
+                // §2 rejected — they excluded a mountain's bulk, the clearest case of a lot of earth.
+                // Sky 0..15 and a substring that every environment id contains keep the record's
+                // non-empty invariant while gating on occupancy alone.
+                new ElementGrounding.Geometric(
+                        "earth", Set.of("Env_"), 0, 15, ElementGrounding.Occupancy.SOLID),
+```
+
+Wind keeps both gates, because exposure *is* what Wind is: open air, high up, under sky. There the environment set and the 12–15 band are the definition rather than decoration.
 
 Apply the same fifth argument to any other call site the Step-0 grep found. In `SectionReaderTerrainSample.java`, add a temporary implementation so the module compiles; Task 6 replaces it:
 
@@ -708,7 +754,7 @@ class VolumeStrengthTest {
     private static final ElementGrounding EARTH =
             new ElementGrounding.Geometric("earth", Set.of("Caves"), 0, 6, ElementGrounding.Occupancy.SOLID);
     private static final ElementGrounding WIND =
-            new ElementGrounding.Geometric("wind", Set.of("Mountains"), 12, 15, ElementGrounding.Occupancy.OPEN);
+            new ElementGrounding.Geometric("wind", Set.of("Mountains"), 12, 15, ElementGrounding.Occupancy.OPEN_ABOVE_SOLID);
 
     private static final class FakeTerrain implements TerrainSample {
         private final Map<String, String> fluids = new HashMap<>();
@@ -830,15 +876,30 @@ class VolumeStrengthTest {
     }
 
     @Test
-    void earthCountsSolidPointsAndWindCountsOpenOnes() {
+    void earthCountsRockAndWindCountsTheExposedSurface() {
         FakeTerrain rock = new FakeTerrain().solidEverywhereAtLevel(80).environment("Env_Zone1_Caves").sky(0);
         Anchor earth = VolumeStrength.measure(rock, P, EARTH, ORIGIN).orElseThrow();
         assertEquals(9, earth.strength());
 
-        // Same world read as Wind: the open levels count, the solid one does not.
+        // Same world read as Wind. Only y=160 counts: it is open and the sample one step below
+        // (y=80) is solid. y=0 is open with nothing below, y=240's neighbour below is open air.
+        // Counting every open level instead would give 27 and rank a valley above a summit.
         FakeTerrain ridge = new FakeTerrain().solidEverywhereAtLevel(80).environment("Env_Zone1_Mountains").sky(15);
         Anchor wind = VolumeStrength.measure(ridge, P, WIND, ORIGIN).orElseThrow();
-        assertEquals(27, wind.strength());
+        assertEquals(9, wind.strength());
+        assertEquals(160.0, wind.position().y(), 1e-9, "the Wind anchor sits on the exposed surface");
+    }
+
+    @Test
+    void wideGatesCountSolidPointsUnderAnyEnvironmentAndAnySky() {
+        // The mechanism Earth relies on in production: gates widened to accept everything, so
+        // occupancy alone decides and a mountain's bulk is not excluded for lacking a cave label.
+        ElementGrounding rockIsRock =
+                new ElementGrounding.Geometric("earth", Set.of("Env_"), 0, 15, ElementGrounding.Occupancy.SOLID);
+        FakeTerrain mountain =
+                new FakeTerrain().solidEverywhereAtLevel(80).environment("Env_Zone1_Mountains").sky(15);
+        Anchor earth = VolumeStrength.measure(mountain, P, rockIsRock, ORIGIN).orElseThrow();
+        assertEquals(9, earth.strength(), "rock under a Mountains environment at full sky must still count");
     }
 
     @Test
@@ -929,7 +990,7 @@ public final class VolumeStrength {
                         continue;
                     }
                     sampled++;
-                    if (satisfies(sample, grounding, x, y, z)) {
+                    if (satisfies(sample, grounding, parameters, x, y, z)) {
                         satisfying++;
                         perLevel.merge(y, 1, Integer::sum);
                     }
@@ -951,12 +1012,18 @@ public final class VolumeStrength {
      * <p>Switches on the sealed hierarchy so a new grounding cannot be added without the compiler
      * demanding a rule for it — which is why the hierarchy is sealed.
      */
-    private static boolean satisfies(TerrainSample sample, ElementGrounding grounding, int x, int y, int z) {
+    private static boolean satisfies(
+            TerrainSample sample,
+            ElementGrounding grounding,
+            AnchorParameters parameters,
+            int x,
+            int y,
+            int z) {
         return switch (grounding) {
             case ElementGrounding.Physical physical ->
                 sample.fluidAt(x, y, z).filter(physical.requiredFluids()::contains).isPresent();
-            case ElementGrounding.Geometric geometric -> satisfiesGeometric(sample, geometric, x, y, z);
-            case ElementGrounding.Weather weather -> satisfiesWeather(sample, weather, x, y, z);
+            case ElementGrounding.Geometric geometric -> satisfiesGeometric(sample, geometric, parameters, x, y, z);
+            case ElementGrounding.Weather weather -> satisfiesWeather(sample, weather, parameters, x, y, z);
         };
     }
 
@@ -968,7 +1035,12 @@ public final class VolumeStrength {
      * condition and the one that separates Earth from Wind.
      */
     private static boolean satisfiesGeometric(
-            TerrainSample sample, ElementGrounding.Geometric geometric, int x, int y, int z) {
+            TerrainSample sample,
+            ElementGrounding.Geometric geometric,
+            AnchorParameters parameters,
+            int x,
+            int y,
+            int z) {
         Optional<String> environment = sample.environmentAt(x, y, z);
         if (environment.isEmpty()
                 || !ElementGrounding.environmentMatches(environment.get(), geometric.environments())) {
@@ -978,14 +1050,56 @@ public final class VolumeStrength {
         if (sky < geometric.minSkyLight() || sky > geometric.maxSkyLight()) {
             return false;
         }
-        boolean solid = sample.isSolidAt(x, y, z);
-        return geometric.occupancy() == ElementGrounding.Occupancy.SOLID ? solid : !solid;
+        return occupied(sample, geometric.occupancy(), parameters, x, y, z);
     }
 
+    /**
+     * Whether the point satisfies the grounding's occupancy requirement.
+     *
+     * <p>{@code OPEN_ABOVE_SOLID} looks one sample step down rather than one block: at the sampling
+     * resolution that is the adjacent sample the scan already visits, so the surface test is free.
+     * Looking one <em>block</em> down would read a position the scan never samples and would miss a
+     * surface whenever the step exceeds 1.
+     */
+    private static boolean occupied(
+            TerrainSample sample,
+            ElementGrounding.Occupancy occupancy,
+            AnchorParameters parameters,
+            int x,
+            int y,
+            int z) {
+        boolean solid = sample.isSolidAt(x, y, z);
+        if (occupancy == ElementGrounding.Occupancy.SOLID) {
+            return solid;
+        }
+        if (solid) {
+            return false;
+        }
+        int below = y - parameters.sampleStep();
+        return below >= 0 && sample.isLoaded(x, below, z) && sample.isSolidAt(x, below, z);
+    }
+
+    /**
+     * Lightning is a condition at a surface, so it takes the surface test unconditionally.
+     *
+     * <p>{@code Weather} carries no {@code Occupancy} field because there is nothing to choose: an
+     * element with no physical presence cannot be a substance filling volume, and lightning strikes
+     * exposed <em>ground</em>. Counting all exposed air instead would score a valley above a summit,
+     * the same inversion {@code OPEN_ABOVE_SOLID} exists to fix for Wind. A field whose only legal
+     * value is one constant is worse than the constant.
+     */
     private static boolean satisfiesWeather(
-            TerrainSample sample, ElementGrounding.Weather weather, int x, int y, int z) {
+            TerrainSample sample,
+            ElementGrounding.Weather weather,
+            AnchorParameters parameters,
+            int x,
+            int y,
+            int z) {
         int sky = sample.skyLightAt(x, y, z);
         if (sky < weather.minSkyLight() || sky > weather.maxSkyLight()) {
+            return false;
+        }
+        if (!occupied(sample, ElementGrounding.Occupancy.OPEN_ABOVE_SOLID, parameters, x, y, z)) {
             return false;
         }
         OptionalDouble storm = sample.stormProbabilityAt(x, y, z);
@@ -1019,7 +1133,7 @@ Expected: `BUILD SUCCESSFUL`.
 
 This project's standing discipline: a guard or predicate that was green on first write proves nothing. For each mutation below, make the edit, run `:core:test`, confirm **RED**, then revert.
 
-1. In `satisfiesGeometric`, invert the occupancy line to `geometric.occupancy() == Occupancy.SOLID ? !solid : solid`. Expected: `earthCountsSolidPointsAndWindCountsOpenOnes` fails. If it passes, the Earth/Wind distinction is not actually tested.
+1. In `occupied`, drop the surface test — return `!solid` for `OPEN_ABOVE_SOLID`. Expected: `earthCountsRockAndWindCountsTheExposedSurface` fails with 27 against 9. This is the inversion that ranks a valley above a summit, so it is the single most important mutation here. If it passes, the volume/surface split is not actually tested.
 2. In `modalLevel`, change the tie-break to `level > bestLevel`. Expected: a test fails only if a tie exists in the fixtures — **if nothing fails, add a fixture with two equally dense levels**, because the tie-break is otherwise unverified and determinism depends on it.
 3. In `measure`, drop the `isLoaded` check. Expected: no current test fails — **add one** with a fake whose `isLoaded` returns false for part of the window, asserting `samplesTaken` excludes it. An unloaded point counted as a real negative is the exact failure `isLoaded` exists to prevent.
 
@@ -1818,4 +1932,4 @@ mechanism that replaced it."
 - **Currents, crystals and geodes.** Anchor spacing gates all three: an MST over anchors that are too sparse or too dense produces currents of the wrong length, and crystal coverage is `2w/R` off that spacing. Building pathing on unvalidated spacing risks discarding it. `influenceRadius` and `crossingTolerance` are carried in `AnchorParameters` now so the record does not change shape later, and are unused until then.
 - **Per-element measurement window heights.** Counting qualifying open air up a full column may score a low ridge above a summit, which would invert Wind against §2. Whether it does depends on whether the environment at altitude still reads as `Mountains` — unmeasured, and `/residueanchors` reporting Wind's strongest-anchor strength is what will show it.
 - **Removing `SiteScorer` and `LatticeParameters`.** Both still serve `/residueprobe`, which reads a single candidate usefully. They are superseded by this path, not dead; deleting them is a separate change once currents land.
-- **Resolving §4's Earth y-source contradiction.** §4 sources Earth's y from "the cave volume's own level" while §2 rejects cave-as-Earth as inverted. `VolumeStrength` follows §2 — Earth counts solid points, so its modal level is inside rock. That is a deliberate reading of a contradictory spec and needs the operator to confirm which half stands.
+- **Correcting §4's Earth y-source wording in the spec.** §4 sources Earth's y from "the cave volume's own level" while §2 rejects cave-as-Earth as inverted. That is **settled, not open**: an anchor is a spot with a lot of the element, so an Earth anchor sits where the rock is, and `VolumeStrength`'s modal level of solid points puts it there. §4's phrase is stale wording from before §2's rejection and should be deleted from the spec — a documentation edit this plan does not make, since it touches a PROPOSED spec rather than the code.
