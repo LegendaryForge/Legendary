@@ -63,6 +63,48 @@ public sealed interface ElementGrounding {
     }
 
     /**
+     * What counts as the element being present at a sampled point, for a {@link Geometric}
+     * grounding.
+     *
+     * <p>Earth and Wind are the same grounding scored by the same rule, and the only thing that
+     * differs is this. Anchor-density design §2: Earth counts points where "the point is rock", Wind
+     * counts points that are "open air in a matching environment". Without this the scorer needs an
+     * {@code elementId} branch, which is exactly the per-element special-casing the sealed hierarchy
+     * exists to prevent.
+     */
+    enum Occupancy {
+        /**
+         * The point counts when it is solid.
+         *
+         * <p>A concentration of earth is a lot of rock, and that already discriminates without any
+         * baseline: measured at sample step 8 over the full column, a column is 20% solid over an
+         * ocean floor, 37.5% over a plain and 80% over a peak. "A lot of rock" is "the ground is
+         * high here".
+         */
+        SOLID,
+        /**
+         * The point counts when it holds <strong>no block and no fluid</strong> — open space.
+         *
+         * <p>The exact complement of {@link #SOLID} minus fluid, which makes air and earth
+         * symmetric: earth is rock, air is not-rock-and-not-water. There is no sky gate and no
+         * environment list, so a cave counts as air — air is there, and the element is named for
+         * open space rather than for any wind mechanic the game does not have.
+         *
+         * <p><strong>The fluid exclusion is load-bearing, not defensive.</strong> {@code getBlock}
+         * reports 0 inside a fluid — measured on 0.7.4, {@code getBlock=0} alongside
+         * {@code getFluidId=8} — so {@code isSolidAt} is false there and "not solid" alone would
+         * count every submerged position as air. Water is not air.
+         *
+         * <p>Known consequence, recorded rather than discovered later: counting open space over the
+         * full column is inversely correlated with ground height, roughly 80% of a column over an
+         * ocean floor against 20% at a peak, which is the exact inverse of {@code SOLID}'s 20% to
+         * 80%. So air anchors favour valleys and lowlands while earth anchors favour high ground,
+         * and the two tile the world rather than competing for it.
+         */
+        OPEN
+    }
+
+    /**
      * An element with a physical presence: the fluid is required, the environment only corroborates.
      *
      * <p>This asymmetry is the whole point of the type. A region labelled volcanic with no lava in it
@@ -93,12 +135,13 @@ public sealed interface ElementGrounding {
      * mountain's interior. Sky light alone qualifies nothing anywhere, by design — it would make
      * every open column in the world a Wind site.
      */
-    record Geometric(String elementId, Set<String> environments, int minSkyLight, int maxSkyLight)
+    record Geometric(String elementId, Set<String> environments, int minSkyLight, int maxSkyLight, Occupancy occupancy)
             implements ElementGrounding {
         public Geometric {
             requireElementId(elementId);
             environments = Set.copyOf(Objects.requireNonNull(environments, "environments"));
             requireSkyRange(minSkyLight, maxSkyLight);
+            Objects.requireNonNull(occupancy, "occupancy");
             if (environments.isEmpty()) {
                 throw new IllegalArgumentException(
                         "Geometric grounding for " + elementId + " names no environment, so only its sky range "

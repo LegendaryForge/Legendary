@@ -52,6 +52,25 @@ public interface TerrainSample {
      */
     int skyLightAt(int x, int y, int z);
 
+    /**
+     * Whether this position is occupied by a solid block, {@code false} when unloaded.
+     *
+     * <p>Added because §2's Earth and Wind predicates — "the point is rock" and "the point is open
+     * air" — were not answerable through this port at all. Fluid, environment, sky light, surface
+     * height and storm probability between them cannot distinguish stone from air, so a volume count
+     * for either element was impossible before this.
+     *
+     * <p>Returns {@code false} for an unloaded position, which is indistinguishable from real air
+     * without {@link #isLoaded} — the same contract {@link #skyLightAt} documents, and the reason
+     * {@code isLoaded} is checked before every read rather than after.
+     *
+     * <p><strong>Solidity is a resolution, so it belongs on this side of the port.</strong> The
+     * engine answers in block-type ids whose meaning only the adapter can know; a module that cannot
+     * import Hytale cannot classify them. The adapter decides; {@code :core} asks a question in its
+     * own vocabulary.
+     */
+    boolean isSolidAt(int x, int y, int z);
+
     /** Terrain surface height for this column, or empty when unloaded. */
     OptionalInt surfaceHeightAt(int x, int z);
 

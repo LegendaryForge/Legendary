@@ -106,21 +106,47 @@ placed in one today.
 ### The per-element spread is a baseline, not five values
 
 §9 item 1 asks for five radii and expects them to *"need iteration against real terrain rather than
-derivation."* All five therefore start at **512**, which is a starting vector in the sense §3 means by
-*"the starting frame, not an answer."* The expected direction of adjustment, from §3:
+derivation."* **The implementation does not take five.** It takes one, and the per-element
+differences emerge from the predicates and the floor.
 
-| Element | Qualifying terrain | Expected adjustment |
-|---|---|---|
-| Earth, Wind | nearly everywhere — rock below, open air above | **wider** than 512; saturate first |
-| Fire | volcanic regions only | **narrower**, or unchanged with sparse coverage accepted |
-| Water | coasts, lakes, rivers, ocean | near baseline |
-| Lightning | storm-prone exposed terrain | **narrower** if the empty case bites — Stormseeker needs it |
+**Amended 2026-10-22.** This section carried a table reading *Earth and Wind wider, Fire narrower,
+Lightning narrower if the empty case bites* — a plan to hand-tune five numbers. The operator's
+position is that the differences should emerge from rarity, abundance and topology rather than from
+dials, and the implementation follows that:
 
-Note what per-element radii are compensating for, because §3's wording invites a misreading. Abundance
-has no say in anchor *count* for regions **of equal area** — an ocean yields what an equal area of
-varied coastline yields. What differs per element is the *extent of qualifying terrain at all*, since
-a region with none gets no anchor (§3's third regime). Fire's radius is small because volcanic terrain
-is rare, not because lava is sparse within it.
+- **The suppression radius is uniform at 512 for every element.** Uniform spacing is what makes
+  currents connectable and crystal density predictable, and it is the only dial that sets how far a
+  player walks between crystals.
+- **Rarity is handled by `minimumStrengthFraction`.** A region whose best candidate holds only a
+  trace of an element gets no anchor for it, so Fire's network comes out sparse and regional because
+  lava is — with nothing tuned to say so. Measured on real terrain the same day: a spot with
+  underground water scored 0.41% at sample step 8 against 0.21% at step 1, both under the 1% floor,
+  so it correctly yields no water anchor. It is a pocket, not a lake.
+- **Overabundance is handled by the `(strength, hash)` tie-break.** In uniform ocean, deep rock or
+  open sky every strength ties and the hash decides, giving one anchor per radius — the same count an
+  equal area of varied coastline yields. Arbitrary placement is legitimate there rather than a
+  fallback: anchors are invisible, so in a region where every point is identical there is no better
+  place for one to be.
+- **What actually varies per element is what gets counted**, and it is what each element *is* rather
+  than a number: Fire, Water and Earth are substances filling volume, so their points are counted
+  through the whole column. Wind is a condition at a surface, so it counts points that are open with
+  solid directly below. Counting all open air instead is *inverted* — 62.5% of a column over a plain
+  against 20% over a peak ranks a valley above a summit.
+
+Two corrections to this document's own earlier reasoning, both measured rather than argued:
+
+- **Earth needs no relative measure and no hash dependence.** An earlier draft of the implementation
+  assumed rock saturates everywhere and Earth would fall through to the tie-break. The absolute count
+  runs from **20%** of the column over an ocean floor through **37.5%** over a plain to **80%** over a
+  peak — a 4× range. "A lot of rock" is "the ground is high here", and volume already discriminates it.
+- **Lightning is out of scope entirely.** It gets its own treatment; `VolumeStrength` throws for a
+  `Weather` grounding rather than scoring it, because a count would carry the same valley-above-summit
+  inversion and an empty result would read as "no qualifying terrain".
+
+The alternative not taken: per-element radii would compensate for the *extent of qualifying terrain*,
+since a region with none gets no anchor at all. That reading of §3 is still correct, and remains the
+fallback if the uniform radius cannot satisfy both Earth and Fire — which is what §10 names as the
+first thing to try before abandoning volume as a measure.
 
 ---
 

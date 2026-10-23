@@ -18,6 +18,9 @@
 # looked identical from the console side, which is why the symptom was misfiled as a
 # hung console for a session. Both the holder AND the server run under `setsid`.
 #
+# It also DEPLOYS the mod jar from mod/hytale/build/libs, so build first and never copy by hand:
+#   ./gradlew :mod:hytale:shadowJar && bash scripts/live-probes/server-up.sh
+#
 #   bash scripts/live-probes/server-up.sh
 #   echo signalprobe > .scratch/hytale-server/console   # fire a command
 #   echo stop        > .scratch/hytale-server/console   # shut it down
@@ -29,6 +32,7 @@ set -uo pipefail
 # The harness directory stays OUT of git: it holds auth.enc and generated
 # universe/ data. Only this driver is tracked. Override with HYTALE_TEST_SERVER.
 SERVER_DIR="${HYTALE_TEST_SERVER:-$(cd "$(dirname "$0")/../../.scratch/hytale-server" && pwd)}"
+REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 if [ ! -f "$SERVER_DIR/run-server.sh" ]; then
   echo "No test-server harness at $SERVER_DIR -- see scripts/live-probes/README.md" >&2
   exit 1
@@ -53,6 +57,28 @@ mkfifo "$FIFO"
 setsid nohup tail -f /dev/null > "$FIFO" 2>/dev/null &
 HOLDER=$!
 echo "$HOLDER" > .holder.pid
+
+# Deploy the mod jar HERE, not by hand, and by atomic rename rather than in place.
+#
+# WHY: `cp` over a jar the running server has open truncates and rewrites the SAME inode, so the
+# classloader's open handle sees changed bytes and every class it has not yet loaded fails with
+# NoClassDefFoundError. On 2026-10-22 that broke a live session twice and was first misdiagnosed as
+# a shutdown-time artifact, because the first symptom appeared during shutdown
+# (PlayerDisconnectEvent -> NoClassDefFoundError on questline.runtime.PlayerRef). The second was
+# unambiguous: /residueanchors threw NoClassDefFoundError on AnchorParameters, a class that was
+# present in the jar, on a server that had been up for minutes.
+#
+# `mv` is a rename: the running server keeps its old inode intact and the new file is picked up on
+# the next boot. It is safe even though the teardown above has already killed the old server --
+# correct regardless of ordering is worth more than correct because of it.
+JAR_SRC="$REPO_ROOT/mod/hytale/build/libs/hytale-0.0.0-SNAPSHOT-all.jar"
+if [ -f "$JAR_SRC" ]; then
+  mkdir -p mods
+  cp "$JAR_SRC" "mods/.deploy.tmp" && mv -f "mods/.deploy.tmp" "mods/hytale-0.0.0-SNAPSHOT-all.jar"
+  echo "MOD DEPLOYED $(stat -c%s mods/hytale-0.0.0-SNAPSHOT-all.jar) bytes from build/libs"
+else
+  echo "MOD NOT DEPLOYED -- no shadow jar at $JAR_SRC (run ./gradlew :mod:hytale:shadowJar)"
+fi
 
 : > "$OUT"
 setsid nohup "$JAVA" -jar "$GAME/Server/HytaleServer.jar" \

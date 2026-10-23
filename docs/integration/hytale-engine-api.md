@@ -44,7 +44,7 @@ derivation would key on — see `../superpowers/specs/2026-10-20-residue-terrain
 | Method | Returns | Notes |
 |---|---|---|
 | `getEnvironment(x, y, z)` | `int` | environment index; resolve a name via `Environment.getAssetMap().getAsset(i)` |
-| `getBlock(x, y, z)` | `int` | |
+| `getBlock(x, y, z)` | `int` | **`0` means no block — air or void.** Measured 0.7.4 via `/blockidprobe`, three known-answer positions in one column: the player's own feet level `0`, open sky above terrain `0`, bedrock depth `445`. Corroborated by mechanism: at `y=16` the same column read `getBlock=0` with `getFluidId=8`, so a fluid occupies a position `getBlock` calls empty — a real block type could not co-occupy. Nonzero values seen: 445, 1530, 1599, 2654. [measured, 0.7.4] |
 | `getFluidId(x, y, z)` / `getWorldFluidId(x, y, z)` | `int` | a **`Fluid` asset** index — resolve via `Fluid.getAssetMap().getAsset(i)`. **Not** a block-type id; see the namespace row below. Both accessors agreed at every position measured so far |
 | `getSupportValue(x, y, z)` | `int` | |
 | `hasStorageInMemory(x, y, z)` | `boolean` | **the loaded/unloaded discriminator** |

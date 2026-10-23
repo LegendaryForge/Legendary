@@ -95,14 +95,35 @@ public final class HytaleDerivationRules {
                         Set.of("Water_Source", "Water"),
                         Set.of("Shores", "Swamps", "Glacial", "Caves_Swamps", "Oasis")),
 
-                // --- Geometric: terrain shape, no marker to require. Both halves needed.
-                // Open sky is the discriminator, so the band is tight.
-                new ElementGrounding.Geometric(
-                        "wind", Set.of("Mountains", "Peaks", "Highlands", "Plateaus", "Cliffs"), 12, 15),
+                // --- Geometric: terrain shape, no marker to require.
+                //
+                // Wind is open space -- the roster decision names the element Wind, and wind and air
+                // are interchangeable here because the game has no wind mechanic at all (operator,
+                // 2026-10-22). The id stays "wind" to match that decision; only the MEASURE is air.
+                // It is symmetric with Earth below: earth is rock, air is
+                // not-rock-and-not-water. No sky gate and no environment list, so a cave counts as
+                // air -- air is there. The element is named for open space rather than for any wind
+                // mechanic, because the game has none (operator, 2026-10-22): an earlier version of
+                // this entry argued wind-as-exposure and gated on Mountains/Peaks/Highlands/
+                // Plateaus/Cliffs with sky 12..15, which measured ZERO anchors on plains while
+                // Earth and Water each produced two. That was a biome label standing in for a
+                // physical property, the same mistake as Earth's old cave list.
+                //
+                // Consequence, recorded rather than discovered later: open space over a full column
+                // is inversely correlated with ground height -- about 80% of a column over an ocean
+                // floor against 20% at a peak, the exact inverse of Earth's 20% to 80%. So air
+                // anchors favour valleys and lowlands while earth anchors favour high ground, and
+                // the two tile the world instead of competing for it.
+                new ElementGrounding.Geometric("wind", Set.of("Env_"), 0, 15, ElementGrounding.Occupancy.OPEN),
 
                 // Deliberately the inverse exposure band: enclosed stone, not open ground. A cave
                 // environment read at high sky light is a cave mouth, and scores lower for it.
-                new ElementGrounding.Geometric("earth", Set.of("Caves", "Deserts", "Badlands", "Mineshafts"), 0, 6),
+                // Earth is rock, and rock needs no environment label and no darkness. The cave
+                // environment set and the 0..6 sky band this once carried were the inverted framing
+                // §2 rejected: they excluded a mountain's bulk, the clearest case of a lot of earth.
+                // Sky 0..15 and a substring every environment id carries keep the record's non-empty
+                // invariant while gating on occupancy alone.
+                new ElementGrounding.Geometric("earth", Set.of("Env_"), 0, 15, ElementGrounding.Occupancy.SOLID),
 
                 // --- Weather: no physical presence at all. Storm probability comes from the
                 // environment's own WeatherForecasts weights, which is why this is the one grounding

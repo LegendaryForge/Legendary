@@ -33,9 +33,10 @@ class SiteScorerTest {
             new ElementGrounding.Physical("fire", Set.of("Fluid_Lava"), Set.of("Volcanoes", "Caves_Volcanic"));
     private static final ElementGrounding WATER =
             new ElementGrounding.Physical("water", Set.of("Fluid_Water"), Set.of("Shores", "Swamps"));
-    private static final ElementGrounding WIND =
-            new ElementGrounding.Geometric("wind", Set.of("Mountains", "Plateaus"), 12, 15);
-    private static final ElementGrounding EARTH = new ElementGrounding.Geometric("earth", Set.of("Caves"), 0, 6);
+    private static final ElementGrounding WIND = new ElementGrounding.Geometric(
+            "wind", Set.of("Mountains", "Plateaus"), 12, 15, ElementGrounding.Occupancy.OPEN);
+    private static final ElementGrounding EARTH =
+            new ElementGrounding.Geometric("earth", Set.of("Caves"), 0, 6, ElementGrounding.Occupancy.SOLID);
     private static final ElementGrounding LIGHTNING = new ElementGrounding.Weather("lightning", 0.10, 13, 15);
     private static final List<ElementGrounding> ALL = List.of(FIRE, WATER, WIND, EARTH, LIGHTNING);
 
@@ -45,6 +46,7 @@ class SiteScorerTest {
 
     private static final class FakeTerrain implements TerrainSample {
         private final Map<String, String> fluids = new HashMap<>();
+        private final java.util.Set<String> solids = new java.util.HashSet<>();
         private final Map<String, Integer> surfaces = new HashMap<>();
         private String environment;
         private int sky = 15;
@@ -57,6 +59,11 @@ class SiteScorerTest {
 
         FakeTerrain surface(int x, int z, int y) {
             surfaces.put(x + ":" + z, y);
+            return this;
+        }
+
+        FakeTerrain solid(int x, int y, int z) {
+            solids.add(key(x, y, z));
             return this;
         }
 
@@ -103,6 +110,11 @@ class SiteScorerTest {
         @Override
         public int skyLightAt(int x, int y, int z) {
             return sky;
+        }
+
+        @Override
+        public boolean isSolidAt(int x, int y, int z) {
+            return everythingLoaded && solids.contains(key(x, y, z));
         }
 
         @Override
@@ -363,7 +375,9 @@ class SiteScorerTest {
 
     @Test
     void geometricGroundingWithoutAnEnvironment_isRejected() {
-        assertThrows(IllegalArgumentException.class, () -> new ElementGrounding.Geometric("wind", Set.of(), 12, 15));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new ElementGrounding.Geometric("wind", Set.of(), 12, 15, ElementGrounding.Occupancy.OPEN));
     }
 
     @Test

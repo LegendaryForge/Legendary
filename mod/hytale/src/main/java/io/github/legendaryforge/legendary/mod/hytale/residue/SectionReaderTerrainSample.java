@@ -109,6 +109,33 @@ public final class SectionReaderTerrainSample implements TerrainSample {
         return global.getSkyLight(x, y, z);
     }
 
+    /**
+     * The block id meaning "no block here" — air or void.
+     *
+     * <p><strong>Measured, not assumed</strong>, via {@code /blockidprobe} on 0.7.4 against three
+     * positions whose answers were known from standing there: the player's own feet level read
+     * {@code 0}, open sky far above terrain read {@code 0}, and bedrock depth read {@code 445}.
+     * Corroborated by mechanism rather than only by agreement — at {@code y=16} the same column read
+     * {@code getBlock=0} alongside {@code getFluidId=8}, so a fluid occupies a position
+     * {@code getBlock} calls empty, which a real block type could not do.
+     *
+     * <p>It is measured because a wrong value here inverts Earth and Wind <em>simultaneously</em>:
+     * Earth counts solid points and Wind counts open ones, so the build stays green and the anchors
+     * stay plausible while every one of them is in the wrong kind of place.
+     */
+    private static final int NO_BLOCK = 0;
+
+    @Override
+    public boolean isSolidAt(int x, int y, int z) {
+        if (!isLoaded(x, y, z)) {
+            return false;
+        }
+        // A fluid-filled position is NOT solid: getBlock reports 0 there, as measured at y=16 with
+        // getFluidId=8. That is the wanted semantics -- Earth must not count a flooded cavity as
+        // rock -- and it is why this reads getBlock rather than negating a fluid check.
+        return reader.getBlock(x, y, z) != NO_BLOCK;
+    }
+
     @Override
     public OptionalInt surfaceHeightAt(int x, int z) {
         return isLoaded(x, referencePlaneY, z) ? OptionalInt.of(referencePlaneY) : OptionalInt.empty();

@@ -12,13 +12,16 @@ import io.github.legendaryforge.legendary.core.internal.weather.DefaultPlayerWea
 import io.github.legendaryforge.legendary.core.internal.weather.DefaultWeatherGate;
 import io.github.legendaryforge.legendary.core.internal.weather.OverrideRegistry;
 import io.github.legendaryforge.legendary.mod.hytale.command.BeamProbeCommand;
+import io.github.legendaryforge.legendary.mod.hytale.command.BlockIdProbeCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.BlockPlacementProbeCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.BlockSpoofProbeCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.FluidScanCostCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.MarkerProbeCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.PointStoreProbeCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.PrefabPasteProbeCommand;
+import io.github.legendaryforge.legendary.mod.hytale.command.ResidueAnchorsCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.ResidueParticleProbeCommand;
+import io.github.legendaryforge.legendary.mod.hytale.command.ResidueScaleCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.ResidueSiteProbeCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.StormseekerAdvanceCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.StormseekerStatusCommand;
@@ -105,10 +108,13 @@ public class LegendaryHytalePlugin extends JavaPlugin {
         getCommandRegistry().registerCommand(new MarkerProbeCommand());
         getCommandRegistry().registerCommand(new TerrainSignalProbeCommand());
         getCommandRegistry().registerCommand(new FluidScanCostCommand());
+        getCommandRegistry().registerCommand(new BlockIdProbeCommand());
+        getCommandRegistry().registerCommand(new ResidueAnchorsCommand());
+        getCommandRegistry().registerCommand(new ResidueScaleCommand());
         getLogger()
                 .atInfo()
                 .log(
-                        "Commands registered: /stormseeker, /ss-advance, /ss-trial, /weatherprobe, /weatheroverrideprobe, /weatherportprobe, /residueparticleprobe, /residueprobe, /blockprobe, /blockspoofprobe, /prefabprobe, /beamprobe, /pointprobe, /markerprobe, /signalprobe, /fluidscancost");
+                        "Commands registered: /stormseeker, /ss-advance, /ss-trial, /weatherprobe, /weatheroverrideprobe, /weatherportprobe, /residueparticleprobe, /residueprobe, /blockprobe, /blockspoofprobe, /prefabprobe, /beamprobe, /pointprobe, /markerprobe, /signalprobe, /fluidscancost, /blockidprobe, /residueanchors, /residuescale");
     }
 
     private void onPlayerConnect(PlayerConnectEvent event) {
