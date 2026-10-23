@@ -11,9 +11,12 @@
 | Element | What it is | Counted |
 |---|---|---|
 | Fire, Water, Earth | a **substance** filling volume | points holding it, through the whole column |
-| Wind, Lightning | a **condition at a surface** | points that are open **with solid directly below**, gated on environment and sky |
+| Wind | a **condition at a surface** | points that are open **with solid directly below**, gated on environment and sky |
+| **Lightning** | **its own treatment, not yet designed** | **nothing — out of scope here** |
 
-Measured, not assumed. Earth's absolute count runs from **20%** of the column over an ocean floor to **80%** over a peak — a 4× range, so "a lot of rock" means "the ground is high here" and volume already discriminates it. Counting open air instead gives **62.5% over a plain against 20% over a peak**, which ranks a valley above a summit — inverted against §2's *"a high plateau or ridge system — not a lone crag."* Wind and Lightning are therefore area measures: exposed high terrain, and exposed storm belt, which is where lightning lands.
+Measured, not assumed. Earth's absolute count runs from **20%** of the column over an ocean floor to **80%** over a peak — a 4× range, so "a lot of rock" means "the ground is high here" and volume already discriminates it. Counting open air instead gives **62.5% over a plain against 20% over a peak**, which ranks a valley above a summit — inverted against §2's *"a high plateau or ridge system — not a lone crag."* Wind is therefore an area measure: exposed high terrain.
+
+**Lightning gets its own treatment and this plan does not give it one** (operator, 2026-10-22). An earlier draft moved it to the surface measure by analogy with Wind, reasoning that lightning strikes ground. That was inventing a design for the one element with content depending on it — Stormseeker needs Lightning — so it is withdrawn rather than kept as a default. `VolumeStrength` **throws** if asked to score a `Weather` grounding, and the probe skips it and prints its row as pending. A number known to be wrong is worse than no number, and a silent zero is worse than both.
 
 The surface predicate costs nothing. At step 8, "solid directly below" is the next sample down in the same column, which the scan already visits — so ordering the per-column walk makes it free, with no extra reads, no new port method, and no per-element window height.
 
@@ -1023,7 +1026,7 @@ public final class VolumeStrength {
             case ElementGrounding.Physical physical ->
                 sample.fluidAt(x, y, z).filter(physical.requiredFluids()::contains).isPresent();
             case ElementGrounding.Geometric geometric -> satisfiesGeometric(sample, geometric, parameters, x, y, z);
-            case ElementGrounding.Weather weather -> satisfiesWeather(sample, weather, parameters, x, y, z);
+            case ElementGrounding.Weather weather -> satisfiesWeather(weather);
         };
     }
 
@@ -1080,30 +1083,22 @@ public final class VolumeStrength {
     }
 
     /**
-     * Lightning is a condition at a surface, so it takes the surface test unconditionally.
+     * Not scored here. Lightning gets its own treatment, which is not designed yet.
      *
-     * <p>{@code Weather} carries no {@code Occupancy} field because there is nothing to choose: an
-     * element with no physical presence cannot be a substance filling volume, and lightning strikes
-     * exposed <em>ground</em>. Counting all exposed air instead would score a valley above a summit,
-     * the same inversion {@code OPEN_ABOVE_SOLID} exists to fix for Wind. A field whose only legal
-     * value is one constant is worse than the constant.
+     * <p>Throwing rather than returning a count or an empty result, deliberately. Under volume
+     * counting the existing storm-plus-sky rule would count all exposed air in a storm region,
+     * which carries the same valley-above-summit inversion {@code OPEN_ABOVE_SOLID} exists to fix —
+     * so any number produced here would be known-wrong. An empty result would be worse: it reads as
+     * "no qualifying terrain", which is the silent-zero failure this port's {@code isLoaded} exists
+     * to prevent, one level up.
+     *
+     * <p>Callers that iterate every grounding must skip {@code Weather} explicitly. That is the
+     * intent — a skip someone wrote is visible in a diff, and a default is not.
      */
-    private static boolean satisfiesWeather(
-            TerrainSample sample,
-            ElementGrounding.Weather weather,
-            AnchorParameters parameters,
-            int x,
-            int y,
-            int z) {
-        int sky = sample.skyLightAt(x, y, z);
-        if (sky < weather.minSkyLight() || sky > weather.maxSkyLight()) {
-            return false;
-        }
-        if (!occupied(sample, ElementGrounding.Occupancy.OPEN_ABOVE_SOLID, parameters, x, y, z)) {
-            return false;
-        }
-        OptionalDouble storm = sample.stormProbabilityAt(x, y, z);
-        return storm.isPresent() && storm.getAsDouble() >= weather.minStormProbability();
+    private static boolean satisfiesWeather(ElementGrounding.Weather weather) {
+        throw new UnsupportedOperationException("Lightning (" + weather.elementId()
+                + ") awaits its own treatment; volume counting would score exposed air and invert "
+                + "valley against summit. Skip Weather groundings rather than scoring them.");
     }
 
     /** The level with the most satisfying samples; the lowest such level wins a tie, for determinism. */
@@ -1785,6 +1780,14 @@ public class ResidueAnchorsCommand extends AbstractWorldCommand {
 
         int totalAnchors = 0;
         for (ElementGrounding grounding : HytaleDerivationRules.cosmologicalFive()) {
+            // Lightning awaits its own treatment. Skipped explicitly rather than defaulted, and
+            // printed rather than omitted, so the element stays visible in the output.
+            if (grounding instanceof ElementGrounding.Weather) {
+                sb.append(String.format(
+                        "%-11s %7s %9s %8s %10s %7s%n",
+                        grounding.elementId(), "-", "-", "-", "pending", "-"));
+                continue;
+            }
             List<Anchor> measured = new ArrayList<>();
             long sampled = 0;
             for (WorldPoint2d candidate : candidates) {
@@ -1822,7 +1825,7 @@ public class ResidueAnchorsCommand extends AbstractWorldCommand {
                 .append(totalAnchors > 0 ? "READ" : "EMPTY")
                 .append(" | ")
                 .append(totalAnchors)
-                .append(" anchor(s) across 5 element(s)\n");
+                .append(" anchor(s) across 4 element(s); lightning pending\n");
         send(context, sb.toString());
     }
 
@@ -1930,6 +1933,7 @@ mechanism that replaced it."
 ## What this plan does not build, and why
 
 - **Currents, crystals and geodes.** Anchor spacing gates all three: an MST over anchors that are too sparse or too dense produces currents of the wrong length, and crystal coverage is `2w/R` off that spacing. Building pathing on unvalidated spacing risks discarding it. `influenceRadius` and `crossingTolerance` are carried in `AnchorParameters` now so the record does not change shape later, and are unused until then.
+- **Lightning's measure.** Its own treatment, not yet designed, and not to be filled in by analogy with Wind — it is the element Stormseeker depends on, so it earns a design pass rather than a borrowed predicate. `VolumeStrength` throws for `Weather` so no caller can silently obtain a number.
 - **Per-element measurement window heights.** Counting qualifying open air up a full column may score a low ridge above a summit, which would invert Wind against §2. Whether it does depends on whether the environment at altitude still reads as `Mountains` — unmeasured, and `/residueanchors` reporting Wind's strongest-anchor strength is what will show it.
 - **Removing `SiteScorer` and `LatticeParameters`.** Both still serve `/residueprobe`, which reads a single candidate usefully. They are superseded by this path, not dead; deleting them is a separate change once currents land.
 - **Correcting §4's Earth y-source wording in the spec.** §4 sources Earth's y from "the cave volume's own level" while §2 rejects cave-as-Earth as inverted. That is **settled, not open**: an anchor is a spot with a lot of the element, so an Earth anchor sits where the rock is, and `VolumeStrength`'s modal level of solid points puts it there. §4's phrase is stale wording from before §2's rejection and should be deleted from the spec — a documentation edit this plan does not make, since it touches a PROPOSED spec rather than the code.
