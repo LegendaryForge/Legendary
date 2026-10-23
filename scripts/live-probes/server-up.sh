@@ -62,7 +62,7 @@ echo "$HOLDER" > .holder.pid
 #
 # WHY: `cp` over a jar the running server has open truncates and rewrites the SAME inode, so the
 # classloader's open handle sees changed bytes and every class it has not yet loaded fails with
-# NoClassDefFoundError. On 2026-10-23 that broke a live session twice and was first misdiagnosed as
+# NoClassDefFoundError. On 2026-10-22 that broke a live session twice and was first misdiagnosed as
 # a shutdown-time artifact, because the first symptom appeared during shutdown
 # (PlayerDisconnectEvent -> NoClassDefFoundError on questline.runtime.PlayerRef). The second was
 # unambiguous: /residueanchors threw NoClassDefFoundError on AnchorParameters, a class that was

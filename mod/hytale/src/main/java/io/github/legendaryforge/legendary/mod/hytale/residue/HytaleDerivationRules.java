@@ -99,11 +99,11 @@ public final class HytaleDerivationRules {
                 //
                 // Wind is open space -- the roster decision names the element Wind, and wind and air
                 // are interchangeable here because the game has no wind mechanic at all (operator,
-                // 2026-10-23). The id stays "wind" to match that decision; only the MEASURE is air.
+                // 2026-10-22). The id stays "wind" to match that decision; only the MEASURE is air.
                 // It is symmetric with Earth below: earth is rock, air is
                 // not-rock-and-not-water. No sky gate and no environment list, so a cave counts as
                 // air -- air is there. The element is named for open space rather than for any wind
-                // mechanic, because the game has none (operator, 2026-10-23): an earlier version of
+                // mechanic, because the game has none (operator, 2026-10-22): an earlier version of
                 // this entry argued wind-as-exposure and gated on Mountains/Peaks/Highlands/
                 // Plateaus/Cliffs with sky 12..15, which measured ZERO anchors on plains while
                 // Earth and Water each produced two. That was a biome label standing in for a

@@ -12,7 +12,7 @@ import java.util.Optional;
  * are different answers, and keeping them apart is the whole reason {@link TerrainSample#isLoaded}
  * exists.
  *
- * <p>Found by reading a live probe's own output on 2026-10-23: {@code /residueanchors} reported Wind
+ * <p>Found by reading a live probe's own output on 2026-10-22: {@code /residueanchors} reported Wind
  * with {@code sampled=0} while Fire, Water and Earth each sampled ~1.2M at the same candidates — and
  * the probe's printed guidance read that zero as "nothing loaded". The instrument gave the wrong
  * reading for exactly the case it was built to distinguish, and only cross-referencing another row
