@@ -38,6 +38,30 @@ public sealed interface ElementGrounding {
     /** The element this grounding types a site as. Opaque: there is no enum of the roster anywhere. */
     String elementId();
 
+    /**
+     * How many satisfying sample points a candidate needs before it is an anchor at all — an
+     * absolute count, not a share of the window.
+     *
+     * <p><strong>Per element, because "enough of it" differs between them by orders of
+     * magnitude.</strong> This replaced a single {@code minimumStrengthFraction} on
+     * {@code AnchorParameters}, which asked "does this element dominate its neighbourhood". That is a
+     * sensible question for Earth, Wind and Water at 20-60% of a column and an unanswerable one for
+     * Fire: measured 2026-10-23 in a lava biome, the richest candidate in a 1 km region held 261 lava
+     * samples of a 43,560-sample window — 0.6% against a 1% floor — while a player swam in deep lava
+     * rivers. Lava is riverine and the window is areal, so no window large enough to contain a river
+     * is small enough for the river to dominate it.
+     *
+     * <p>A count also says what the design actually meant. {@code AnchorParameters} describes the
+     * floor's purpose as admitting "a lake, an ocean, a caldera — not a 2x2 puddle", and that is an
+     * absolute amount. A share of a window additionally moves when the window moves, so the same body
+     * of lava would qualify or not depending on {@code measurementRadius}, which is a dial about
+     * perception rather than about the element.
+     *
+     * <p>Interpreting it needs {@code sampleStep}: one sample stands for {@code step³} blocks, so at
+     * the default step of 8 a floor of 10 is roughly 5,120 block-volumes.
+     */
+    int minimumStrengthSamples();
+
     /** Whether a resolved environment id contains any of {@code needles} as a substring. */
     static boolean environmentMatches(String environmentId, Set<String> needles) {
         for (String needle : needles) {
@@ -46,6 +70,14 @@ public sealed interface ElementGrounding {
             }
         }
         return false;
+    }
+
+    private static void requireMinimumStrengthSamples(String elementId, int minimumStrengthSamples) {
+        if (minimumStrengthSamples <= 0) {
+            throw new IllegalArgumentException("minimumStrengthSamples for " + elementId
+                    + " must be positive, got " + minimumStrengthSamples
+                    + " — a zero floor makes a single sample of an element an anchor site");
+        }
     }
 
     private static void requireElementId(String elementId) {
@@ -112,10 +144,15 @@ public sealed interface ElementGrounding {
      * claim and not one residue should make. Environment ids are a regional classification, not a
      * promise about any coordinate.
      */
-    record Physical(String elementId, Set<String> requiredFluids, Set<String> corroboratingEnvironments)
+    record Physical(
+            String elementId,
+            Set<String> requiredFluids,
+            Set<String> corroboratingEnvironments,
+            int minimumStrengthSamples)
             implements ElementGrounding {
         public Physical {
             requireElementId(elementId);
+            requireMinimumStrengthSamples(elementId, minimumStrengthSamples);
             requiredFluids = Set.copyOf(Objects.requireNonNull(requiredFluids, "requiredFluids"));
             corroboratingEnvironments =
                     Set.copyOf(Objects.requireNonNull(corroboratingEnvironments, "corroboratingEnvironments"));
@@ -135,10 +172,17 @@ public sealed interface ElementGrounding {
      * mountain's interior. Sky light alone qualifies nothing anywhere, by design — it would make
      * every open column in the world a Wind site.
      */
-    record Geometric(String elementId, Set<String> environments, int minSkyLight, int maxSkyLight, Occupancy occupancy)
+    record Geometric(
+            String elementId,
+            Set<String> environments,
+            int minSkyLight,
+            int maxSkyLight,
+            Occupancy occupancy,
+            int minimumStrengthSamples)
             implements ElementGrounding {
         public Geometric {
             requireElementId(elementId);
+            requireMinimumStrengthSamples(elementId, minimumStrengthSamples);
             environments = Set.copyOf(Objects.requireNonNull(environments, "environments"));
             requireSkyRange(minSkyLight, maxSkyLight);
             Objects.requireNonNull(occupancy, "occupancy");
@@ -161,10 +205,12 @@ public sealed interface ElementGrounding {
      *     at all — Zone 1 sits near 0.014 and should score nothing, while
      *     {@code Env_Zone4_Crucible} sits at 0.50
      */
-    record Weather(String elementId, double minStormProbability, int minSkyLight, int maxSkyLight)
+    record Weather(
+            String elementId, double minStormProbability, int minSkyLight, int maxSkyLight, int minimumStrengthSamples)
             implements ElementGrounding {
         public Weather {
             requireElementId(elementId);
+            requireMinimumStrengthSamples(elementId, minimumStrengthSamples);
             requireSkyRange(minSkyLight, maxSkyLight);
             if (!(minStormProbability >= 0) || minStormProbability > 1) {
                 throw new IllegalArgumentException("minStormProbability must be in [0,1], got " + minStormProbability);

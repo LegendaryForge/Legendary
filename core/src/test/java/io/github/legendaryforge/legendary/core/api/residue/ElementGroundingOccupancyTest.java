@@ -15,9 +15,9 @@ class ElementGroundingOccupancyTest {
     @Test
     void earthCountsSolidAndWindCountsTheExposedSurface() {
         ElementGrounding.Geometric earth =
-                new ElementGrounding.Geometric("earth", Set.of("Caves"), 0, 6, ElementGrounding.Occupancy.SOLID);
-        ElementGrounding.Geometric wind =
-                new ElementGrounding.Geometric("wind", Set.of("Mountains"), 12, 15, ElementGrounding.Occupancy.OPEN);
+                new ElementGrounding.Geometric("earth", Set.of("Caves"), 0, 6, ElementGrounding.Occupancy.SOLID, 10);
+        ElementGrounding.Geometric wind = new ElementGrounding.Geometric(
+                "wind", Set.of("Mountains"), 12, 15, ElementGrounding.Occupancy.OPEN, 10);
         assertEquals(ElementGrounding.Occupancy.SOLID, earth.occupancy());
         assertEquals(ElementGrounding.Occupancy.OPEN, wind.occupancy());
     }
@@ -25,6 +25,7 @@ class ElementGroundingOccupancyTest {
     @Test
     void occupancyIsRequired() {
         assertThrows(
-                NullPointerException.class, () -> new ElementGrounding.Geometric("earth", Set.of("Caves"), 0, 6, null));
+                NullPointerException.class,
+                () -> new ElementGrounding.Geometric("earth", Set.of("Caves"), 0, 6, null, 10));
     }
 }

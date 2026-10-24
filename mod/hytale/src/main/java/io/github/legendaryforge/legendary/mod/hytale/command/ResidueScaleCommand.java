@@ -142,8 +142,6 @@ public class ResidueScaleCommand extends AbstractWorldCommand {
                 .append(production.measurementRadius())
                 .append("b, step ")
                 .append(production.sampleStep())
-                .append(", floor ")
-                .append(production.minimumStrengthFraction())
                 .append('\n');
 
         sb.append(String.format("%n%6s %5s %6s %9s %7s", "radius", "step", "load", "samples", "ms"));
@@ -175,7 +173,6 @@ public class ResidueScaleCommand extends AbstractWorldCommand {
                     production.suppressionRadius(),
                     radius,
                     step,
-                    production.minimumStrengthFraction(),
                     production.influenceRadius(),
                     production.crossingTolerance());
 

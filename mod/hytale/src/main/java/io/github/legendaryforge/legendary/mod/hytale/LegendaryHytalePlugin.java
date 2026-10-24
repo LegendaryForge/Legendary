@@ -6,6 +6,7 @@ import com.hypixel.hytale.server.core.modules.interaction.interaction.config.Int
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
+import com.hypixel.hytale.server.core.universe.world.events.ChunkPreLoadProcessEvent;
 import io.github.legendaryforge.legendary.core.api.weather.PlayerWeatherController;
 import io.github.legendaryforge.legendary.core.api.weather.WeatherGate;
 import io.github.legendaryforge.legendary.core.internal.weather.DefaultPlayerWeatherController;
@@ -15,8 +16,11 @@ import io.github.legendaryforge.legendary.mod.hytale.command.BeamProbeCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.BlockIdProbeCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.BlockPlacementProbeCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.BlockSpoofProbeCommand;
+import io.github.legendaryforge.legendary.mod.hytale.command.ChunkHookProbeCommand;
+import io.github.legendaryforge.legendary.mod.hytale.command.FluidCensusCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.FluidScanCostCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.MarkerProbeCommand;
+import io.github.legendaryforge.legendary.mod.hytale.command.PartitionGapCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.PointStoreProbeCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.PrefabPasteProbeCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.ResidueAnchorsCommand;
@@ -30,6 +34,8 @@ import io.github.legendaryforge.legendary.mod.hytale.command.TerrainSignalProbeC
 import io.github.legendaryforge.legendary.mod.hytale.command.WeatherConditionProbeCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.WeatherOverrideProbeCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.WeatherPortProbeCommand;
+import io.github.legendaryforge.legendary.mod.hytale.command.WorldGenHeightCommand;
+import io.github.legendaryforge.legendary.mod.hytale.command.WorldGenQueryCommand;
 import io.github.legendaryforge.legendary.mod.hytale.stormseeker.HytaleStormseekerHost;
 import io.github.legendaryforge.legendary.mod.hytale.stormseeker.StormseekerStartLineInteraction;
 import io.github.legendaryforge.legendary.mod.hytale.stormseeker.StormseekerTickSystem;
@@ -89,7 +95,10 @@ public class LegendaryHytalePlugin extends JavaPlugin {
 
         getEventRegistry().registerGlobal(PlayerConnectEvent.class, this::onPlayerConnect);
         getEventRegistry().registerGlobal(PlayerDisconnectEvent.class, this::onPlayerDisconnect);
+        getEventRegistry().registerGlobal(ChunkPreLoadProcessEvent.class, ChunkHookProbeCommand::onChunkPreLoad);
+        ChunkHookProbeCommand.markRegistered();
         getLogger().atInfo().log("Player event listeners registered.");
+        getLogger().atInfo().log("Chunk pre-load listener registered.");
 
         getCommandRegistry()
                 .registerCommand(new StormseekerStatusCommand(stormseekerHost, weatherGate, weatherBackend));
@@ -111,10 +120,15 @@ public class LegendaryHytalePlugin extends JavaPlugin {
         getCommandRegistry().registerCommand(new BlockIdProbeCommand());
         getCommandRegistry().registerCommand(new ResidueAnchorsCommand());
         getCommandRegistry().registerCommand(new ResidueScaleCommand());
+        getCommandRegistry().registerCommand(new WorldGenQueryCommand());
+        getCommandRegistry().registerCommand(new WorldGenHeightCommand());
+        getCommandRegistry().registerCommand(new ChunkHookProbeCommand());
+        getCommandRegistry().registerCommand(new FluidCensusCommand());
+        getCommandRegistry().registerCommand(new PartitionGapCommand());
         getLogger()
                 .atInfo()
                 .log(
-                        "Commands registered: /stormseeker, /ss-advance, /ss-trial, /weatherprobe, /weatheroverrideprobe, /weatherportprobe, /residueparticleprobe, /residueprobe, /blockprobe, /blockspoofprobe, /prefabprobe, /beamprobe, /pointprobe, /markerprobe, /signalprobe, /fluidscancost, /blockidprobe, /residueanchors, /residuescale");
+                        "Commands registered: /stormseeker, /ss-advance, /ss-trial, /weatherprobe, /weatheroverrideprobe, /weatherportprobe, /residueparticleprobe, /residueprobe, /blockprobe, /blockspoofprobe, /prefabprobe, /beamprobe, /pointprobe, /markerprobe, /signalprobe, /fluidscancost, /blockidprobe, /residueanchors, /residuescale, /worldgenquery, /worldgenheight, /chunkhookprobe, /fluidcensus, /partitiongap");
     }
 
     private void onPlayerConnect(PlayerConnectEvent event) {
