@@ -54,7 +54,7 @@ class AnchorParametersTest {
 
     @Test
     void theStrengthFloorIsNotAParameterHere() {
-        // It moved to ElementGrounding.minimumStrengthSamples() on 2026-10-23. Asserted rather than
+        // It moved to ElementGrounding.minimumStrengthVolume() on 2026-10-23. Asserted rather than
         // merely deleted: a reader who comes looking for a floor on this record should find a
         // statement that it is deliberately absent, not silence.
         for (java.lang.reflect.RecordComponent component : AnchorParameters.class.getRecordComponents()) {

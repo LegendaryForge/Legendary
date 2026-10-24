@@ -153,14 +153,39 @@ worth knowing before anything derives on demand.
 
 ## 5. Out of scope, and flagged rather than decided
 
-**The measurement radius is now coupled to the strength floors, and this is the live follow-up.**
-`measurementRadius` stays 128 here, which leaves the window (257 b) twice the new candidate spacing
-(128 b) rather than equal to it, so neighbouring candidates see more shared terrain than before. §10's
-stated remedy for arbitrary-looking anchors is *"a narrower window"* — but halving it is **not** a free
-change: `ElementGrounding.minimumStrengthSamples()` is calibrated against the current window
-(`436 = 1%` of `33×33×40`), and Fire's `10` came from a live `0`-against-`44` separation measured at
-radius 128. Shrinking the window changes what every floor means. Decide the two together or not at
-all.
+**The measurement radius stays 128, and narrowing it is the live follow-up.** The window (257 b) is
+now twice the new candidate spacing (128 b) rather than equal to it, so neighbouring candidates see
+more shared terrain than before. §10's stated remedy for arbitrary-looking anchors is *"a narrower
+window"*, and that remedy is now cheaper than this document first claimed.
+
+> **Corrected 2026-10-23, same day, by the session that wrote it.** This paragraph read *"Shrinking
+> the window changes what every floor means."* That is too strong, and it mis-states where the
+> coupling lives. The floor's **mechanism** is window-independent — it is an absolute amount, which
+> `ElementGrounding`'s own javadoc said before this document was written. Only **one value** carries
+> the old window's imprint: `HytaleDerivationRules`' abundant-element floor, self-documented as *"the
+> count that reproduces the old 1% fraction floor at the default window"*, `ceil(0.01 × 43,560)`.
+> Fire's floor is volume-derived from a live `0`-against-`44` separation and is genuinely
+> window-free. So narrowing the window re-imposes a fraction on the four elements whose floor has
+> never been the binding constraint; it does not invalidate the floors.
+>
+> Left as a correction rather than a silent edit, because the overstatement is the kind this project
+> has logged repeatedly — a hazard note read as live until someone spends the time to disprove it.
+
+**What was actually wrong there, and is now fixed.** Chasing that coupling turned up a different one
+that nothing had recorded: the floor was a **raw sample count**, and one sample stands for
+`sampleStep³` blocks. The same body of lava yields **8× the samples at step 4** that it does at step 8,
+so every floor became 8× looser with no error and no failing test. That was a live trap rather than a
+theoretical one — session 26's queued anisotropic-sampling proposal (coarse x/z, step 1 in y) raises a
+window from 43,560 samples to 348,480, exactly that 8×, which would have let Fire site on an eighth of
+the lava its floor was measured against.
+
+`ElementGrounding` now states the floor as a **block volume** and derives the sample count from
+`sampleStep` at comparison time, so neither that dial nor `measurementRadius` can move a verdict about
+the element. Both production floors reproduce their historical counts exactly at step 8 (Fire's 5,120
+blocks → 10; the abundant elements' 223,232 → 436), so **no verdict changes at the current
+parameters** — which is what made it safe to take on its own rather than alongside a tuning change.
+Pinned by `theFloorIsInvariantUnderSampleStepBecauseItIsAVolume`, mutation-tested by reintroducing the
+defect.
 
 **`verticalSpan` is still unspecified** and the superseded document's §"Out of scope" applies
 unchanged — §4 gives each element its own y while the span is a single global 16.

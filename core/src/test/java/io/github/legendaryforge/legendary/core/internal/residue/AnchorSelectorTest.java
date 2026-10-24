@@ -37,7 +37,7 @@ class AnchorSelectorTest {
      * fixture strengths below meaningful.
      */
     private static final ElementGrounding WATER =
-            new ElementGrounding.Physical("water", Set.of("Water_Source"), Set.of("Shores"), 10);
+            new ElementGrounding.Physical("water", Set.of("Water_Source"), Set.of("Shores"), 10 * 8 * 8 * 8);
 
     private static Anchor at(double x, double z, int strength) {
         return new Anchor("water", new WorldPoint3d(x, 64, z), strength, 1000);
@@ -153,7 +153,7 @@ class AnchorSelectorTest {
         // element dominate its neighbourhood", which for lava has no yes anywhere in the world.
         // The design's own words are "a lake, an ocean, a caldera -- not a 2x2 puddle", and that is
         // an absolute amount.
-        ElementGrounding fire = withFloor(10);
+        ElementGrounding fire = withFloorAtStep8(10);
         Anchor river = new Anchor("fire", new WorldPoint3d(0, 143, 0), 261, 43_560);
         assertEquals(0.006, river.strengthFraction(), 0.001, "well under any sane fraction floor");
         assertEquals(List.of(river), AnchorSelector.select(SEED, P, fire, List.of(river)));
@@ -164,7 +164,7 @@ class AnchorSelectorTest {
         // The other half: the floor must be able to say no. Separation at the lava site was 0 samples
         // against 44 for the weakest real river, so any threshold in that range works -- this pins
         // that the chosen one rejects nothing-at-all rather than admitting everything.
-        ElementGrounding fire = withFloor(10);
+        ElementGrounding fire = withFloorAtStep8(10);
         Anchor trace = new Anchor("fire", new WorldPoint3d(0, 143, 0), 9, 43_560);
         assertEquals(List.of(), AnchorSelector.select(SEED, P, fire, List.of(trace)));
     }
@@ -174,15 +174,80 @@ class AnchorSelectorTest {
         // A count floor is independent of the denominator, which is the whole point: the same body
         // of lava measured in a wider window would fail a fraction floor purely because the window
         // grew. Same strength, 10x the samples, same verdict.
-        ElementGrounding fire = withFloor(10);
+        ElementGrounding fire = withFloorAtStep8(10);
         Anchor narrow = new Anchor("fire", new WorldPoint3d(0, 143, 0), 50, 43_560);
         Anchor wide = new Anchor("fire", new WorldPoint3d(0, 143, 0), 50, 435_600);
         assertEquals(1, AnchorSelector.select(SEED, P, fire, List.of(narrow)).size());
         assertEquals(1, AnchorSelector.select(SEED, P, fire, List.of(wide)).size());
     }
 
-    private static ElementGrounding withFloor(int minimumStrengthSamples) {
-        return new ElementGrounding.Physical(
-                "fire", Set.of("Lava_Source"), Set.of("Volcanoes"), minimumStrengthSamples);
+    @Test
+    void theFloorIsInvariantUnderSampleStepBecauseItIsAVolume() {
+        // The defect this closes. The floor used to be a raw count of satisfying samples, and one
+        // sample stands for step³ blocks -- so the SAME body of lava yields 8x the samples at step 4
+        // that it does at step 8, and a count floor silently became 8x looser. No error, no failing
+        // test. It was a live trap rather than a theoretical one: the queued anisotropic-sampling
+        // proposal (coarse x/z, step 1 in y) raises a window from 43,560 samples to 348,480, which
+        // is exactly that 8x, and it would have let Fire site on an eighth of the lava its floor was
+        // measured against.
+        ElementGrounding fire = withFloorAtStep8(10); // 5,120 blocks
+        AnchorParameters step8 = withStep(8);
+        AnchorParameters step4 = withStep(4);
+
+        assertEquals(10, fire.minimumStrengthSamples(8));
+        assertEquals(80, fire.minimumStrengthSamples(4), "8x the samples describe the same volume");
+
+        // Half the floor -- 2,560 blocks -- must be rejected at BOTH steps. Under the old raw count
+        // of 10 this was ACCEPTED at step 4, because the same body reads as 40 samples there.
+        Anchor halfAtStep8 = new Anchor("fire", new WorldPoint3d(0, 143, 0), 5, 43_560);
+        Anchor halfAtStep4 = new Anchor("fire", new WorldPoint3d(0, 143, 0), 40, 348_480);
+        assertEquals(List.of(), AnchorSelector.select(SEED, step8, fire, List.of(halfAtStep8)));
+        assertEquals(List.of(), AnchorSelector.select(SEED, step4, fire, List.of(halfAtStep4)));
+
+        // And the same body exactly AT the floor qualifies at both.
+        Anchor atStep8 = new Anchor("fire", new WorldPoint3d(0, 143, 0), 10, 43_560);
+        Anchor atStep4 = new Anchor("fire", new WorldPoint3d(0, 143, 0), 80, 348_480);
+        assertEquals(
+                1, AnchorSelector.select(SEED, step8, fire, List.of(atStep8)).size());
+        assertEquals(
+                1, AnchorSelector.select(SEED, step4, fire, List.of(atStep4)).size());
+    }
+
+    @Test
+    void theProductionFloorsReproduceTheirHistoricalCountsAtTheDefaultStep() {
+        // The conversion to volumes must be behaviour-preserving at the current parameters, which is
+        // what made it safe to take on its own rather than alongside a tuning change. These two are
+        // the values in HytaleDerivationRules, restated here because mod/hytale does not compile on
+        // CI -- so without this the guarantee would be untested anywhere a runner can see.
+        assertEquals(10, withFloorAtStep8(10).minimumStrengthSamples(8), "Fire's measured floor");
+        assertEquals(436, withFloorAtStep8(436).minimumStrengthSamples(8), "the abundant elements' floor");
+    }
+
+    @Test
+    void theSampleCountRoundsUpSoTruncationCannotWeakenTheFloor() {
+        // ceilDiv, not integer division: the comparison this stands for is strength * step³ >= volume,
+        // and rounding down would admit a candidate up to one sample short -- 512 blocks at step 8.
+        ElementGrounding fire = withFloorVolume(5_121);
+        assertEquals(11, fire.minimumStrengthSamples(8), "5,121 blocks does not fit in 10 samples of 512");
+    }
+
+    /**
+     * A Fire grounding whose floor is the given sample count <em>at the default step of 8</em>.
+     *
+     * <p>The floor is a volume now, but these fixtures are written in samples because that is the
+     * unit the live measurements they cite were recorded in. Converting here keeps the fixtures
+     * readable against their own evidence without the production type carrying a step-dependent
+     * number.
+     */
+    private static ElementGrounding withFloorAtStep8(int samples) {
+        return withFloorVolume(samples * 8 * 8 * 8);
+    }
+
+    private static ElementGrounding withFloorVolume(int blocks) {
+        return new ElementGrounding.Physical("fire", Set.of("Lava_Source"), Set.of("Volcanoes"), blocks);
+    }
+
+    private static AnchorParameters withStep(int sampleStep) {
+        return new AnchorParameters(128, 0.35, 512, 128, sampleStep, 8, 8);
     }
 }

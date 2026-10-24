@@ -323,13 +323,18 @@ public class ResidueAnchorsCommand extends AbstractWorldCommand {
                     anchors.size(),
                     gap(anchors, false),
                     gap(anchors, true),
-                    grounding.minimumStrengthSamples(),
+                    grounding.minimumStrengthSamples(parameters.sampleStep()),
                     best));
         }
         for (ElementGrounding grounding : awaitingTreatment) {
             sb.append(String.format(
                     "%-11s %7s %9s %8s %9d %5s%n",
-                    grounding.elementId(), "-", "pending", "pending", grounding.minimumStrengthSamples(), "-"));
+                    grounding.elementId(),
+                    "-",
+                    "pending",
+                    "pending",
+                    grounding.minimumStrengthSamples(parameters.sampleStep()),
+                    "-"));
         }
 
         sb.append("\nvolc* is a DIAGNOSTIC, not a score: the share of the window whose environment is\n")
