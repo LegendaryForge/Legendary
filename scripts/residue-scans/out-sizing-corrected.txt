@@ -1,0 +1,14 @@
+label                 corrected — halve the scale
+suppressionRadius R   256
+cellSize              128   (R/cell = 2.00)
+saturation lam_p*pi*R^2  12.57   competitors within R = 11.6
+
+anchors/km2              5.00   design 1/R^2        =   15.26   ratio 3.05
+MST m/km2                1847   design A/R          =    3906   ratio 2.11
+coverage per element    2.94%   design 2w/R         =   6.25%   ratio 2.12
+coverage 5x convention 14.72%   design 10w/R        =  31.25%
+coverage UNION         13.70%   <- what a player walks
+
+band check 2w*L         2.96%   (union overlap is the difference)
+
+SIZING_VERDICT: COMPLETE
