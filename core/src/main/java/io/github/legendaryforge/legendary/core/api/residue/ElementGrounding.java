@@ -39,8 +39,18 @@ public sealed interface ElementGrounding {
     String elementId();
 
     /**
-     * How many satisfying sample points a candidate needs before it is an anchor at all — an
-     * absolute count, not a share of the window.
+     * How much of the element, <strong>in block-volumes</strong>, a candidate needs before it is an
+     * anchor at all — an absolute quantity, not a share of the window and not a count of samples.
+     *
+     * <p><strong>A volume rather than a sample count, since 2026-10-23.</strong> This was an {@code
+     * int} count of satisfying samples, compared directly against {@code VolumeStrength}'s output.
+     * But one sample stands for {@code sampleStep³} blocks, so the same body of lava yields 8x the
+     * samples at step 4 that it does at step 8 — and a raw count floor therefore became 8x looser
+     * with no error and no test failing. That was a live trap: the queued anisotropic-sampling
+     * proposal (coarse x/z, step 1 in y) raises a window from 43,560 samples to 348,480, which is
+     * exactly the 8x that would have let Fire site on an eighth of the lava its floor was measured
+     * against. A volume is invariant under both {@code sampleStep} and {@code measurementRadius},
+     * so neither dial can move a verdict about the element.
      *
      * <p><strong>Per element, because "enough of it" differs between them by orders of
      * magnitude.</strong> This replaced a single {@code minimumStrengthFraction} on
@@ -57,10 +67,29 @@ public sealed interface ElementGrounding {
      * of lava would qualify or not depending on {@code measurementRadius}, which is a dial about
      * perception rather than about the element.
      *
-     * <p>Interpreting it needs {@code sampleStep}: one sample stands for {@code step³} blocks, so at
-     * the default step of 8 a floor of 10 is roughly 5,120 block-volumes.
+     * <p>Read it directly as blocks: Fire's 5,120 is a lava body about 17 blocks on a side, plainly
+     * not the "2x2 puddle" the floor exists to reject.
      */
-    int minimumStrengthSamples();
+    int minimumStrengthVolume();
+
+    /**
+     * The floor expressed as a sample count, for a given {@code sampleStep}.
+     *
+     * <p>{@code ceilDiv}, because the comparison it stands for is {@code strength * step³ >= volume}
+     * and for positive integers {@code strength >= ceil(volume / step³)} is exactly equivalent.
+     * Rounding down would weaken the floor by up to one sample — which at step 8 is 512 blocks.
+     *
+     * <p>Derived rather than stored, so a parameter change cannot leave it stale. Both production
+     * floors reproduce their historical counts exactly at the default step of 8: Fire's 5,120 gives
+     * 10, and the abundant elements' 223,232 gives 436.
+     */
+    default int minimumStrengthSamples(int sampleStep) {
+        if (sampleStep <= 0) {
+            throw new IllegalArgumentException("sampleStep must be positive, got " + sampleStep);
+        }
+        long cube = (long) sampleStep * sampleStep * sampleStep;
+        return (int) Math.ceilDiv(minimumStrengthVolume(), cube);
+    }
 
     /** Whether a resolved environment id contains any of {@code needles} as a substring. */
     static boolean environmentMatches(String environmentId, Set<String> needles) {
@@ -72,10 +101,10 @@ public sealed interface ElementGrounding {
         return false;
     }
 
-    private static void requireMinimumStrengthSamples(String elementId, int minimumStrengthSamples) {
-        if (minimumStrengthSamples <= 0) {
-            throw new IllegalArgumentException("minimumStrengthSamples for " + elementId
-                    + " must be positive, got " + minimumStrengthSamples
+    private static void requireMinimumStrengthVolume(String elementId, int minimumStrengthVolume) {
+        if (minimumStrengthVolume <= 0) {
+            throw new IllegalArgumentException("minimumStrengthVolume for " + elementId
+                    + " must be positive, got " + minimumStrengthVolume
                     + " — a zero floor makes a single sample of an element an anchor site");
         }
     }
@@ -148,11 +177,11 @@ public sealed interface ElementGrounding {
             String elementId,
             Set<String> requiredFluids,
             Set<String> corroboratingEnvironments,
-            int minimumStrengthSamples)
+            int minimumStrengthVolume)
             implements ElementGrounding {
         public Physical {
             requireElementId(elementId);
-            requireMinimumStrengthSamples(elementId, minimumStrengthSamples);
+            requireMinimumStrengthVolume(elementId, minimumStrengthVolume);
             requiredFluids = Set.copyOf(Objects.requireNonNull(requiredFluids, "requiredFluids"));
             corroboratingEnvironments =
                     Set.copyOf(Objects.requireNonNull(corroboratingEnvironments, "corroboratingEnvironments"));
@@ -178,11 +207,11 @@ public sealed interface ElementGrounding {
             int minSkyLight,
             int maxSkyLight,
             Occupancy occupancy,
-            int minimumStrengthSamples)
+            int minimumStrengthVolume)
             implements ElementGrounding {
         public Geometric {
             requireElementId(elementId);
-            requireMinimumStrengthSamples(elementId, minimumStrengthSamples);
+            requireMinimumStrengthVolume(elementId, minimumStrengthVolume);
             environments = Set.copyOf(Objects.requireNonNull(environments, "environments"));
             requireSkyRange(minSkyLight, maxSkyLight);
             Objects.requireNonNull(occupancy, "occupancy");
@@ -206,11 +235,11 @@ public sealed interface ElementGrounding {
      *     {@code Env_Zone4_Crucible} sits at 0.50
      */
     record Weather(
-            String elementId, double minStormProbability, int minSkyLight, int maxSkyLight, int minimumStrengthSamples)
+            String elementId, double minStormProbability, int minSkyLight, int maxSkyLight, int minimumStrengthVolume)
             implements ElementGrounding {
         public Weather {
             requireElementId(elementId);
-            requireMinimumStrengthSamples(elementId, minimumStrengthSamples);
+            requireMinimumStrengthVolume(elementId, minimumStrengthVolume);
             requireSkyRange(minSkyLight, maxSkyLight);
             if (!(minStormProbability >= 0) || minStormProbability > 1) {
                 throw new IllegalArgumentException("minStormProbability must be in [0,1], got " + minStormProbability);

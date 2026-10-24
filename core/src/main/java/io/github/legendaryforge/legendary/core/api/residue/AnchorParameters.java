@@ -30,7 +30,7 @@ package io.github.legendaryforge.legendary.core.api.residue;
  * @param measurementRadius horizontal half-width of the window strength is counted over
  * @param sampleStep spacing between sampled positions in all three axes
  * <p><strong>The strength floor is not here.</strong> It moved to
- * {@link ElementGrounding#minimumStrengthSamples()} on 2026-10-23, because a single floor expressed
+ * {@link ElementGrounding#minimumStrengthVolume()} on 2026-10-23, because a single floor expressed
  * as a fraction of the window could not serve both an element that fills a fifth of a column and one
  * that runs through it as a river. See that method for the measurement that forced it. What survives
  * of the old field's intent is its description of the job: admit a lake, an ocean, a caldera — not a

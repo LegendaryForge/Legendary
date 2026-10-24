@@ -39,12 +39,14 @@ public final class AnchorSelector {
      * The subset of {@code measured} that clears the floor and wins its neighbourhood, in input order.
      *
      * <p>Takes the {@code grounding} because the floor is a property of the element, not of the
-     * lattice — see {@link ElementGrounding#minimumStrengthSamples()}. Callers already have it: they
+     * lattice — see {@link ElementGrounding#minimumStrengthVolume()}. Callers already have it: they
      * needed it to produce {@code measured} in the first place.
      */
     public static List<Anchor> select(
             long worldSeed, AnchorParameters parameters, ElementGrounding grounding, List<Anchor> measured) {
-        int floor = grounding.minimumStrengthSamples();
+        // The grounding states its floor as a block volume; the sample count that represents it
+        // depends on sampleStep, so it is derived here rather than stored anywhere.
+        int floor = grounding.minimumStrengthSamples(parameters.sampleStep());
         List<Anchor> eligible = new ArrayList<>();
         for (Anchor anchor : measured) {
             // An absolute count, so the verdict does not move when measurementRadius does.
