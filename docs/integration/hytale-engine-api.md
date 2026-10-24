@@ -3,10 +3,15 @@
 > **This is the accreting reference. The other integration documents are dated snapshots.**
 >
 > `hytale-capability-audit.md` audited build `0.5.9` on 2026-08-24 and has not been re-run since;
-> the game is now `0.7.3` (this line said `0.7.2` until 2026-10-21; the launcher updated and the
-> `0.7.2` → `0.7.3` diff is one added class, `ThirdPartySentryFilter`, with zero signature removals
-> across the 65 types we import — captured in `../../scripts/api-baseline/snapshots/`), and its own
-> §6 *Re-audit checklist* was never executed for `0.6.1`, `0.7.2` or `0.7.3`.
+> the game is now `0.7.4` (this line said `0.7.2` until 2026-10-21 and `0.7.3` until 2026-10-23 —
+> re-derived from `../../scripts/api-baseline/snapshots/`, whose newest entry is `0.7.4-c9581a28`,
+> after session 27 recorded every one of its measurements against `0.7.4` while this line still
+> said `0.7.3`), and its own §6 *Re-audit checklist* was never executed for `0.6.1`, `0.7.2`,
+> `0.7.3` or `0.7.4`.
+>
+> **Read the build off the snapshots directory, not off this sentence** — `ls
+> ../../scripts/api-baseline/snapshots/ | tail -1`. A hand-maintained version string in prose is
+> the one thing here guaranteed to go stale, and it has now done so twice in three days.
 > `docs/README.md` already warns that it is "unreliable per row". That document stays as
 > history. **New findings land here**, one row at a time, each stamped with the build it was
 > established against and how.
@@ -308,6 +313,122 @@ residue spec §5.
 > rosters and no two are the same list, so the assets cannot answer "which elements does Hytale have"
 > — only "keyed to what". Catalogued in `../setting/hytale-orbis-setting-brief.md` §3, and the trap is
 > written up in `../../CLAUDE.md` § "Lore first".
+
+---
+
+## Worldgen feature locality — there is no 3x3-style bound
+
+**Established 2026-10-23 against `0.7.4`. All [javap] — signatures read, nothing executed.** This
+answers the question session 27 left as *"the most valuable unknown left"*: what bounds a worldgen
+feature's footprint, and therefore whether a residue network can be derived at generation time.
+
+**The answer is that nothing bounds it, because features are re-derived per chunk from a
+deterministic point generator rather than written across chunk borders.** Minecraft's 3x3-chunk
+feature bound has no analogue here.
+
+### `ChunkGenerator` computes its own feature reach
+
+`com.hypixel.hytale.server.worldgen.chunk.ChunkGenerator` — the live generator, reached via
+`world.getWorldConfig().getWorldGenProvider().getGenerator()`. Its constructor ends:
+
+```java
+int extents = getLargestFeatureChunkExtents(zonePatternProvider, CHUNK_BOUNDS_PADDING);
+this.minChunkCoord = -67108864 + extents;
+this.maxChunkCoord =  67108863 - extents;
+```
+
+and the method it calls, decompiled from bytecode:
+
+```java
+private static int getLargestFeatureChunkExtents(ZonePatternProvider provider, int padding) {
+    double max = 0.0;
+    for (Zone zone : provider.getZones()) {
+        if (zone.caveGenerator() != null) {
+            for (CaveType t : zone.caveGenerator().getCaveTypes()) {
+                max = Math.max(max, t.getMaximumSize());               // blocks
+            }
+        }
+        for (Biome b : zone.biomePatternGenerator().getBiomes()) {
+            if (b.getPrefabContainer() == null) continue;
+            for (PrefabContainerEntry e : b.getPrefabContainer().getEntries()) {
+                max = Math.max(max, e.getPrefabPatternGenerator().getMaxSize());   // blocks
+            }
+        }
+    }
+    return ChunkUtil.chunkCoordinate(MathUtil.ceil(max)) + padding;    // -> CHUNKS, + 16
+}
+```
+
+| Fact | Value | Tier |
+|---|---|---|
+| `ChunkGenerator.CHUNK_BOUNDS_PADDING` | **16**, and it is **chunks = 512 blocks** | [javap] |
+| `ChunkUtil.chunkCoordinate(int)` | `x >> 5`, so blocks -> chunks | [javap] |
+| `ChunkUtil.SIZE` | 32 | [javap] |
+| World chunk range before clamping | `-67108864 .. 67108863` | [javap] |
+
+So the engine derives its feature reach from whatever the largest **declared** feature size is, and
+reserves 16 chunks on top. The padding's *only* use is clamping world bounds so a feature near the
+edge cannot overflow — it is not a per-chunk write budget.
+
+### The native placement model is the one our anchor design arrived at independently
+
+`com.hypixel.hytale.server.worldgen.prefab.PrefabPatternGenerator` fields, and the correspondence is
+close enough to be worth stating plainly:
+
+| Engine field | Our equivalent |
+|---|---|
+| `IPointGenerator gridGenerator` | `CandidateLattice` |
+| `int exclusionRadius` | `AnchorParameters.suppressionRadius` |
+| `int maxSize` | measurement + suppression footprint |
+| `int seedOffset` | the per-element hash domain we do **not** have (see below) |
+| `heightCondition`, `mapCondition`, `parentCondition`, `prefabPlacementConfiguration` | `ElementGrounding`'s predicates |
+
+And `com.hypixel.hytale.procedurallib.logic.point.IPointGenerator` is queried **per region, from a
+seed**:
+
+| Method | Meaning |
+|---|---|
+| `collect(int seed, double minX, double minZ, double maxX, double maxZ, PointConsumer2d)` | every point in a rectangle — this is `CandidateLattice.candidatesWithin` |
+| `nearest2D(int seed, double x, double z)` / `nearest3D(...)` | nearest point(s) to a position |
+| `transition2D` / `transition3D` | boundary queries |
+| `getInterval()` | point spacing — this is `cellSize` |
+
+A generator that can be asked "which points fall in this rectangle" is a generator each chunk can
+query independently over its own bounds expanded by `maxSize`. That is what makes a declared
+max-size necessary at all, and it is why no cross-chunk write is needed.
+
+### What this settles, and what it does not
+
+**Settles.** Generation-time derivation of a bounded-footprint feature is the engine's own model, not
+a thing we would be working against. At the corrected sizing (`suppressionRadius` 256,
+`measurementRadius` 128 — see `../superpowers/specs/2026-10-23-residue-sizing-re-derivation.md`) our
+footprint is **384 blocks = 12 chunks**, which sits inside the 16-chunk padding the engine already
+reserves. The architecture fork session 27 posed — *"a run-ahead derivation service, or bounding the
+footprint"* — is answered by neither: declare the footprint and derive per chunk, as the engine does.
+
+**Does not settle.** Every row above is `[javap]`, which this document's own tier table calls **a
+hypothesis**. Specifically unconfirmed:
+
+- That `getLargestFeatureChunkExtents` is the *only* thing gating feature reach. It is the only one
+  found; absence of a second gate was not established.
+- Whether `IPointGenerator.collect` is actually what prefab placement calls per chunk, as opposed to
+  being used some other way. The field exists and the interface affords it; the call was not traced.
+- Whether a mod can register into this path at all, or only read it. `builtin.worldgen.modifier` is
+  live (session 27: 3 references from `ChunkGeneratorJsonLoader` against 0 for
+  `builtin.hytalegenerator`) and its content types include `PointGrid` — so the declarative route is
+  plausibly open, but nothing has shipped a modifier asset and watched it take effect.
+
+**The probe that would confirm it:** declare a trivial feature with a known `maxSize` and an
+`exclusionRadius`, and check that its blocks appear in chunks other than the one containing its
+point. Until then this is a strong hypothesis about a mechanism, not a measured capability.
+
+### One asymmetry worth carrying to the anchor model
+
+`PrefabPatternGenerator` has a `seedOffset` per generator. `AnchorSelector.positionHash` is
+`mix(worldSeed, x, z)` with **no element term**, so two elements that tie across the same candidates
+select identical anchors — recorded in
+`../superpowers/specs/2026-10-23-residue-sizing-re-derivation.md` §5. The engine having a per-pattern
+seed offset is independent evidence that the per-element domain is the expected shape, not a nicety.
 
 ---
 
