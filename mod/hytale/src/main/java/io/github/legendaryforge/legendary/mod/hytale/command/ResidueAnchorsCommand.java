@@ -152,6 +152,19 @@ public class ResidueAnchorsCommand extends AbstractWorldCommand {
 
         int window = parameters.windowSampleCount();
 
+        // DIAGNOSTIC ONLY -- fire's declared environment set, read off the production rules so it
+        // cannot drift from what they say. VolumeStrength never reads Physical.environments(), so
+        // this set is dead data in production today; the column below measures what it WOULD be
+        // worth. Lava volume gives fire a maximum of 0.006 against a 0.01 floor even in deep lava
+        // rivers, so the question is whether the environment it sits in discriminates where the
+        // fluid cannot.
+        Set<String> fireEnvironments = Set.of();
+        for (ElementGrounding grounding : HytaleDerivationRules.cosmologicalFive()) {
+            if (grounding instanceof ElementGrounding.Physical physical && "fire".equals(physical.elementId())) {
+                fireEnvironments = physical.corroboratingEnvironments();
+            }
+        }
+
         sb.append("anchor: ")
                 .append(who)
                 .append(" at ")
@@ -169,9 +182,9 @@ public class ResidueAnchorsCommand extends AbstractWorldCommand {
                 .append(parameters.measurementRadius())
                 .append("b, step ")
                 .append(parameters.sampleStep())
-                .append(", floor ")
-                .append(parameters.minimumStrengthFraction())
                 .append('\n');
+        // The floor is per element now, so it belongs in the per-element table rather than in the
+        // params line -- printing one number there would imply a single floor that no longer exists.
         sb.append("region: +/-")
                 .append(REGION_RADIUS)
                 .append("b, margin ")
@@ -199,7 +212,8 @@ public class ResidueAnchorsCommand extends AbstractWorldCommand {
                         .asCandidate(candidate.x(), candidate.z())
                         .ifPresent(candidatesByElement.get(grounding.elementId())::add);
             }
-            readings.add(new CandidateReading(candidate, inRegion, byElement));
+            readings.add(new CandidateReading(
+                    candidate, inRegion, byElement, environmentShare(sample, parameters, candidate, fireEnvironments)));
         }
 
         // Selection is per element and still needs every candidate including the margin's, so it
@@ -209,7 +223,8 @@ public class ResidueAnchorsCommand extends AbstractWorldCommand {
         for (ElementGrounding grounding : measurable) {
             String id = grounding.elementId();
             List<Anchor> inRegion = new ArrayList<>();
-            for (Anchor anchor : AnchorSelector.select(WORLD_SEED, parameters, candidatesByElement.get(id))) {
+            for (Anchor anchor :
+                    AnchorSelector.select(WORLD_SEED, parameters, grounding, candidatesByElement.get(id))) {
                 if (anchor.position().x() >= minX
                         && anchor.position().x() <= maxX
                         && anchor.position().z() >= minZ
@@ -230,6 +245,7 @@ public class ResidueAnchorsCommand extends AbstractWorldCommand {
         for (ElementGrounding grounding : measurable) {
             sb.append(String.format(" %7s", grounding.elementId()));
         }
+        sb.append(String.format(" %7s", "volc*"));
         sb.append("  anchored\n");
 
         int fullyLoaded = 0;
@@ -270,6 +286,7 @@ public class ResidueAnchorsCommand extends AbstractWorldCommand {
                     anchored.append(anchored.length() == 0 ? "" : " ").append(id);
                 }
             }
+            sb.append(String.format(" %7.3f", reading.volcanicShare()));
             sb.append("  ").append(anchored.length() == 0 ? "-" : anchored).append('\n');
         }
 
@@ -289,22 +306,44 @@ public class ResidueAnchorsCommand extends AbstractWorldCommand {
 
         int totalAnchors = 0;
         sb.append("\nPER ELEMENT. Anchors surviving the floor and suppression, inside the region.\n");
-        sb.append("element     anchors  mean gap  min gap\n");
+        sb.append("element     anchors  mean gap  min gap     floor  best\n");
         for (ElementGrounding grounding : measurable) {
             List<Anchor> anchors = anchorsByElement.get(grounding.elementId());
             totalAnchors += anchors.size();
+            int best = 0;
+            for (CandidateReading reading : readings) {
+                ColumnMeasurement m = reading.byElement().get(grounding.elementId());
+                if (m != null) {
+                    best = Math.max(best, m.strength());
+                }
+            }
             sb.append(String.format(
-                    "%-11s %7d %9s %8s%n",
-                    grounding.elementId(), anchors.size(), gap(anchors, false), gap(anchors, true)));
+                    "%-11s %7d %9s %8s %9d %5d%n",
+                    grounding.elementId(),
+                    anchors.size(),
+                    gap(anchors, false),
+                    gap(anchors, true),
+                    grounding.minimumStrengthSamples(),
+                    best));
         }
         for (ElementGrounding grounding : awaitingTreatment) {
-            sb.append(String.format("%-11s %7s %9s %8s%n", grounding.elementId(), "-", "pending", "pending"));
+            sb.append(String.format(
+                    "%-11s %7s %9s %8s %9d %5s%n",
+                    grounding.elementId(), "-", "pending", "pending", grounding.minimumStrengthSamples(), "-"));
         }
 
+        sb.append("\nvolc* is a DIAGNOSTIC, not a score: the share of the window whose environment is\n")
+                .append("in fire's declared set, which VolumeStrength does not currently read. Compare it\n")
+                .append("to the fire column on the SAME row. If volc* varies between candidates it can\n")
+                .append("ground Fire where lava volume cannot; if it is flat across the region, every\n")
+                .append("candidate ties and the hash would place Fire anchors arbitrarily inside it --\n")
+                .append("abundance is not discrimination.\n");
         sb.append("\nREADING THIS. A zero frac with a large samples count is a real absence; a zero\n")
                 .append("with samples 0 is an unread window, and the row is omitted for that reason.\n")
                 .append("The floor is the number a frac must clear, so a frac just under it means the\n")
-                .append("floor is what suppressed the element at that candidate.\n")
+                .append("floor is an absolute SAMPLE COUNT per element now, printed beside each one with\n")
+                .append("that element's best candidate -- so 'best' under 'floor' is exactly why an\n")
+                .append("element has no anchors, with no arithmetic needed.\n")
                 .append("Do NOT turn the fully-loaded count into an area and divide anchors by it. A\n")
                 .append("window is ")
                 .append(2 * parameters.measurementRadius() + 1)
@@ -332,7 +371,7 @@ public class ResidueAnchorsCommand extends AbstractWorldCommand {
      * is why its strongest-candidate column compared four different places.
      */
     private record CandidateReading(
-            WorldPoint2d candidate, boolean inRegion, Map<String, ColumnMeasurement> byElement) {
+            WorldPoint2d candidate, boolean inRegion, Map<String, ColumnMeasurement> byElement, double volcanicShare) {
 
         /**
          * Loaded sample positions this window read — the largest any element reported.
@@ -360,6 +399,52 @@ public class ResidueAnchorsCommand extends AbstractWorldCommand {
             }
             return true;
         }
+    }
+
+    /**
+     * Share of the window whose environment matches {@code environments} — a diagnostic, not a score.
+     *
+     * <p>Walks the same bounds {@code VolumeStrength} does, deliberately: a share measured over a
+     * different window would not be comparable to the element fractions printed beside it, and the
+     * whole point of putting it on the same row is that the comparison is same-window.
+     *
+     * <p>Gates on environment <strong>alone</strong> — no occupancy, no sky. {@code Geometric} cannot
+     * express that (its {@code Occupancy} is SOLID or OPEN, with no "either"), which is itself part of
+     * the finding: if Fire is to be grounded regionally, the existing grounding types cannot say it.
+     */
+    private static double environmentShare(
+            SectionReaderTerrainSample sample,
+            AnchorParameters parameters,
+            WorldPoint2d candidate,
+            Set<String> environments) {
+        if (environments.isEmpty()) {
+            return 0;
+        }
+        int centreX = (int) Math.floor(candidate.x());
+        int centreZ = (int) Math.floor(candidate.z());
+        int radius = parameters.measurementRadius();
+        int step = parameters.sampleStep();
+        int top = parameters.worldHeight() - 1;
+        int matched = 0;
+        int sampled = 0;
+        for (int dx = -radius; dx <= radius; dx += step) {
+            for (int dz = -radius; dz <= radius; dz += step) {
+                for (int y = 0; y <= top; y += step) {
+                    int x = centreX + dx;
+                    int z = centreZ + dz;
+                    if (!sample.isLoaded(x, y, z)) {
+                        continue;
+                    }
+                    sampled++;
+                    if (sample.environmentAt(x, y, z)
+                            .filter(id -> ElementGrounding.environmentMatches(id, environments))
+                            .isPresent()) {
+                        matched++;
+                    }
+                }
+            }
+        }
+        return sampled == 0 ? 0 : matched / (double) sampled;
     }
 
     /** Identifies the element-at-a-place pair an anchor occupies, for marking its row. */

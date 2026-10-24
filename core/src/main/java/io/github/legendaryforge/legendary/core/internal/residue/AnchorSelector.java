@@ -2,6 +2,7 @@ package io.github.legendaryforge.legendary.core.internal.residue;
 
 import io.github.legendaryforge.legendary.core.api.residue.Anchor;
 import io.github.legendaryforge.legendary.core.api.residue.AnchorParameters;
+import io.github.legendaryforge.legendary.core.api.residue.ElementGrounding;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,11 +35,20 @@ public final class AnchorSelector {
 
     private AnchorSelector() {}
 
-    /** The subset of {@code measured} that clears the floor and wins its neighbourhood, in input order. */
-    public static List<Anchor> select(long worldSeed, AnchorParameters parameters, List<Anchor> measured) {
+    /**
+     * The subset of {@code measured} that clears the floor and wins its neighbourhood, in input order.
+     *
+     * <p>Takes the {@code grounding} because the floor is a property of the element, not of the
+     * lattice — see {@link ElementGrounding#minimumStrengthSamples()}. Callers already have it: they
+     * needed it to produce {@code measured} in the first place.
+     */
+    public static List<Anchor> select(
+            long worldSeed, AnchorParameters parameters, ElementGrounding grounding, List<Anchor> measured) {
+        int floor = grounding.minimumStrengthSamples();
         List<Anchor> eligible = new ArrayList<>();
         for (Anchor anchor : measured) {
-            if (anchor.strengthFraction() >= parameters.minimumStrengthFraction()) {
+            // An absolute count, so the verdict does not move when measurementRadius does.
+            if (anchor.strength() >= floor) {
                 eligible.add(anchor);
             }
         }

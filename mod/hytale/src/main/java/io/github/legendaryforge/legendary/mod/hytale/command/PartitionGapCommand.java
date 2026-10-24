@@ -234,7 +234,7 @@ public class PartitionGapCommand extends AbstractWorldCommand {
 
         // Reconciliation. Without this the attribution above is a restatement of the production gates
         // checking itself, which proves nothing.
-        AnchorParameters parameters = new AnchorParameters(256, 0.35, 512, RADIUS, STEP, 0.01, 8, 8);
+        AnchorParameters parameters = new AnchorParameters(256, 0.35, 512, RADIUS, STEP, 8, 8);
         WorldPoint2d centre = new WorldPoint2d(playerX, playerZ);
         long volumeSum = 0;
         sb.append("\nRECONCILIATION against VolumeStrength over the same window:\n");

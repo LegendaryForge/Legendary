@@ -25,15 +25,15 @@ import org.junit.jupiter.api.Test;
 class VolumeStrengthTest {
 
     /** Small radius and coarse step keep the fakes legible: 3x3 columns, 4 sampled levels. */
-    private static final AnchorParameters P = new AnchorParameters(256, 0.35, 512, 80, 80, 0.01, 8, 8);
+    private static final AnchorParameters P = new AnchorParameters(256, 0.35, 512, 80, 80, 8, 8);
 
     private static final ElementGrounding WATER =
-            new ElementGrounding.Physical("water", Set.of("Water_Source"), Set.of("Shores"));
+            new ElementGrounding.Physical("water", Set.of("Water_Source"), Set.of("Shores"), 10);
     private static final ElementGrounding EARTH =
-            new ElementGrounding.Geometric("earth", Set.of("Caves"), 0, 6, ElementGrounding.Occupancy.SOLID);
+            new ElementGrounding.Geometric("earth", Set.of("Caves"), 0, 6, ElementGrounding.Occupancy.SOLID, 10);
     private static final ElementGrounding AIR =
-            new ElementGrounding.Geometric("wind", Set.of("Env_"), 0, 15, ElementGrounding.Occupancy.OPEN);
-    private static final ElementGrounding LIGHTNING = new ElementGrounding.Weather("lightning", 0.10, 13, 15);
+            new ElementGrounding.Geometric("wind", Set.of("Env_"), 0, 15, ElementGrounding.Occupancy.OPEN, 10);
+    private static final ElementGrounding LIGHTNING = new ElementGrounding.Weather("lightning", 0.10, 13, 15, 10);
 
     private static final WorldPoint2d ORIGIN = new WorldPoint2d(0, 0);
 
@@ -282,7 +282,7 @@ class VolumeStrengthTest {
         // The mechanism Earth relies on in production: gates widened to accept everything, so
         // occupancy alone decides and a mountain's bulk is not excluded for lacking a cave label.
         ElementGrounding rockIsRock =
-                new ElementGrounding.Geometric("earth", Set.of("Env_"), 0, 15, ElementGrounding.Occupancy.SOLID);
+                new ElementGrounding.Geometric("earth", Set.of("Env_"), 0, 15, ElementGrounding.Occupancy.SOLID, 10);
         FakeTerrain mountain = new FakeTerrain()
                 .solidEverywhereAtLevel(80)
                 .environment("Env_Zone1_Mountains")

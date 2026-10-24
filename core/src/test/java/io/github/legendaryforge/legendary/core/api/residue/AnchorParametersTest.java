@@ -27,7 +27,6 @@ class AnchorParametersTest {
                         p.suppressionRadius(),
                         p.measurementRadius(),
                         p.sampleStep(),
-                        p.minimumStrengthFraction(),
                         8,
                         9));
     }
@@ -43,25 +42,20 @@ class AnchorParametersTest {
                         512,
                         p.measurementRadius(),
                         p.sampleStep(),
-                        p.minimumStrengthFraction(),
                         p.influenceRadius(),
                         p.crossingTolerance()));
     }
 
     @Test
-    void floorMustBeAFraction() {
-        AnchorParameters p = AnchorParameters.defaults();
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> new AnchorParameters(
-                        p.cellSize(),
-                        p.jitterFraction(),
-                        p.suppressionRadius(),
-                        p.measurementRadius(),
-                        p.sampleStep(),
-                        1.5,
-                        p.influenceRadius(),
-                        p.crossingTolerance()));
+    void theStrengthFloorIsNotAParameterHere() {
+        // It moved to ElementGrounding.minimumStrengthSamples() on 2026-10-23. Asserted rather than
+        // merely deleted: a reader who comes looking for a floor on this record should find a
+        // statement that it is deliberately absent, not silence.
+        for (java.lang.reflect.RecordComponent component : AnchorParameters.class.getRecordComponents()) {
+            assertFalse(
+                    component.getName().toLowerCase(java.util.Locale.ROOT).contains("strength"),
+                    "AnchorParameters should carry no strength floor, found " + component.getName());
+        }
     }
 
     @Test
@@ -104,7 +98,6 @@ class AnchorParametersTest {
                 p.suppressionRadius(),
                 measurementRadius,
                 sampleStep,
-                p.minimumStrengthFraction(),
                 p.influenceRadius(),
                 p.crossingTolerance());
     }

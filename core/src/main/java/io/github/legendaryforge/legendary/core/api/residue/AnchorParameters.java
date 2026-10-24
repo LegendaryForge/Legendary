@@ -23,9 +23,12 @@ package io.github.legendaryforge.legendary.core.api.residue;
  *     terrain
  * @param measurementRadius horizontal half-width of the window strength is counted over
  * @param sampleStep spacing between sampled positions in all three axes
- * @param minimumStrengthFraction absolute floor, as a fraction of samples taken. A region whose best
- *     candidate falls below this gets <strong>no anchor for that element</strong>, which is how
- *     rarity handles itself: nowhere near lava produces no Fire anchor, with nothing tuned to say so
+ * <p><strong>The strength floor is not here.</strong> It moved to
+ * {@link ElementGrounding#minimumStrengthSamples()} on 2026-10-23, because a single floor expressed
+ * as a fraction of the window could not serve both an element that fills a fifth of a column and one
+ * that runs through it as a river. See that method for the measurement that forced it. What survives
+ * of the old field's intent is its description of the job: admit a lake, an ocean, a caldera — not a
+ * 2x2 puddle.
  * @param influenceRadius {@code w} — crystals may spawn within this distance of a current
  * @param crossingTolerance {@code D} — two currents passing within this distance cross. Bounded by
  *     {@code influenceRadius}: beyond it a geode could form outside both crystal bands, in ground
@@ -37,7 +40,6 @@ public record AnchorParameters(
         int suppressionRadius,
         int measurementRadius,
         int sampleStep,
-        double minimumStrengthFraction,
         int influenceRadius,
         int crossingTolerance) {
 
@@ -64,10 +66,6 @@ public record AnchorParameters(
         }
         if (sampleStep <= 0) {
             throw new IllegalArgumentException("sampleStep must be positive, got " + sampleStep);
-        }
-        if (!(minimumStrengthFraction >= 0) || minimumStrengthFraction > 1) {
-            throw new IllegalArgumentException(
-                    "minimumStrengthFraction must be in [0,1], got " + minimumStrengthFraction);
         }
         if (influenceRadius <= 0) {
             throw new IllegalArgumentException("influenceRadius must be positive, got " + influenceRadius);
@@ -135,12 +133,11 @@ public record AnchorParameters(
      * The values decided in {@code 2026-10-22-residue-sizing-decision.md}.
      *
      * <p>{@code suppressionRadius} 512 derives from one provisional operator judgement — about 15%
-     * of the world near some current — through {@code R = 10w/C}. {@code minimumStrengthFraction} is
-     * the one value here with no stated basis: it exists to stop a region with a trace of an element
-     * minting an anchor, and 0.01 is a starting guess to be moved once the probe shows what real
-     * terrain produces.
+     * of the world near some current — through {@code R = 10w/C}. The strength floor that used to
+     * live here, and was the one value with no stated basis, is now per element on
+     * {@link ElementGrounding}.
      */
     public static AnchorParameters defaults() {
-        return new AnchorParameters(256, 0.35, 512, 128, 8, 0.01, 8, 8);
+        return new AnchorParameters(256, 0.35, 512, 128, 8, 8, 8);
     }
 }

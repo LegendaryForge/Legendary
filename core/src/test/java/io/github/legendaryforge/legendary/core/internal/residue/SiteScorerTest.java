@@ -30,19 +30,19 @@ class SiteScorerTest {
     private static final LatticeParameters P = LatticeParameters.defaults();
 
     private static final ElementGrounding FIRE =
-            new ElementGrounding.Physical("fire", Set.of("Fluid_Lava"), Set.of("Volcanoes", "Caves_Volcanic"));
+            new ElementGrounding.Physical("fire", Set.of("Fluid_Lava"), Set.of("Volcanoes", "Caves_Volcanic"), 10);
     private static final ElementGrounding WATER =
-            new ElementGrounding.Physical("water", Set.of("Fluid_Water"), Set.of("Shores", "Swamps"));
+            new ElementGrounding.Physical("water", Set.of("Fluid_Water"), Set.of("Shores", "Swamps"), 10);
     private static final ElementGrounding WIND = new ElementGrounding.Geometric(
-            "wind", Set.of("Mountains", "Plateaus"), 12, 15, ElementGrounding.Occupancy.OPEN);
+            "wind", Set.of("Mountains", "Plateaus"), 12, 15, ElementGrounding.Occupancy.OPEN, 10);
     private static final ElementGrounding EARTH =
-            new ElementGrounding.Geometric("earth", Set.of("Caves"), 0, 6, ElementGrounding.Occupancy.SOLID);
-    private static final ElementGrounding LIGHTNING = new ElementGrounding.Weather("lightning", 0.10, 13, 15);
+            new ElementGrounding.Geometric("earth", Set.of("Caves"), 0, 6, ElementGrounding.Occupancy.SOLID, 10);
+    private static final ElementGrounding LIGHTNING = new ElementGrounding.Weather("lightning", 0.10, 13, 15, 10);
     private static final List<ElementGrounding> ALL = List.of(FIRE, WATER, WIND, EARTH, LIGHTNING);
 
     /** Mirrors the real rules' shape: one element, two spellings of the same fluid. */
     private static final ElementGrounding TWO_VARIANT_WATER =
-            new ElementGrounding.Physical("water", Set.of("Water_Source", "Water"), Set.of("Shores"));
+            new ElementGrounding.Physical("water", Set.of("Water_Source", "Water"), Set.of("Shores"), 10);
 
     private static final class FakeTerrain implements TerrainSample {
         private final Map<String, String> fluids = new HashMap<>();
@@ -370,18 +370,18 @@ class SiteScorerTest {
     void physicalGroundingWithoutAFluid_isRejected() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new ElementGrounding.Physical("fire", Set.of(), Set.of("Volcanoes")));
+                () -> new ElementGrounding.Physical("fire", Set.of(), Set.of("Volcanoes"), 10));
     }
 
     @Test
     void geometricGroundingWithoutAnEnvironment_isRejected() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new ElementGrounding.Geometric("wind", Set.of(), 12, 15, ElementGrounding.Occupancy.OPEN));
+                () -> new ElementGrounding.Geometric("wind", Set.of(), 12, 15, ElementGrounding.Occupancy.OPEN, 10));
     }
 
     @Test
     void weatherGroundingWithAnImpossibleProbability_isRejected() {
-        assertThrows(IllegalArgumentException.class, () -> new ElementGrounding.Weather("lightning", 1.5, 13, 15));
+        assertThrows(IllegalArgumentException.class, () -> new ElementGrounding.Weather("lightning", 1.5, 13, 15, 10));
     }
 }
