@@ -15,12 +15,18 @@ package io.github.legendaryforge.legendary.core.api.residue;
  *
  * @param cellSize lattice cell edge in blocks; one candidate per cell. Must not exceed
  *     {@code suppressionRadius}, or candidates would be sparser than anchors and selection would
- *     have nothing to choose between
+ *     have nothing to choose between. Should be comfortably <em>under</em> it rather than merely
+ *     within it: at {@code cellSize == suppressionRadius} the selection is no longer saturated and
+ *     this dial starts moving anchor density, which it is not meant to control. See
+ *     {@code 2026-10-23-residue-sizing-re-derivation.md} §4
  * @param jitterFraction how far a candidate may sit from its cell centre, as a fraction of
  *     {@code cellSize} per axis, in {@code [0, 0.5]}
  * @param suppressionRadius a site must beat everything within this horizontal distance to become an
- *     anchor. Sets anchor density at roughly one per {@code suppressionRadius²} of qualifying
- *     terrain
+ *     anchor. Sets anchor density at roughly one per <strong>{@code π · suppressionRadius²}</strong>
+ *     of qualifying terrain — a retained anchor excludes a <em>disc</em>, not a square, because
+ *     {@link io.github.legendaryforge.legendary.core.internal.residue.AnchorSelector} is a Matérn
+ *     type II hard-core process. Measured 1.23 anchors/km² at 512 against the {@code 1/R²} estimate
+ *     of 3.81; the missing factor is π
  * @param measurementRadius horizontal half-width of the window strength is counted over
  * @param sampleStep spacing between sampled positions in all three axes
  * <p><strong>The strength floor is not here.</strong> It moved to
@@ -130,14 +136,24 @@ public record AnchorParameters(
     }
 
     /**
-     * The values decided in {@code 2026-10-22-residue-sizing-decision.md}.
+     * The values decided in {@code 2026-10-23-residue-sizing-re-derivation.md}.
      *
-     * <p>{@code suppressionRadius} 512 derives from one provisional operator judgement — about 15%
-     * of the world near some current — through {@code R = 10w/C}. The strength floor that used to
-     * live here, and was the one value with no stated basis, is now per element on
-     * {@link ElementGrounding}.
+     * <p>{@code suppressionRadius} 256 derives from one provisional operator judgement — about 15%
+     * of the world near some current — through <strong>{@code R ≈ 4.5w/C}</strong>, which is
+     * measured rather than estimated: {@code scripts/residue-scans/SizingScan.java} executes the
+     * anchor-density chain and reports a 13.70% five-element union at these values.
+     *
+     * <p><strong>{@code cellSize} and {@code suppressionRadius} halve together.</strong> They were
+     * 256 and 512; the ratio between them is what fixes every dimensionless property of the network
+     * — saturation, and the number of competitors a position hash can decide between (11.6, at both
+     * the old and the new values). Halving only the radius would leave the lattice setting anchor
+     * density, so changing one of these two without the other is a change in character, not scale.
+     *
+     * <p>The superseded {@code R = 10w/C} came from {@code 2026-10-22-residue-sizing-decision.md}
+     * and overstated coverage by about 2.1x. The strength floor that used to live here, and was the
+     * one value with no stated basis, is now per element on {@link ElementGrounding}.
      */
     public static AnchorParameters defaults() {
-        return new AnchorParameters(256, 0.35, 512, 128, 8, 8, 8);
+        return new AnchorParameters(128, 0.35, 256, 128, 8, 8, 8);
     }
 }

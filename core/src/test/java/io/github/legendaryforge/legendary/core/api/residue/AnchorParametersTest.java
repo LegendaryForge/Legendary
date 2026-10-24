@@ -8,8 +8,14 @@ class AnchorParametersTest {
 
     @Test
     void defaultsMatchTheSizingDecision() {
+        // 2026-10-23-residue-sizing-re-derivation.md. cellSize is asserted alongside the radius
+        // because the two are coupled: the ratio between them fixes saturation and the competitor
+        // count, so halving one without the other changes the network's character rather than its
+        // scale. Asserting only the radius would let that pair drift apart silently.
         AnchorParameters p = AnchorParameters.defaults();
-        assertEquals(512, p.suppressionRadius());
+        assertEquals(256, p.suppressionRadius());
+        assertEquals(128, p.cellSize());
+        assertEquals(2, p.suppressionRadius() / p.cellSize(), "R/cellSize = 2 is what keeps selection saturated");
         assertEquals(128, p.measurementRadius());
         assertEquals(8, p.sampleStep());
         assertEquals(8, p.influenceRadius());

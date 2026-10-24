@@ -6,10 +6,32 @@ includes this directory, and nothing here is compiled by `./gradlew build`.
 ## Why these are committed
 
 They are the evidence base for committed design documents. `2026-08-30-n9-all-crossings-are-nexuses-design.md`
-rests entirely on `N9Scan.java`, and a spec whose figures cannot be re-derived is a spec whose
+rests entirely on `N9Scan.java`, and `2026-10-23-residue-sizing-re-derivation.md` rests entirely on
+`SizingScan.java`. A spec whose figures cannot be re-derived is a spec whose
 figures have to be taken on trust. These lived in git-ignored `.scratch/` first; a helper cited by a
 committed document has crossed the promotion threshold in
 `Systems/Tooling/scratch_helpers_convention.md`.
+
+## `SizingScan.java` — the anchor-density sizing chain
+
+Executes what anchor-density design §3 estimates: candidate lattice → `AnchorSelector` retention →
+§5's MST → crystal-band area as a rasterised union. Faithful to the implementation in the three
+places that matter — the real `CandidateLattice` jitter, the real `ResidueRandom.mix` SplitMix64
+tie-break, and `AnchorSelector`'s exact `> radius` skip (so equality still competes).
+
+```bash
+java SizingScan.java <suppressionRadius> <cellSize> <span> <trials> <label>
+java SizingScan.java 512 256 8192 3 "as designed"   # the superseded values
+java SizingScan.java 256 128 8192 3 "corrected"     # → out-sizing-corrected.txt
+```
+
+It found §3's coverage estimate high by ~2.1x and its anchor density high by π. Ends with
+`SIZING_VERDICT: COMPLETE` — read that line by name.
+
+**Each element gets an independent strength field**, which is what varied terrain supplies. That is a
+modelling choice, and it is the regime the coverage target describes; the real `AnchorSelector` hash
+carries no element term, so two elements that both tie across the same candidates would select
+identical anchors. See the re-derivation spec §5.
 
 ## Running
 

@@ -1,5 +1,27 @@
 # Residue sizing — §9's open numbers, decided
 
+> ## ⚠️ SUPERSEDED IN ARITHMETIC — read [`2026-10-23-residue-sizing-re-derivation.md`](2026-10-23-residue-sizing-re-derivation.md) first
+>
+> **Added 2026-10-23.** The status line below reads as current and the **judgements** in it still
+> are. The **arithmetic linking them is wrong**, and in the direction that matters: it reports the
+> world as about twice as currented as the model actually makes it.
+>
+> **Specifically superseded:** `R = 10w/C` and every figure derived through it — the suppression
+> radius of **512** (now **256**), `cellSize` **256** (now **128**), and the whole "Everything else
+> about the network's density follows" table (3.81 anchors/km², 1,953 m of current, 15.6% coverage;
+> measured 1.23, 946 m and a 7.18% union). `AnchorSelector` is a Matérn type II hard-core process,
+> so anchors exclude a disc of `πR²` rather than a square of `R²`.
+>
+> **Also superseded:** this document's prediction that a window at `R/2` would make hash
+> arbitrariness more likely than `R/4`. The ratio that governs it is window to *candidate spacing*,
+> not window to `R`.
+>
+> **What is still good here:** every operator judgement (`w = 8`, measurement radius 128, the ~15%
+> coverage target, `D = w` as a correctness bound), the reasoning for each, the striking of §9 item
+> 3, the per-element-spread argument, and the `verticalSpan` flag — which is still open.
+>
+> Kept rather than deleted because it is the record of what was believed and when.
+
 **Status: DECIDED 2026-10-22.** Closes items 1, 2, 4 and 5 of
 [`2026-10-21-residue-anchor-density-design.md`](2026-10-21-residue-anchor-density-design.md) §9, and
 strikes item 3 as not a decision. Operator judgements taken in session 25; the arithmetic linking them

@@ -17,7 +17,18 @@ import org.junit.jupiter.api.Test;
  */
 class AnchorSelectorTest {
 
-    private static final AnchorParameters P = AnchorParameters.defaults();
+    /**
+     * An explicit suppression radius, deliberately <strong>not</strong> {@code defaults()}.
+     *
+     * <p>Every fixture below is geometry chosen relative to this radius, so reading it from the
+     * production defaults made these mechanics tests depend on a tuning dial. The dial moved on
+     * 2026-10-23 — {@code 2026-10-23-residue-sizing-re-derivation.md} halved it from 512 to 256 —
+     * and four of these tests failed for reasons that had nothing to do with selection: their
+     * candidates simply stopped being neighbours. The sizing decision is pinned in exactly one
+     * place, {@code AnchorParametersTest.defaultsMatchTheSizingDecision}, and this is not it.
+     */
+    private static final AnchorParameters P = new AnchorParameters(128, 0.35, 512, 128, 8, 8, 8);
+
     private static final long SEED = 0x5EEDL;
 
     /**
@@ -50,7 +61,8 @@ class AnchorSelectorTest {
     @Test
     void candidatesExactlyAtTheSuppressionRadiusDoCompete() {
         // The boundary is where an off-by-one lives, so it gets its own case.
-        List<Anchor> selected = AnchorSelector.select(SEED, P, WATER, List.of(at(0, 0, 100), at(512, 0, 500)));
+        List<Anchor> selected =
+                AnchorSelector.select(SEED, P, WATER, List.of(at(0, 0, 100), at(P.suppressionRadius(), 0, 500)));
         assertEquals(1, selected.size());
         assertEquals(500, selected.get(0).strength());
     }
