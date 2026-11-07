@@ -12,6 +12,7 @@ import io.github.legendaryforge.legendary.core.api.weather.WeatherGate;
 import io.github.legendaryforge.legendary.core.internal.weather.DefaultPlayerWeatherController;
 import io.github.legendaryforge.legendary.core.internal.weather.DefaultWeatherGate;
 import io.github.legendaryforge.legendary.core.internal.weather.OverrideRegistry;
+import io.github.legendaryforge.legendary.mod.hytale.command.AnchorDrainageCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.BeamProbeCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.BlockIdProbeCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.BlockPlacementProbeCommand;
@@ -131,10 +132,11 @@ public class LegendaryHytalePlugin extends JavaPlugin {
         getCommandRegistry().registerCommand(new FeatureLocalityCommand());
         getCommandRegistry().registerCommand(new ResidueSeparationCommand());
         getCommandRegistry().registerCommand(new WindChannelsCommand());
+        getCommandRegistry().registerCommand(new AnchorDrainageCommand());
         getLogger()
                 .atInfo()
                 .log(
-                        "Commands registered: /stormseeker, /ss-advance, /ss-trial, /weatherprobe, /weatheroverrideprobe, /weatherportprobe, /residueparticleprobe, /residueprobe, /blockprobe, /blockspoofprobe, /prefabprobe, /beamprobe, /pointprobe, /markerprobe, /signalprobe, /fluidscancost, /blockidprobe, /residueanchors, /residuescale, /worldgenquery, /worldgenheight, /chunkhookprobe, /fluidcensus, /partitiongap, /featurelocality, /residueseparation, /windchannels");
+                        "Commands registered: /stormseeker, /ss-advance, /ss-trial, /weatherprobe, /weatheroverrideprobe, /weatherportprobe, /residueparticleprobe, /residueprobe, /blockprobe, /blockspoofprobe, /prefabprobe, /beamprobe, /pointprobe, /markerprobe, /signalprobe, /fluidscancost, /blockidprobe, /residueanchors, /residuescale, /worldgenquery, /worldgenheight, /chunkhookprobe, /fluidcensus, /partitiongap, /featurelocality, /residueseparation, /windchannels, /anchordrainage");
     }
 
     private void onPlayerConnect(PlayerConnectEvent event) {

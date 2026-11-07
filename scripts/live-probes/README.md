@@ -41,6 +41,7 @@ executing, not by reading.
 
 | Driver | Probe | Last run green | Against |
 |---|---|---|---|
+| `drive-anchordrainage.sh` | `/anchordrainage` (headless; Earth only, ~3.5 min) | 2026-11-07 | **0.7.6** |
 | `drive-windchannels.sh` | `/windchannels` (headless; 5 regions, 3 controls) | 2026-11-07 | **0.7.6** |
 | `drive-residueseparation.sh` | `/residueseparation` (headless; Earth only) | 2026-11-07 | **0.7.6** |
 | `drive-featurelocality.sh` | `/featurelocality` (headless; Parts 1/1b/2 only) | 2026-11-07 | **0.7.6** |
@@ -54,6 +55,16 @@ executing, not by reading.
 | `drive-signalprobe.sh` | `/signalprobe` | 2026-10-21 | 0.7.2 |
 | `drive-blockprobe.sh` | `/blockplacementprobe` | 2026-08-29 | **0.6.1 — unverified since** |
 | `drive-prefabprobe.sh` | `/prefabprobe` | 2026-08-29 | **0.6.1 — unverified since** |
+
+> **Do not edit a driver while it is running.** Bash reads a script incrementally, so changing the
+> file mid-run shifts byte offsets and execution resumes at a stale one — which on 2026-11-07
+> produced `syntax error near unexpected token ')'` partway through a probe, after the script had
+> already launched a server, and left that server running for four minutes because the failure
+> happened before the cleanup block. The edit was a one-line comment fix. **Every driver here is a
+> top-level script and shares this exposure**, and these runs last minutes while a session keeps
+> working, so the window is wide and recurring. The structural fix is two lines per file — wrap each
+> body in a `{ ... }` group, which forces bash to parse the whole file before executing any of it —
+> and it has not been applied.
 
 **`drive-residueseparation.sh` was absent from this table from the day it shipped** (session 30)
 until 2026-11-07, and nothing reported it: `checkDocsOrganization`'s indexing rule covers `docs/`,

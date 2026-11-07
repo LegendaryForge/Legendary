@@ -87,11 +87,19 @@ public final class AnchorSelector {
     /**
      * Whether {@code rival} outranks {@code anchor} on {@code (strength, hash)}.
      *
+     * <p><strong>Visible beyond selection because the topology layer needs the same order.</strong>
+     * A {@code Sprawling} current links each anchor to the nearest <em>stronger</em> anchor, and
+     * "stronger" has to mean exactly what it means here or the two layers disagree about which of two
+     * anchors is uphill. A replica would make any measurement of the forest a measurement of the
+     * replica — the standing rule that a check sharing an author with its subject tests the author.
+     * `ResidueRandom.mix` is package-private, so there is no way to reproduce this order correctly
+     * from outside this package anyway.
+     *
      * <p>The hash is taken over the rounded position so it is a property of the place rather than of
      * a double's exact bits, which keeps the comparison stable if a candidate's coordinates are ever
      * recomputed at a different precision.
      */
-    private static boolean beats(long worldSeed, Anchor rival, Anchor anchor) {
+    public static boolean beats(long worldSeed, Anchor rival, Anchor anchor) {
         if (rival.strength() != anchor.strength()) {
             return rival.strength() > anchor.strength();
         }

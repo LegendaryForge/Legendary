@@ -112,6 +112,25 @@ public final class GeneratorTerrainSample implements TerrainSample {
         return new GeneratorTerrainSample((x, z) -> surfaceHeight);
     }
 
+    /**
+     * A monotone-ramp variant, for use as a <strong>positive control</strong>.
+     *
+     * <p>Complements {@link #flat(int)}, and the pair is what separates two different degeneracies.
+     * Flat makes every strength identical, so the position hash decides everything — the state in
+     * which a strength-ordered structure has no field to follow. A ramp gives strength a clean
+     * monotone gradient instead, so the same structure must come out ordered and uphill. A
+     * measurement that cannot tell those two apart is not measuring the field.
+     *
+     * @param base surface height at {@code x = 0}
+     * @param run blocks of easting per block of rise; larger is gentler
+     */
+    public static GeneratorTerrainSample slope(int base, int run) {
+        if (run == 0) {
+            throw new IllegalArgumentException("run must be non-zero; use flat() for no gradient");
+        }
+        return new GeneratorTerrainSample((x, z) -> base + Math.floorDiv(x, run));
+    }
+
     /** Distinct columns whose height was fetched, so a caller can report the real call count. */
     public int columnsCached() {
         return heights.size();
