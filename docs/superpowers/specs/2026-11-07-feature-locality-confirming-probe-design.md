@@ -134,6 +134,12 @@ would itself be a finding.
 
 ### Part 3 — Does `collect` name where features actually are? (claim 2)
 
+> **⚠️ SUPERSEDED — this part no longer exists.** Replaced 2026-11-07 (session 30) by the `collect()`
+> call-edge test in
+> [`2026-11-07-collect-call-edge-claim2-design.md`](2026-11-07-collect-call-edge-claim2-design.md).
+> The design below is retained because its *diagnosis* is what retired it: the null was structural,
+> not a tuning problem, and § Results records why. The approach is not to be tuned and re-run.
+
 For the prefab pattern with the largest `maxSize`:
 
 1. `getGridGenerator().getInterval()` — report it against our `cellSize`.
@@ -298,6 +304,21 @@ The diagnosis matters more than the number, and it is structural rather than a t
 carries `getPosition()`, so claim 2 can be tested by comparing `collect()` output against where the
 engine says prefabs **actually are**, with no terrain inference and no noise floor. That is a direct
 test of the same claim and should replace Part 3's approach rather than tune it.
+
+> ## ⚠️ That instrument was unsound, and claim 2 is now closed by a different one
+>
+> **Do not build the comparison above.** It spans two different placement systems:
+> `UniquePrefabEntry` comes from `UniquePrefabGenerator`, which has **no `IPointGenerator`** — not on
+> the generator, not on its `UniquePrefabConfiguration`, which places by anchor + maxDistance +
+> maxAttempts rejection sampling against a `Random`. The engine runs the two as separate steps of one
+> pass (`generatePrefabs` from the collect-filled list, then `generateUniquePrefabs`). So the two
+> sides disagree by construction and the probe would have printed `CLAIM2_REFUTED` — the **fourth**
+> cross-scope comparison in this probe's history, after corrections #1, #3 and #6 below.
+>
+> Claim 2 was closed instead by the `collect` call site in `PrefabPopulator.collectPrefabs`, which
+> states the claim directly and also gives the region. See
+> [`2026-11-07-collect-call-edge-claim2-design.md`](2026-11-07-collect-call-edge-claim2-design.md)
+> (session 30). Caught by reading the two configuration types before building anything.
 
 ### Seven things the run corrected, all found by executing
 
