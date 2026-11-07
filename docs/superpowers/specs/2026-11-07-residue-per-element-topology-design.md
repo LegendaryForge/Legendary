@@ -258,10 +258,10 @@ once written.
 
 | Open | State |
 |---|---|
-| `reach`, for Earth | **Measured 2026-11-07**: nearest-stronger p50 **640 b**, p90 **1312 b**, max 4839 b. At reach 512, 39 of 56 core anchors are sources (70%); at 1536, 4 of 56 (7%). A usable Earth reach is therefore **~6x `suppressionRadius`**, far above the floor derived below. Unmeasured for the other four |
+| `reach`, for Earth | **Measured 2026-11-07** over 104.86 km²: nearest-stronger p50 **690 b**, p90 **1445 b**. A usable Earth reach is therefore **~5.6x `suppressionRadius`**, far above the floor derived below. Unmeasured for the other four |
 | Current length per km² | Replaces `0.48 A/R`, which was measured against the MST. With it, crystal coverage `2w/R` |
-| Does a `Sprawling` forest follow the field or the hash? | **Open, and the first instrument could not tell.** `/anchordrainage`'s edge-bearing-coherence metric reads flat 19.4%, ramp 60.0%, real 29.4% at reach 512 — but the ramp figure there rests on **5 edges**, and where the ramp has enough edges (768–1536) it settles at **29%**, indistinguishable from real terrain. A clean monotone field and real terrain look the same under this metric, so it separates nothing. The predicted 12.5% null is wrong too: flat reads 17–21%, because jittered-lattice anchors cluster their bearings on lattice axes. **The replacement test** compares each edge against the *local strength gradient* rather than against other edges — strength is proportional to mean window height, so uphill is computable and the null is a uniform angle distribution |
-| Anchor density for the other four elements | Earth is 1.48/km² measured. The 5.00/km² sizing figure is the uncorrelated regime for all five, so every quantity derived from spacing — `0.48 A/R`, `2w/R` crystal coverage — inherits the same 3.3x question |
+| Does a `Sprawling` forest follow the field or the hash? | **Answered 2026-11-07: it follows the field, significantly but weakly.** See §9 |
+| Anchor density for the other four elements | Earth is **1.53/km²**, replicated on 2.8x the area (160 anchors in 104.86 km², spacing **810 b**, against 1.48/km² and 821 b on the first region). The 5.00/km² sizing figure is the uncorrelated regime for all five, so every quantity derived from spacing — `0.48 A/R`, `2w/R` crystal coverage — inherits the same 3.3x question |
 | Whether constriction places Wind anchors sensibly | Now testable headlessly, which it was not before |
 | Does any of it feel like wind | Needs a person in a valley |
 
@@ -276,7 +276,58 @@ form. The measurement is of that distribution; the floor is arithmetic.
 | Earth's y source | Unchanged by this spec; still degenerate at `y=0` |
 | Lightning's measure | Unchanged; `VolumeStrength` still throws for `Weather`. Its *topology* is decided here, which is progress from nothing |
 
-## 7. Shape of the work, if it is built
+## 7. Does `Sprawling` follow the field? Measured, and weakly yes
+
+This is the risk §6 named as the one to find before building, and the one `Sprawling`'s whole
+justification rests on: its direction, its acyclicity and its "upstream" semantics all come from
+edges following strength. If edges followed the position hash instead, the structure would be wrong.
+
+```bash
+./gradlew :mod:hytale:shadowJar && bash scripts/live-probes/drive-anchordrainage.sh
+```
+
+**The metric.** For each edge, the angle between the edge and the **local strength gradient**, fitted
+as a least-squares plane over the *candidate* field (candidates sit every 128 b; anchors every ~810,
+far too sparse to fit a gradient from). **The null is arithmetic rather than calibrated**: edges that
+ignore the field make that angle uniform on `[0,180]`, so the mean is 90 degrees and the fraction
+below 90 is exactly 0.5. Nothing has to be measured to know where "no signal" sits.
+
+| gradient radius | real mean angle | real uphill fraction | ramp control |
+|---|---|---|---|
+| 256 b | 79.9 | 0.57 +- 0.04 | 47.4 / 0.89 |
+| **512 b** | **75.2** | **0.63 +- 0.04** | 47.9 / 0.89 |
+| 1024 b | 78.4 | 0.62 +- 0.04 | 48.0 / 0.88 |
+| 2048 b | 91.9 | 0.49 +- 0.04 | 48.1 / 0.88 |
+
+Two controls, and each does a different job. The **flat field declines 494/494 at every radius** —
+a field with no gradient has no uphill, so the metric must refuse to answer, and a number appearing
+there would mean the fit is reading noise and would void the real row. That is a gate in the verdict,
+not a printed statistic. The **ramp is flat across all four radii** (47.4–48.1), which is what
+establishes that the metric is scale-invariant on a scale-free field — so any scale dependence in the
+real row belongs to the terrain and not to the instrument.
+
+**The shape was predicted before the run, and the prediction included its own falsification.** The
+median edge is 690 b, and "does this edge go uphill" means uphill over the distance the edge travels,
+so alignment should strengthen toward the edge scale and then plateau — while a *monotone rise
+through 2048 b* would mean the regional trend was being picked up rather than the local field, and
+would have made `Sprawling` unsupported. The peak sits at 512 b, holds at 1024, and **collapses to
+the null at 2048**. The falsification condition did not fire, and the collapse is positive evidence
+against the regional-trend reading.
+
+At 512 b, with n = 147: uphill 0.63 is **3.2 SE** above the null and mean angle 75.2 is **3.4 SE**
+below it — two metrics computed from the same edges agreeing, both significant.
+
+> **Read the magnitude honestly. Real terrain is about one third of the way from arbitrary to
+> clean-gradient-following**: `(0.63 - 0.50) / (0.89 - 0.50)` = 0.33, and the mean-angle form gives
+> 0.35. So the field drives the edges — `Sprawling` is not picking directions out of the hash, which
+> was the worry — but it drives them loosely. **Whether a one-third-aligned current reads as sensible
+> standing next to it is a perception question**, and it joins the measurement radius and the wind
+> gate as something no headless probe settles.
+
+**Earth only**, and the first two instruments for this question were wrong. §9 records both, because
+the failure modes are more reusable than the result.
+
+## 8. Shape of the work, if it is built
 
 Two independent pieces, and the first does not depend on the second:
 
@@ -289,7 +340,29 @@ Two independent pieces, and the first does not depend on the second:
 
 They share only the measurement that motivated both, so they should be planned and landed separately.
 
-## 8. Corrections this spec makes to earlier documents
+## 9. Corrections this spec makes to earlier documents
+
+**Two instruments for §7's question answered it wrongly before the third answered it.** Recorded
+because the result is one fact and these are reusable:
+
+1. **Edge-bearing coherence** — the modal fraction of edge bearings over eight sectors — read flat
+   19.4%, ramp 60.0%, real 29.4% and looked like a finding. It was not: the ramp figure rested on
+   **5 edges** (and a 100% reading one reach below it on **2**), and where the ramp had enough edges
+   it settled at **29%**, indistinguishable from real terrain. A clean monotone field and real
+   terrain looked identical under it. Its predicted 12.5% null was also wrong — flat read 17–21%,
+   because jittered-lattice anchors cluster their bearings on lattice axes. The defect is structural:
+   **it compared edges against each other, so its null had to be calibrated from a control**, and the
+   control turned out to sit 10 points from the floor.
+2. **One gradient scale** — the replacement metric read at 256 b alone would have reported 0.57, half
+   the signal, and at 2048 b alone would have reported 0.49 and declared `Sprawling` unsupported. The
+   same single-scale mistake had already been made once that day by the wind-channel probe, whose
+   first version analysed only narrow scales and reported no channels.
+
+The generalisable form: **prefer a metric whose null is arithmetic over one whose null is a
+control.** A calibrated null can be too close to the signal to separate anything, and nothing in the
+output says so — the numbers look like a result either way.
+
+
 
 - **`2026-10-21-residue-anchor-density-design.md` §5** credits the MST with two properties it does
   not deliver here: direction (an unrooted tree has none, and its root is retired) and non-crossing
