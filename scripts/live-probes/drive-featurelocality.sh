@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
 # Boots the test server headless, runs /featurelocality, stops.
 #
-# HEADLESS COVERS PARTS 1, 1b AND 2 ONLY. Parts 3 and 4 read the topmost solid block,
-# which needs LOADED chunks, and a headless server has none -- the probe says so in its
-# own output rather than reporting a silent zero. For those two parts use
-# `server-up.sh`, connect a client, then `echo featurelocality > .scratch/hytale-server/console`.
+# HEADLESS COVERS ALL FOUR PARTS. No part reads terrain any more, so none of them needs
+# loaded chunks and none needs a connected client.
 #
-# Parts 1/1b/2 are the critical-path ones: claim 1 (is there a second gate) and the
-# recovery of the computed world bound. Part 3 is claim 2.
+# This comment claimed the opposite until 2026-11-07 (session 30), and it was stale in two
+# steps. Part 4 stopped inferring placement from terrain in session 29 -- it reads a placed
+# prefab's own bounds instead -- and Part 3 stopped in session 30, when the deviation
+# contrast was replaced by the collect() call edge. Each change made this header wronger and
+# neither updated it, so a reader was told to go connect a client for work that had become
+# headless. Same shape as the stale pointers this project keeps recording: it reads as live.
 set -uo pipefail
 SERVER_DIR="${HYTALE_TEST_SERVER:-$(cd "$(dirname "$0")/../../.scratch/hytale-server" && pwd)}"
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"

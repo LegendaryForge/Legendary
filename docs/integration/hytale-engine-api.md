@@ -27,11 +27,20 @@
 |---|---|---|
 | **[measured]** | executed against a running server, output recorded | strongest |
 | **[compiled]** | our code calls it and `:mod:hytale:compileJava` resolves it against the real jar | strong — proves existence and shape, not behaviour |
+| **[bytecode]** | a method body, constant or call site read out of the jar's bytecode | strong for logic and control flow — proves what the code does and which path reaches it, not that it ran |
 | **[javap]** | signature read, never called | **a hypothesis** |
 | **[asset]** | read out of `Assets.zip` | strong for structure, says nothing about runtime |
 
 The project's standing method rule is that a signature is a hypothesis and a probe is confirmation.
 A `[javap]` row has not been confirmed. Do not design on one without saying so.
+
+**`[bytecode]` was added 2026-11-07 (session 30), and the gap it fills was demonstrable rather than
+theoretical.** The locality section below had a decompiled *method body*, two constants and a
+`x >> 5` implementation all filed as `[javap]` — a tier whose own definition is "signature read,
+never called", which is literally false for every one of them. The distinction is not pedantic: a
+signature says a method exists, while a call site says *which path invokes what*, and claim 2 below
+is answered by exactly that and by nothing weaker short of execution. `[bytecode]` is still static
+and still not `[measured]`; what it rules out is reading a control-flow fact as a mere hypothesis.
 
 ---
 
@@ -318,9 +327,13 @@ residue spec §5.
 
 ## Worldgen feature locality — there is no 3x3-style bound
 
-**Established 2026-10-23 against `0.7.4`. All [javap] — signatures read, nothing executed.** This
+**Established 2026-10-23 against `0.7.4`, confirmed by execution 2026-11-07 against `0.7.6`.** This
 answers the question session 27 left as *"the most valuable unknown left"*: what bounds a worldgen
 feature's footprint, and therefore whether a residue network can be derived at generation time.
+
+> The heading of this section read *"All [javap] — signatures read, nothing executed"* until
+> 2026-11-07. Both halves were wrong by then: the measured rows below had landed, and the rows that
+> remain static are `[bytecode]` — bodies and constants, not signatures. Re-tiered in session 30.
 
 **The answer is that nothing bounds it, because features are re-derived per chunk from a
 deterministic point generator rather than written across chunk borders.** Minecraft's 3x3-chunk
@@ -361,10 +374,11 @@ private static int getLargestFeatureChunkExtents(ZonePatternProvider provider, i
 
 | Fact | Value | Tier |
 |---|---|---|
-| `ChunkGenerator.CHUNK_BOUNDS_PADDING` | **16**, and it is **chunks = 512 blocks** | [javap] |
-| `ChunkUtil.chunkCoordinate(int)` | `x >> 5`, so blocks -> chunks | [javap] |
+| `ChunkGenerator.CHUNK_BOUNDS_PADDING` | **16**, and it is **chunks = 512 blocks** | [bytecode] |
+| `ChunkUtil.chunkCoordinate(int)` | `x >> 5`, so blocks -> chunks | [bytecode] |
 | `ChunkUtil.SIZE` | 32 | [javap] |
-| World chunk range before clamping | `-67108864 .. 67108863` | [javap] |
+| World chunk range before clamping | `-67108864 .. 67108863` | [bytecode] |
+| `ChunkUtil.minBlock(int)` / `maxBlock(int)` | `c << 5` and `(c << 5) + 31` | [bytecode] |
 
 So the engine derives its feature reach from whatever the largest **declared** feature size is, and
 reserves 16 chunks on top. The padding's *only* use is clamping world bounds so a feature near the
@@ -394,8 +408,14 @@ seed**:
 | `getInterval()` | point spacing — this is `cellSize` |
 
 A generator that can be asked "which points fall in this rectangle" is a generator each chunk can
-query independently over its own bounds expanded by `maxSize`. That is what makes a declared
-max-size necessary at all, and it is why no cross-chunk write is needed.
+query independently over its own bounds expanded by a declared reach. That is what makes a declared
+size necessary at all, and it is why no cross-chunk write is needed.
+
+> **This read "expanded by `maxSize`" until 2026-11-07, and the term was wrong.** The inference
+> itself was right — the next section has the actual call — but the expansion is by
+> `PrefabContainerEntry.getExtents()`. `maxSize` feeds the *world bound*; `getExtents()` feeds the
+> *per-chunk query region*. Two quantities, two uses, and session 29 had already measured that they
+> are not interchangeable without knowing what the second one was for.
 
 ### What this settles, and what it does not
 
@@ -431,22 +451,85 @@ declares, and features demonstrably span chunk borders.
 - **`ChunkGenerator.execute` is `@Deprecated` and marked FOR REMOVAL on `0.7.6`.** The only known
   route to a worldgen thread is therefore on a removal path.
 - **`getExtents()` is not comparable to `getMaxSize()`.** It ranges 0..131 and came out *above* its
-  entry's declared `maxSize` for 1,049 of 1,429 entries and *below* for 361. A split in both
-  directions is two different quantities; `getLargestFeatureChunkExtents` never consults it.
+  entry's declared `maxSize` for 1,049 of 1,429 entries, *below* for 361 and *equal* for 19. A split
+  in both directions is two different quantities; `getLargestFeatureChunkExtents` never consults it.
+  **Its role was found in session 30 and is in the next section: it is the per-chunk `collect`
+  region's expansion term.** Read the original sentence narrowly — it is true of
+  `getLargestFeatureChunkExtents` specifically, and was recorded when nothing was known to consult
+  `getExtents()` at all, which made it easy to read as "it does nothing".
 
-**Still unconfirmed, and narrowed to one claim:**
+### `IPointGenerator.collect` is what the per-chunk prefab pass calls (claim 2)
 
-- Whether `IPointGenerator.collect` is actually what prefab placement calls per chunk. The probe
-  tried to show it by contrast — do `collect`'s points deviate from `generateHeight` more than
-  controls — and the answer is **NOT_SHOWN, not refuted**: 76 comparisons, best single-table Fisher
-  p 0.0059, **Bonferroni-corrected 0.4517**. It is **not answerable by that method**, for two
-  structural reasons: ~20% of *all* columns deviate >= 3 blocks from `generateHeight` regardless of
-  signal, and the usable `getInterval()` band for one player's loaded area (16..67 blocks) contains
-  **only `maxSize=5` patterns**, while the only large features (`maxSize=100`) sit 333 blocks apart.
-  Size and density are inversely related, so the band that yields statistics holds nothing
-  detectable. **The instrument to use instead**, found while fixing the crossing test and not yet
-  run: `UniquePrefabEntry.getPosition()` against `collect()` output — a direct comparison with no
-  terrain inference and no noise floor.
+**Established 2026-11-07 against `0.7.6`** (session 30) —
+[`../superpowers/specs/2026-11-07-collect-call-edge-claim2-design.md`](../superpowers/specs/2026-11-07-collect-call-edge-claim2-design.md).
+
+```java
+// ChunkGeneratorExecution, during chunk generation ->
+public static void populate(int seed, ChunkGeneratorExecution execution) {
+    ChunkGenerator.getResource().prefabPopulator.run(seed, execution);
+}
+
+public void run(int seed, ChunkGeneratorExecution execution) {
+    this.worldSeed = seed;
+    this.uniquePrefabs = Objects.requireNonNullElse(
+            execution.getChunkGenerator().getUniquePrefabs(seed), EMPTY_UNIQUE_PREFABS);
+    collectBiomes(seed, execution);
+    collectPrefabs(seed, execution);
+    invalidatePrefabs();
+    generatePrefabs(seed, execution);        // places from `prefabs`
+    generateUniquePrefabs(seed, execution);  // the OTHER placement system
+    // ... then clears biome, entry, execution, uniquePrefabs, biomes, prefabs, invalidated
+}
+
+private void collectPrefabs(int seed, ChunkGeneratorExecution execution) {
+    for (int i = 0; i < biomes.size(); i++) {
+        Biome biome = biomes.get(i);
+        PrefabContainer container = biome.getPrefabContainer();
+        if (container == null) continue;
+        int ordinal = 0;
+        for (PrefabContainerEntry entry : container.getEntries()) {
+            this.biome = biome;
+            this.entry = entry;
+            this.execution = execution;
+            this.prefabSeed = HashUtil.hash(seed, biome.getId(), ++ordinal);
+            entry.getPrefabPatternGenerator()
+                 .getGridGenerator()
+                 .collect(seed,
+                          ChunkUtil.minBlock(execution.getX()) - entry.getExtents(),
+                          ChunkUtil.minBlock(execution.getZ()) - entry.getExtents(),
+                          ChunkUtil.maxBlock(execution.getX()) + entry.getExtents(),
+                          ChunkUtil.maxBlock(execution.getZ()) + entry.getExtents(),
+                          this::collectPrefab);
+        }
+    }
+}
+```
+
+| Fact | How | Tier |
+|---|---|---|
+| The per-chunk prefab pass calls `IPointGenerator.collect` | call site in `PrefabPopulator.collectPrefabs`, reached as `ChunkGeneratorExecution` → `populate` → `run` → `collectPrefabs` | **[bytecode, 0.7.6]** |
+| The region is **the chunk's own bounds expanded by `entry.getExtents()`** | the call's four coordinate arguments, with `minBlock(c) = c << 5` and `maxBlock(c) = (c << 5) + 31` | **[bytecode, 0.7.6]** |
+| `ChunkGenerator.getResource()` is public static and `ChunkGeneratorResource.prefabPopulator` is `public final`, and both are populated in the live world | read on a worldgen thread by `/featurelocality` Part 3 | **[measured, 0.7.6]** |
+| **Every** prefab entry answers that call. 1,429 entries x 2 chunks = **2,858 attempted, 2,858 grid generators present (0 null, 0 threw), 2,858 usable intervals, 2,858 `collect` calls completed (0 threw), 120,369 points returned** | the populator's own arguments, reproduced at chunk `(0,0)` and `(100,-37)` | **[measured, 0.7.6]** |
+| Worked example: `Zone4_Tier4`, `interval=333`, **`extents=131` against `maxSize=100`**, chunk `(100,-37)` → x region `[3200 - 131 .. 3200 + 31 + 131] = [3069..3362]`, width **294 = 32 + 2x131** | same run | **[measured, 0.7.6]** |
+| Pattern prefabs and unique prefabs are **two placement systems**. `UniquePrefabGenerator` has no `IPointGenerator` — not on it, not on its `UniquePrefabConfiguration`, which places by `anchor` + `maxDistance` + `maxAttempts` rejection sampling against a `Random`. They are coupled only by suppression: `collectPrefab` calls `isWithinUniquePrefabExclusionRange(x, z, patternGenerator, uniquePrefabs)` | `javap` of both config types, plus the `run` body above | **[bytecode, 0.7.6]** |
+
+**What this does not establish.** That the engine *used* those points to place something in a given
+chunk. The test for that is containment — every pattern prefab placed in a chunk sits at one of the
+points `collect` yields for its expanded region — and it is **blocked on enumerating placed prefabs,
+which no public API appears to offer**: `PrefabContainerEntry` holds no instance records, `run` clears
+its candidate list on the way out, and `getPrefabLoadingCache()` is a type-keyed template cache
+(`Map<WorldGenPrefabSupplier, PrefabBuffer>`) rather than a placement record. Recorded as blocked, not
+as unrun work with a known method.
+
+> **The instrument session 29 named for this job would have given a confident wrong answer.** It was
+> `UniquePrefabEntry.getPosition()` against `collect()` output — which, per the last row above,
+> compares two different placement systems and therefore disagrees by construction. It would have
+> printed `CLAIM2_REFUTED`, and it would have been the fourth cross-scope comparison in this one
+> probe's history. Caught by reading the two config types before building it.
+
+**Still unconfirmed:**
+
 - Whether a mod can register into this path, or only read it. **Deliberately out of scope**, not
   merely unrun: the 2026-10-21 adoption derives residue in `:core` behind an injected terrain port
   and authors no worldgen JSON, and `Workspace_Deferrals` #18 records the `WorldGenModifier` route as
@@ -467,6 +550,16 @@ declares, and features demonstrably span chunk borders.
 select identical anchors — recorded in
 `../superpowers/specs/2026-10-23-residue-sizing-re-derivation.md` §5. The engine having a per-pattern
 seed offset is independent evidence that the per-element domain is the expected shape, not a nicety.
+
+**And session 30 found the engine's actual per-scope derivation, which is not `seedOffset`.**
+`collectPrefabs` computes `prefabSeed = HashUtil.hash(worldSeed, biome.getId(), ordinal)`, and
+`collectPrefab` then reseeds a `FastRandom` from `HashUtil.hash(prefabSeed, pointX, pointZ) *
+1609272495L`. So the **lattice itself is queried with the plain world seed** and per-entry variation
+comes from that derived seed, not from `seedOffset`. [bytecode, 0.7.6]
+
+That is evidence about the *shape* of one option for the open anchor-hash decision —
+`hash(seed, scopeId, ordinal)`, scope rather than position carrying the identity — and nothing more.
+It does not make the decision.
 
 ---
 
