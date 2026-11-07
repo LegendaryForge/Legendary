@@ -66,6 +66,22 @@ Pinned by `AnchorParametersTest`, which also asserts `suppressionRadius / cellSi
 that keeps selection saturated, so the lattice proposes and terrain disposes rather than `cellSize`
 quietly setting anchor density.
 
+**Anchor density depends on how spatially correlated the strength field is, and the two published
+figures differ by 3.3x for that reason.** Measured 2026-11-07 by `/anchordrainage` over a 37.75 km²
+core region: real Earth terrain gives **1.48 anchors/km²** (spacing ~821 b), while the same probe's
+flat-field control gives **4.90/km²** (spacing ~452 b) — independently reproducing
+`SizingScan`'s 5.00/km². That scan ranks by an uncorrelated hash and says so (*"strengths tie, so the
+hash decides"*), whereas real Earth strength is smooth, because neighbouring candidates share most of
+a 128-radius window at 128 cell spacing, and a smooth field has far fewer local maxima.
+
+**So any figure derived from anchor spacing must say which regime it came from** — `0.48 A/R` current
+length and `2w/R` crystal coverage both inherit this, and both were derived under the uncorrelated
+one. Only Earth has been measured.
+
+```bash
+bash scripts/live-probes/drive-anchordrainage.sh | grep DRAINAGE_VERDICT
+```
+
 **Element floors**, stated as block volumes on each grounding:
 
 ```bash
@@ -97,13 +113,19 @@ scoring weights at all. Likewise:
 | `SiteScorer` | retired weighted-sum scoring; still driven by `/residueprobe` |
 | `CurrentGeometry`, `GrandConvergence` | retired convergence star |
 | `DefaultResidueNetwork` | built on the retired star; **zero production consumers** |
+| `NullCoreResidueNetwork` (`quests/stormseeker`) | decorator on the retired star; referenced by nothing but its own test |
 
 ```bash
-grep -rn 'new DefaultResidueNetwork' core/src quests harness mod | grep -v /test/
+grep -rn 'ResidueNetwork' core/src quests harness mod | grep -v /test/
 ```
 
-That returning nothing is the point: the retired star is reachable only from its own tests, so
-building the real current model is **additive** and retiring the star is a separate, safe deletion.
+That returning only declarations is the point: the retired star is reachable only from its own tests,
+so building the real current model is **additive** and retiring the star is a separate, safe deletion.
+**The whole `ResidueNetwork` interface is in that set** — `densityAt`, `flowAt`, `nexusesWithin` and
+`grandConvergence` have no production caller, so the current model is free to define its own API
+rather than fit this one. Added 2026-11-07: the table named only `DefaultResidueNetwork`, and the
+grep above named only its constructor, so a reader checking the claim got a narrower answer than the
+claim made.
 
 **`verticalSpan` is a dial on the retired record, not an open item on the live one.** It appears in
 `LatticeParameters` and is read only by `SiteScorer`. Its job — how far above and below a surface to
@@ -114,11 +136,38 @@ model is a mistake this document exists to prevent.
 
 Everything above anchors. Nothing here exists in code.
 
-- **Currents** — per element, a **minimum spanning tree** over that element's anchors: `N−1` edges,
-  no cycles, minimal total length. Each edge is a **least-cost path weighted by element affinity**,
-  not a straight line, because crystal density makes the line's path observable and a straight line
-  over a ridge reads as geometry rather than place. Rivers then emerge as water currents with no
-  special case.
+- **Currents — topology is per element, and a global spanning tree is retired.** Decided
+  2026-11-07; see `../superpowers/specs/2026-11-07-residue-per-element-topology-design.md`. Anchors
+  are derived from an area's elemental affinity, so each element's anchor set is **patchy** — and a
+  spanning tree must connect every anchor, so it must emit an edge bridging two volcanic regions
+  across a snowfield. That is the defect terrain derivation was adopted to kill, reimported at the
+  edge layer. Two kinds instead, chosen by **whether the element can be absent**, which its grounding
+  type already decides:
+  - **`Sprawling(reach)`** — Earth, Water, Wind. Each anchor links to the nearest **stronger** anchor
+    within `reach`; nothing stronger in reach makes it a source. Acyclic because strength strictly
+    decreases, directional because upstream is *toward stronger*, and local with a halo of exactly
+    `reach` — the same margin `AnchorSelector` documents for `suppressionRadius`. Reuses the shipped
+    total order `AnchorSelector.beats`.
+  - **`Contained(reach)`** — Fire, Lightning. Single-linkage groups at `reach`, then a minimum
+    spanning tree *within* each group. The MST was not wrong, it was wrongly universalised: it is
+    right exactly where the grounding **guarantees** absence around the cluster. `Contained` on a
+    `Geometric` grounding is a construction error, because rock and air are never absent.
+  - Each edge is still a **least-cost path weighted by element affinity**, not a straight line,
+    because crystal density makes the line's path observable and a straight line over a ridge reads
+    as geometry rather than place. Rivers then emerge as water currents with no special case.
+- **Wind is grounded in constriction, not in open space.** `Occupancy.OPEN` counts open space over
+  the whole world column, which its own javadoc records as reading *"strongest over deep water"* — so
+  wind anchors favour ocean floors, the inverse of where wind reads. Measured 2026-11-07 over five
+  regions: narrow gorges are absent (runs of 28–64 blocks) while valley structure is real (142–460
+  blocks at 62–74% directional coherence). Against a **measured** mean Earth anchor spacing of
+  **~821 blocks**, those runs are **0.17x to 0.56x** of one anchor gap — in no region measured does a
+  valley reach the next anchor. A path cost needs no such guarantee. Constriction therefore decides
+  **where a wind anchor is** and **which way a current bends**, never what connects to what.
+
+  ```bash
+  bash scripts/live-probes/drive-anchordrainage.sh   # spacing, from measured anchor density
+  bash scripts/live-probes/drive-windchannels.sh     # channel runs
+  ```
 - **Anchors are 3D**, each carrying its own y from its element's rule — fluid surface for Fire and
   Water, the cave volume's level for Earth, above terrain for Wind, exposed surface for Lightning.
   This dissolves a measured defect rather than patching it: with one shared reference plane, the
@@ -135,7 +184,10 @@ Everything above anchors. Nothing here exists in code.
 
 | Open | State |
 |---|---|
-| **Is an MST computable in an unbounded world?** | Found 2026-11-07 and **unaddressed by any spec**. An MST is a global structure; computing it per region makes edges near a boundary depend on where the boundary was drawn. This is the same shape as the failure that retired the convergence star. Blocks currents |
+| `reach`, per element | The one parameter the topology decision adds. Derived, not chosen: from where connectivity structure stops changing as reach grows, expressed as a ratio to an existing parameter and pinned the way `suppressionRadius / cellSize == 2` is. **Unmeasured** |
+| Does a sprawling forest degenerate in a uniform field? | The ocean case: a near-flat strength field could yield one long arbitrary chain instead of a network. Measurable headlessly for Earth, and the risk to find before building |
+| Current length per km² | Replaces `0.48 A/R`, which was measured against the retired MST — and with it the `2w/R` crystal coverage derived from it |
+| Does constriction place Wind anchors sensibly? | Newly testable headlessly, which `Occupancy.OPEN` was not |
 | `measurementRadius` | Earth **measured** 2026-11-07: at the current window 32% of contests are decided by gaps under 1%, which halves at radius 64. But the original argument for 128 was about *water saturation*, which runs the opposite way and is unmeasured |
 | Element term in the anchor hash | `AnchorSelector.positionHash` is `mix(worldSeed, x, z)` with no element term, so two elements tying across the same candidates select identical anchors. The engine's own answer, found 2026-11-07, is `hash(seed, scopeId, ordinal)` |
 | Earth's y source | Its modal level is `y=0` in every column measured, so §4's rule is degenerate for Earth |
@@ -174,6 +226,7 @@ right one without reading them all. **They are history; this document is the sta
 | The parameter vector's derivation, and the π error that halved it | `../superpowers/specs/2026-10-23-residue-sizing-re-derivation.md` |
 | The roster, and why a content count is not evidence | `../superpowers/specs/2026-10-21-residue-roster-decision.md` |
 | The window-arbitrariness measurement | `../superpowers/specs/2026-11-07-residue-window-separation-measurement.md` |
+| Why spanning is retired, the per-element topology split, and the wind-channel measurement | `../superpowers/specs/2026-11-07-residue-per-element-topology-design.md` — supersedes the anchor-density design's §5 topology decision |
 | Engine facts — what worldgen actually does | `../integration/hytale-engine-api.md` |
 | Lore — what things *are* | `../setting/hytale-orbis-setting-brief.md` |
 
