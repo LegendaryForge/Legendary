@@ -21,6 +21,7 @@ line by name, never the exit code.
 | **a fact about the engine** — an API, a signature, a measured value, an asset schema | [`integration/hytale-engine-api.md`](integration/hytale-engine-api.md), as a new row with its **tier** and **build** | an API fact outlives the design that found it; designs get superseded |
 | **a fact about the fiction** — lore, naming, what exists in the world | [`setting/hytale-orbis-setting-brief.md`](setting/hytale-orbis-setting-brief.md) | lore is the authority on meaning; see `../CLAUDE.md` § "Lore first" |
 | **a design or decision** | a new `superpowers/specs/YYYY-MM-DD-*.md` with a `**Status:` line | dated and append-only; the status is what stops it reading as current after it is superseded |
+| **the current state of a design** — what it *is* now, as opposed to what was decided when | the one living document for that area, e.g. [`architecture/residue.md`](architecture/residue.md) | a dated spec states a decision; it cannot state a state. 14 residue specs accumulated with the current design written down in none of them, and sessions reconstructed it by diffing them in date order |
 | **a plan to execute one** | a new `superpowers/plans/YYYY-MM-DD-*.md` | same |
 | **a durable rule for every session** | [`../CLAUDE.md`](../CLAUDE.md) | it is the only document auto-loaded every session |
 | **operating notes for the test server** | [`integration/live-server-testing.md`](integration/live-server-testing.md) | perishable, engine-specific, read at point of use |
@@ -56,6 +57,7 @@ worth more than a convention that fires on whoever remembers it.
 
 | Document | What it is |
 |---|---|
+| [residue.md](architecture/residue.md) | **The current residue design — read this first for anything residue.** The only document stating what the design *is*; the 14 dated residue specs are provenance. Every number carries the command that re-derives it from code. Verified against `main` 2026-11-07. |
 | [ecs-principles.md](architecture/ecs-principles.md) | ECS architecture, host/runtime boundaries, multiplayer design. Sourced from the Hytale Canonical Modding Architecture v1.2; dated 2026-02-04. |
 | [testing-strategy.md](architecture/testing-strategy.md) | Unit tests, harness tests, validation approach. Dated 2026-02-04. |
 | [native-objectives-migration-cost.md](architecture/native-objectives-migration-cost.md) | **DECIDED 2026-08-25** — adopt Hytale's native objectives for the Stormseeker content spine, and what that cost. |

@@ -382,132 +382,54 @@ its own tests, it is a design, not a mechanism.
 
 ---
 
-## Residue network: direction changed, old specs bannered
+## Residue network — read one document, not fourteen
 
-**Read `docs/superpowers/specs/2026-10-21-residue-anchor-density-design.md` first, then
-`2026-10-20-residue-terrain-derivation-design.md` for the direction it builds on.** The
-anchor-density spec is **PROPOSED**, is the current model, and supersedes the *placement half* of the
-2026-10-21 adoption further down this section. Nothing in it is implemented.
+> **[`docs/architecture/residue.md`](docs/architecture/residue.md) is the current design.** It states
+> what is built, the live parameter vector, which code is live and which is retired, what is decided
+> but unbuilt, what is open, and what is settled and must not be re-proposed. Read it before any
+> residue work.
 
-**Its §9 numbers are supplied** by `2026-10-22-residue-sizing-decision.md`: `w = 8`, measurement
-radius `128`, suppression radius `512` for all five elements as a starting vector, `D = 8`. Crossing
-frequency is **struck as not a decision** — nothing gates on it until something required is placed in
-a geode. The whole set derives from one provisional operator judgement, *~15% of the world near some
-current*, through `R = 10w/C`; `verticalSpan` is **not** among them and needs its own decision before
-implementation, because §4 gives each element its own y while the span is still one global value.
+**This section used to summarise that design, and the summary is what went stale.** It stated the
+suppression radius as `512` for two weeks after the committed value became `256` — and so did the
+anchor-density spec's own §9 banner, so a session checking the summary against a spec found
+agreement and was wrong twice over. Before that it pointed every session at a superseded placement
+model, and before that it contradicted itself about whether four specs carried banners. Three
+distinct stale-pointer failures in one section, each fixed by rewriting the summary, which is what
+produced the next one.
 
-> **Until 2026-10-22 that pointer named only the 2026-10-20 design, and the anchor-density spec was
-> not mentioned anywhere in this file.** So the document every session loads first sent readers to a
-> superseded placement model and omitted the one that replaced it — the same shape as the four stale
-> warnings this file and `Project_Dependencies.md` corrected on 2026-10-20 and 2026-10-21, arriving
-> through the opposite door: not a hazard note outliving its hazard, but a *current* pointer
-> outliving its currency. Both read as live; only the second sends you somewhere.
+So the section no longer summarises. **The cause was structural**: there are 14 dated residue specs,
+each a delta that supersedes parts of earlier ones and records the supersession in itself, so the
+current design was written down nowhere and every reader reconstructed it by diffing in date order.
+A summary of that is a fifteenth surface that can disagree with the other fourteen. The fix is one
+document that holds the state, with every number carrying the command that re-derives it from code —
+not a better summary here.
 
-The three committed residue specs (`2026-08-27-residue-network-design.md`,
-`2026-08-29-six-element-residue-framework-design.md`,
-`2026-08-30-n9-all-crossings-are-nexuses-design.md`) describe a **single-convergence seeded-walk**
-model keyed to the **six essence items**. That direction was superseded in discussion on 2026-10-20.
+**When a residue decision lands, updating that document is part of landing it.** A new dated spec
+that decides something should edit it in the same change; otherwise the pile starts growing again.
 
-**They now carry `⚠️ SUPERSEDED IN DIRECTION` banners** — added 2026-10-21, on those three plus
-`2026-08-28-graded-nexuses-design.md`, four in total. Each banner names what is specifically
-superseded and what survives (the measurements, and the reasoning about why each choice was made),
-so the specs are safe to open; read the 2026-10-20 document first for the direction, not because the
-old ones will mislead you about their own standing.
-
-> **This paragraph said the opposite until 2026-10-22**, and the stale half was the warning: *"nothing
-> was retired, so those specs still read as current. They are not."* True when written on 2026-10-20,
-> fixed the next day by the bannering, and left here — while § "Lore first" two sections up already
-> described "four residue specs ... bannered as superseded that same day." So this file contradicted
-> itself, and the half a reader acts on was the one sending them to audit a hazard that had been
-> closed. **Third instance of that shape in this project on 2026-10-22**, after
-> `Project_Dependencies.md`'s claim that `.ai/workspace_graph.json` was a seven-month-old snapshot
-> (it was a day old) and the launch guard deleted rather than reworded once the relocation made its
-> condition impossible. The lesson is the one that blockquote states: a warning about a hazard that
-> no longer exists reads as live until someone spends the time to disprove it. **When a fix lands,
-> the pointer that sent people looking is part of what the fix has to touch.**
-
-Three facts from the new document that are easy to re-derive wrongly:
-
-- **Extent.** One convergence per world yields **zero nexuses beyond ~3 km** — measured, in the
-  committed `scripts/residue-scans/out-chosen.txt` §7. Tuning cannot fix it; the model is one
-  localised feature in an unbounded world.
-- **Roster — revised 2026-10-21, and the earlier version of this bullet was wrong.** It read
-  *"Hytale's six **runes** are Wind, Earth, Lightning, Water, Fire, Void … verifiable from the jar, no
-  lore source needed."* Runes are not a roster — they are the written characters that *represent*
-  elements, and factions and named characters have them too. And the jar does **not** settle it: the
-  five `Server/Abilities/Elements/` files are `{"DamageCause": "X"}` damage types, so they corroborate
-  a list without being one. See § "Lore first" above; this bullet is that section's worked example.
-  **DECIDED 2026-10-21** — `docs/superpowers/specs/2026-10-21-residue-roster-decision.md`. The roster
-  is the **cosmological five**: Fire, Water, Lightning, Wind, Earth, with Void handled separately as an
-  incursion. The word *essence* stays; only membership changes. `:core` still keys to the six shipped
-  **essence items** (Fire, Ice, Life, Lightning, Void, Water) — there is nothing to change in code, so
-  this is a documentation and content decision. **Lightning is in every roster, so Stormseeker is
-  unaffected.**
-
-  Recorded as a **reversible modelling default, not a claim about Hytale's taxonomy.** Two things from
-  that decision are load-bearing for anyone building on it:
-
-  - **Keep `elementId` an opaque `ResourceId`. Do not add an enum, a list, a default, or validation.**
-    That openness is what makes a roster change a documentation edit rather than a breaking API change
-    plus a migration, and the game ships every 2–6 weeks while still adding elements. It has been
-    misread as a gap before; it is the mechanism that makes the decision safe to take at all.
-  - **A content count is evidence about what has been built, never about what the world is.** An
-    argument weighing rosters by how many shipped creatures drop each essence was used to take this
-    decision and then withdrawn: the game's two elemental layers are each incomplete in *opposite*
-    directions — `Server/Abilities/Elements/` is complete at five (Wind and Earth included), while the
-    essence *items* omit Wind and Earth and add Ice, Life and Void. Fire has twenty droppers because
-    Zone 4 got built. Weighing that is measuring Hypixel's schedule.
-- **The roster is NOT in `:core`, and this bullet said otherwise until 2026-10-21.** It read *"element
-  identity is a `:core` constructor argument with one consumer, so changing it is cheap until questline
-  #2"*, and the specs said the roster was *"baked into `:core`'s API"*. Verified by reading the code:
-  `elementId` is an opaque `ResourceId` — **no enum, no list, no validation, no default** — and every
-  `DefaultResidueNetwork(seed, elementId, params)` call in the repository is **in a test**. There are
-  **zero** production consumers, not one: `NullCoreResidueNetwork` in `quests/stormseeker` is a
-  decorator over an injected delegate and supplies no id. So the roster decision has **no code cost
-  and no deadline** — "cheap now, breaking after questline #2" was predicated on a roster that does
-  not exist in code. It is a documentation and future-content decision, and can be made whenever.
-  This is the heuristic two sections below applied to residue instead of the questline framework:
-  **grep the call sites; if the only callers are its own tests, it is a design, not a mechanism.**
-- **Void is an incursion, not a darkness.** Not native to Orbis, no reachable destination, modelled
-  by the engine as a staged invasion event. A "Void = night and underground dark" idea was
-  considered and **dropped**; do not re-propose it.
-
-**The direction was ADOPTED 2026-10-21** — `docs/superpowers/specs/2026-10-21-residue-terrain-derivation-adoption.md`.
-The convergence star retires (measured: 0.00 nexuses/km² beyond 3 km, and tuning is exhausted); the
-placed-nexus model is approved; its own §9 q1–q5 are closed.
-
-> **Its placement half is already superseded**, by `2026-10-21-residue-anchor-density-design.md`
-> (same day, PR #138). *"Candidates come from a seed-hashed jittered lattice"* is replaced: nexus
-> stops being a placed entity, currents become the only generated geometry, strength is **volume**
-> (a count of sample points satisfying each element's predicate), and anchors are **3D** with a y
-> per element. **Mind which §9 a sentence means** — the adoption's §9 q1–q5 are closed; the
-> anchor-density spec has its *own* §9, holding five numbers that are open and blocked on operator
-> judgement. Everything else the adoption settled stands, and the three bullets below are part of
-> that:
-
-- **Derivation is pure `:core` code behind an injected terrain port, and no residue is authored into
-  worldgen JSON.** That declines §7's two-implementations trap by construction. It also costs nothing
-  real: `HytaleWorldGenProvider` — the live generator — has **zero** bytecode references to
-  `builtin/hytalegenerator`, so V2's graph machinery is not callable at runtime anyway. Verified, not
-  recalled.
-- **Timing is a deployment choice, not an architecture one.** The derivation is deterministic, so
-  on-demand-near-players (the only thing possible today) and generation-time precomputation into
-  `PointManager` return the same answer; the second is a *cache*, not a second source of truth.
-- **The first deliverable is `/residueprobe`, which places nothing.** The capability question is
-  answered — lava, water, environment and exposure reads all compile against the real jar. What no jar
-  read can answer is whether the scoring puts a Fire nexus *at* the lava lake, so the probe prints its
-  opinion about ground you can walk to and judge. Lightning over-reports until storm frequency
-  reaches the port.
-
-  **This bullet used to end "River-versus-ocean is not expressible at all," and the anchor-density
-  spec's §2 makes it expressible** — as a *strength* difference rather than a type distinction: an
-  ocean fills the measurement window and a river crosses a corner of it, so counting
-  predicate-satisfying points separates them by exactly the margin §2 wants ("a lake, an ocean, a
-  caldera — not a 2×2 puddle"). It does not *label* either; it ranks them.
-
+**What has not changed:** the dated specs remain the record of what was believed and when, the four
+`2026-08-*` ones still carry their `⚠️ SUPERSEDED IN DIRECTION` banners, and engine facts still go to
+`docs/integration/hytale-engine-api.md` rather than into a design. `docs/README.md` § "Where does
+this go?" routes all three cases and `checkDocsOrganization` enforces it.
 ---
 
-*Last updated: 2026-10-22 (third change that day) — § "Residue network" pointed every session at
+*Last updated: 2026-11-07 (session 30) — § "Residue network" no longer summarises the residue
+design; it points at `docs/architecture/residue.md`, which is new and is the only document stating
+what that design currently is. The driver was an operator report of constant drift, and the
+diagnosis was structural rather than a memory failure: **14** dated residue specs, each a delta
+superseding parts of earlier ones and recording the supersession in itself, so the current design
+was written down nowhere and each session reconstructed it by diffing in date order. Measured cost
+on this day alone — the suppression radius read `512` here and in the anchor-density spec's §9
+banner while the committed `AnchorParameters.defaults()` said `256`; `measurementRadius` was
+"decided" in one spec and "the live follow-up" in another; and session 25 had already lost a
+research block rediscovering a fork closed the day before. This section's own three prior
+stale-pointer failures were each fixed by rewriting the summary, which is what produced the next
+one — so the summary is gone and 123 lines became a 29-line pointer. Every number in the new
+document carries the command that re-derives it from code, because a number copied into prose is
+how `512` outlived `256` in two places at once. Also fixed the §9 banner, indexed the document in
+`docs/README.md`, and added a routing row there for current-state references, which the table had
+no home for. Noted but NOT fixed: `checkDocsOrganization` does not read `CLAUDE.md`, so rule 3's
+link resolution does not cover the one document every session auto-loads. Previously 2026-10-22 (third change that day) — § "Residue network" pointed every session at
 `2026-10-20-residue-terrain-derivation-design.md` "before any residue work" and never mentioned
 `2026-10-21-residue-anchor-density-design.md`, which supersedes the placement half of the adoption
 this section presents as current. Cost, measured rather than supposed: session 25 read the session

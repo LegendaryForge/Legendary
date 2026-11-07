@@ -374,6 +374,11 @@ a single session, and the only self-inflicted one.
 > **Four of these five are now decided** —
 > [`2026-10-22-residue-sizing-decision.md`](2026-10-22-residue-sizing-decision.md). `w = 8`,
 > measurement radius `128`, suppression radius `512` for all five elements as a starting vector,
+> **— read that `512` as history, not as the value.** `2026-10-23-residue-sizing-re-derivation.md`
+> halved it to `256`, the `1/R²` density estimate having missed a factor of π, and the committed
+> `AnchorParameters.defaults()` says `256`. This banner stated the superseded figure as current for
+> two weeks and so did `CLAUDE.md`. For current state plus the command that re-derives it:
+> [`../../architecture/residue.md`](../../architecture/residue.md) §2. —
 > `D = 8` (`= w`, a correctness bound rather than a preference). Item 3 is **struck as not a
 > decision** — nothing gates on it, so it stays a deferred measurement with this section's own
 > trigger. The coverage target it all derives from, ~15%, is provisional by the operator's framing.
