@@ -1,20 +1,16 @@
 package io.github.legendaryforge.legendary.mod.hytale.command;
 
-import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.math.util.MathUtil;
 import com.hypixel.hytale.procedurallib.logic.point.IPointGenerator;
 import com.hypixel.hytale.protocol.FormattedMessage;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
 import com.hypixel.hytale.server.core.command.system.basecommands.AbstractWorldCommand;
-import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
-import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.WorldConfig;
-import com.hypixel.hytale.server.core.universe.world.accessor.SectionReader;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.universe.world.worldgen.IWorldGen;
+import com.hypixel.hytale.server.worldgen.ChunkGeneratorResource;
 import com.hypixel.hytale.server.worldgen.biome.Biome;
 import com.hypixel.hytale.server.worldgen.biome.BiomePatternGenerator;
 import com.hypixel.hytale.server.worldgen.cave.CaveGenerator;
@@ -29,16 +25,22 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-import org.joml.Vector3d;
 
 /**
  * Debug command: {@code /featurelocality}
  *
  * <p>Runs the probe specified in {@code
- * docs/superpowers/specs/2026-11-07-feature-locality-confirming-probe-design.md}, which confirms or
- * refutes the worldgen-locality finding on PR #149. That finding is {@code [javap]} throughout —
- * this document's own tier table calls that <strong>a hypothesis</strong> — and it decides whether
- * residue can be derived at generation time.
+ * docs/superpowers/specs/2026-11-07-feature-locality-confirming-probe-design.md}, which confirmed
+ * the worldgen-locality finding merged as PR #149. Most of that finding is now
+ * {@code [measured, 0.7.6]}; this command is what measured it, and it decides whether residue can
+ * be derived at generation time.
+ *
+ * <p><strong>Part 3 was replaced</strong> by {@code
+ * docs/superpowers/specs/2026-11-07-collect-call-edge-claim2-design.md}. Its terrain-deviation
+ * contrast could not work — a ~20% background deviation rate, and no pattern both dense enough for
+ * statistics and large enough to detect — and the instrument named to replace it compared two
+ * different placement systems. What is there now is the {@code collect()} call edge in
+ * {@code PrefabPopulator}, plus the runtime preconditions it depends on.
  *
  * <p><strong>It needs no declared feature.</strong> #149's probe sentence was "declare a trivial
  * feature with a known maxSize and check its blocks appear in chunks other than its point's", which
@@ -46,7 +48,8 @@ import org.joml.Vector3d;
  * has already declined. The base game ships thousands of declared features and the whole walk down
  * to their sizes is public API, so the engine's own features answer the question instead.
  *
- * <p>Four independent parts. Each reports on its own; a part that cannot run <em>says so</em> rather
+ * <p>Four independent parts, and <strong>none of them needs a connected player</strong> since Part 3
+ * stopped reading terrain. Each reports on its own; a part that cannot run <em>says so</em> rather
  * than being omitted, because an absent line must never read as a passing one.
  *
  * <ol>
@@ -56,8 +59,10 @@ import org.joml.Vector3d;
  *       though {@code minChunkCoord} is not, so binary-searching it recovers the {@code extents} the
  *       constructor computed — executing {@code getLargestFeatureChunkExtents} rather than reading
  *       it.
- *   <li><strong>Point-generator trace.</strong> Does {@code collect} name where features actually
- *       are? Measured against a mandatory control set.
+ *   <li><strong>The {@code collect} call edge.</strong> Is {@code IPointGenerator.collect} what
+ *       per-chunk prefab placement calls? The edge is in {@code PrefabPopulator.collectPrefabs};
+ *       this part measures that the live world can answer that exact call, for every prefab entry,
+ *       at real chunk coordinates.
  *   <li><strong>Chunk crossing.</strong> #149's literal question.
  * </ol>
  *
@@ -76,43 +81,17 @@ public class FeatureLocalityCommand extends AbstractWorldCommand {
     /** {@code ChunkGenerator.CHUNK_BOUNDS_PADDING}, in CHUNKS. Private there, so asserted here. */
     private static final int EXPECTED_PADDING_CHUNKS = 16;
 
-    /** Half-width of the region Part 3 collects over. Kept inside a single player's loaded radius. */
-    private static final int COLLECT_HALF_WIDTH = 224;
-
-    /** Columns sampled per set in Part 3. Collected and control sets are matched in size. */
-    private static final int SAMPLE_TARGET = 48;
+    /** {@code ChunkUtil.maxBlock(c)} is {@code (c << 5) + 31}; this is the 31. */
+    private static final int CHUNK_MAX_OFFSET = 31;
 
     /**
-     * Minimum scorable columns per set before a contrast may be called MEASURED.
+     * The chunks Part 3 reproduces the populator's {@code collect} call at.
      *
-     * <p>The first run with a player reported MEASURED off <strong>8</strong> collected points, at
-     * 5/8 against a control 10/48. Fisher one-sided on that single table is p ~ 0.026, and it was the
-     * best of four seed candidates, so the corrected figure is ~0.10 -- not significant. A ratio
-     * threshold with no sample-size floor and no multiple-comparison correction waves noise through.
+     * <p>Origin alone would not show that the region TRACKS the chunk: a degenerate region at
+     * {@code (0,0)} is indistinguishable from a correct one, since {@code 0 << 5} is 0. The second
+     * chunk is asymmetric and negative in z for that reason.
      */
-    private static final int MIN_SCORABLE = 30;
-
-    /**
-     * Minimum |actual - generateHeight| counted as a placed feature, in blocks.
-     *
-     * <p>Was effectively 1, which counted a one-block disagreement as a prefab. generateHeight
-     * matched the topmost solid block 7/7 EXACTLY on 0.7.4, so a small difference is real signal
-     * about the generator -- but it is not evidence of a structure, which is what Part 3 is asking.
-     */
-    private static final int DEVIATION_MIN_BLOCKS = 3;
-
-    /**
-     * Vertical half-band searched for the topmost solid block, around {@code generateHeight}.
-     *
-     * <p>A full 0..319 scan per column would be sound but costs 320 reads; a band costs 193 and
-     * bounds the work. A column whose topmost solid is outside the band is counted as a band miss
-     * and reported separately — never folded into either the deviation or the agreement count,
-     * because a miss is an absence of evidence and the two counts are evidence.
-     */
-    private static final int SCAN_HALF_BAND = 96;
-
-    /** World ceiling, from {@code /blockidprobe}'s measured 0..319 range. */
-    private static final int WORLD_TOP_Y = 319;
+    private static final int[][] CALL_CHUNKS = {{0, 0}, {100, -37}};
 
     public FeatureLocalityCommand() {
         super("featurelocality", "Confirms or refutes the worldgen feature-locality finding");
@@ -167,7 +146,12 @@ public class FeatureLocalityCommand extends AbstractWorldCommand {
         Census census = census(sb, zones);
         onWorldgenThread(sb, generator, census);
         Bound bound = recoverBound(sb, generator, census);
-        Trace trace = trace(sb, world, store, generator, census, seed);
+
+        // Parts 3 and 4 are SIBLINGS now. Part 4 used to be called from inside Part 3, which is how
+        // it came to be skipped on one path and how its verdict came to be read off a field Part 3
+        // owned. Each part returns its own verdict and the caller assigns it.
+        String claim2 = callEdge(sb, generator, census, seed);
+        String crossing = crossing(sb, generator, seedInt(seed));
 
         sb.append("\nLOCALITY_VERDICT: ")
                 .append(census.claim1Verdict())
@@ -178,9 +162,9 @@ public class FeatureLocalityCommand extends AbstractWorldCommand {
                 .append(' ')
                 .append(bound.matchVerdict(census.predictedExtents()))
                 .append(" | claim2 ")
-                .append(trace.verdict)
+                .append(claim2)
                 .append(" | crossing ")
-                .append(trace.crossing)
+                .append(crossing)
                 .append('\n');
         send(context, sb.toString());
     }
@@ -287,7 +271,6 @@ public class FeatureLocalityCommand extends AbstractWorldCommand {
                                     }
                                     if (size > c.largestPrefabSize) {
                                         c.largestPrefabSize = size;
-                                        c.largestPattern = pattern;
                                     }
                                 }
                                 if (excl != null && excl > exclMax) {
@@ -624,264 +607,340 @@ public class FeatureLocalityCommand extends AbstractWorldCommand {
                 : generator.isChunkOutsideGeneratableArea(0, coord);
     }
 
-    // ------------------------------------------------------------- Parts 3+4
+    // --------------------------------------------------------------- Part 3
 
-    /** Does {@code collect} name where features are? Measured against a matched control set. */
     private static int seedInt(long seed) {
         return (int) seed;
     }
 
-    private static Trace trace(
-            StringBuilder sb,
-            World world,
-            Store<EntityStore> store,
-            ChunkGenerator generator,
-            Census census,
-            long seed) {
-        Trace trace = new Trace();
-        sb.append("\n=== PART 3: does collect() name where features are? ===\n");
-
-        // The player comes FIRST now: every measurement below reads loaded chunks, so without one
-        // there is nothing to do and printing pattern details first only buried that.
-        int px = 0;
-        int pz = 0;
-        String who = null;
-        for (PlayerRef playerRef : world.getPlayerRefs()) {
-            Ref<EntityStore> ref = playerRef.getReference();
-            TransformComponent transform =
-                    ref == null ? null : store.getComponent(ref, TransformComponent.getComponentType());
-            if (transform == null) {
-                continue;
-            }
-            Vector3d pos = transform.getPosition();
-            px = MathUtil.floor(pos.x);
-            pz = MathUtil.floor(pos.z);
-            who = playerRef.getUsername();
-            break;
-        }
-        if (who == null) {
-            sb.append("no connected player with a TransformComponent. PART 3 reads the topmost solid\n")
-                    .append("block, which needs LOADED chunks, and a headless server has none, so claim 2\n")
-                    .append("stays UNTESTED. Parts 1, 1b, 2 and 4 do not need a player.\n");
-            trace.crossing = crossing(sb, generator, seedInt(seed));
-            return trace;
-        }
-        sb.append("anchor: ")
-                .append(who)
-                .append(" at ")
-                .append(px)
-                .append(',')
-                .append(pz)
-                .append('\n');
-
-        // PATTERN SELECTION IS WHAT THIS TEST TURNS ON, and both obvious selectors are wrong.
-        //
-        // Picking the largest maxSize gave getInterval()=333 blocks: a region inside one player's
-        // loaded radius holds ~8 of its points, so the comparison can never reach the sample floor,
-        // and the first version reported MEASURED off exactly that.
-        //
-        // Picking the DENSEST then gave getInterval()=1, which collects 130,812 points in the same
-        // region -- and produced control 0/0, because a control position must not sit near a
-        // collected one and at interval 1 every position does. That failure is structural, not a
-        // bug in the control: when candidate sites cover everything there is no "not a site" to
-        // contrast against, so no contrast exists to measure.
-        //
-        // The usable interval is therefore a BAND, derived from the geometry rather than guessed:
-        //   upper: enough points to clear the sample floor, (2*HW/iv)^2 >= 1.5*MIN_SCORABLE
-        //   lower: sparse enough that excluded neighbourhoods leave a control set behind
-        double bandMax = (2.0 * COLLECT_HALF_WIDTH) / Math.sqrt(1.5 * MIN_SCORABLE);
-        double bandMin = 16.0;
-        sb.append(String.format(
-                "usable getInterval() band for this region (+/-%d blocks) and floor n=%d: %.0f..%.0f%n",
-                COLLECT_HALF_WIDTH, MIN_SCORABLE, bandMin, bandMax));
-
-        // Group by interval: 1,429 patterns share a handful of intervals, and testing 500 patterns
-        // with identical spacing would just inflate the comparison count the correction divides by.
-        java.util.Map<Double, PrefabPatternGenerator> byInterval = new java.util.TreeMap<>();
-        java.util.Map<Double, Integer> intervalCounts = new java.util.TreeMap<>();
-        for (PrefabPatternGenerator candidate : census.patterns) {
-            IPointGenerator g = safeObj(candidate::getGridGenerator);
-            if (g == null) {
-                continue;
-            }
-            Double iv = safeDoubleBoxed(g::getInterval);
-            if (iv == null || iv <= 0.0) {
-                continue;
-            }
-            double key = Math.round(iv * 100.0) / 100.0;
-            intervalCounts.merge(key, 1, Integer::sum);
-            byInterval.putIfAbsent(key, candidate);
-        }
-        sb.append("distinct getInterval() values across ")
-                .append(census.patterns.size())
-                .append(" patterns: ")
-                .append(intervalCounts.size())
-                .append("  -> ");
-        int shown = 0;
-        for (java.util.Map.Entry<Double, Integer> e : intervalCounts.entrySet()) {
-            if (shown++ > 0) {
-                sb.append(", ");
-            }
-            sb.append(String.format("%.0f(x%d)", e.getKey(), e.getValue()));
-            if (shown >= 14) {
-                sb.append(", ...");
-                break;
-            }
-        }
-        sb.append('\n');
-
-        List<PrefabPatternGenerator> chosen = new ArrayList<>();
-        for (java.util.Map.Entry<Double, PrefabPatternGenerator> e : byInterval.entrySet()) {
-            if (e.getKey() >= bandMin && e.getKey() <= bandMax) {
-                chosen.add(e.getValue());
-            }
-        }
-        if (chosen.isEmpty()) {
-            // Keep the two extremes so the output still SHOWS why nothing is in band, rather than
-            // printing an empty table that reads like a probe that did not run.
-            sb.append("NO pattern falls in the band -- the two extremes are tested anyway so the\n")
-                    .append("table shows the failure rather than printing nothing.\n");
-            if (!byInterval.isEmpty()) {
-                chosen.add(byInterval.values().iterator().next());
-                if (census.largestPattern != null) {
-                    chosen.add(census.largestPattern);
-                }
-            }
-        } else {
-            sb.append("in-band patterns selected: ").append(chosen.size()).append('\n');
-        }
-
-        if (chosen.isEmpty()) {
-            sb.append("no prefab pattern with a point generator; claim 2 UNTESTED\n");
-            return trace;
-        }
-
-        // seedOffset is `protected final` with NO public getter, so the engine's exact per-pattern
-        // seed cannot be reproduced. A wrong seed returns a DIFFERENT valid point set, which shows no
-        // contrast even if claim 2 is true -- so the seed is scanned. Every (pattern, seed) pair
-        // tried is a comparison, and the count is carried into the correction below: selecting the
-        // best of N and then testing it at 0.05 is testing at 0.05*N.
-        int seedInt = (int) seed;
-        int[] candidateSeeds = {seedInt, 0, (int) (seed >>> 32), seedInt + 1};
-        String[] seedLabels = {"(int) worldSeed", "0", "worldSeed>>>32", "worldSeed+1 (ctl seed)"};
-
-        SectionReader reader = new SectionReader(world.getChunkStore());
-        sb.append("deviation counted at >= ")
-                .append(DEVIATION_MIN_BLOCKS)
-                .append(" blocks from generateHeight; a set needs >= ")
-                .append(MIN_SCORABLE)
-                .append(" scorable columns to be eligible.\n");
-        sb.append(String.format(
-                "%n%-34s %-22s %7s %9s %9s %7s %7s %9s%n",
-                "pattern (interval)", "seed", "points", "collected", "control", "dev%", "ctl%", "p (1-sided)"));
-
-        int comparisons = 0;
-        double bestP = 1.0;
-        for (PrefabPatternGenerator candidate : chosen) {
-            IPointGenerator grid = safeObj(candidate::getGridGenerator);
-            if (grid == null) {
-                continue;
-            }
-            Double iv = safeDoubleBoxed(grid::getInterval);
-            Integer maxSize = safeInt(candidate::getMaxSize);
-            Boolean fit = safeBool(candidate::isFitHeightmap);
-            String label = String.format("iv=%.0f max=%s fit=%s", iv == null ? -1.0 : iv, maxSize, fit);
-            for (int i = 0; i < candidateSeeds.length; i++) {
-                List<long[]> points = collectPoints(grid, candidateSeeds[i], px, pz);
-                if (points.isEmpty()) {
-                    sb.append(String.format(
-                            "%-34s %-22s %7d %9s %9s %7s %7s %9s%n", label, seedLabels[i], 0, "-", "-", "-", "-", "-"));
-                    continue;
-                }
-                Deviation collected = deviation(reader, generator, seedInt, points, SAMPLE_TARGET);
-                Deviation control = deviation(
-                        reader,
-                        generator,
-                        seedInt,
-                        controlPoints(px, pz, points, iv == null ? 1.0 : iv),
-                        SAMPLE_TARGET);
-                comparisons++;
-                double pValue =
-                        fisherRightTail(collected.deviating, collected.scored(), control.deviating, control.scored());
-                boolean eligible = collected.scored() >= MIN_SCORABLE && control.scored() >= MIN_SCORABLE;
-                sb.append(String.format(
-                        "%-34s %-22s %7d %9s %9s %6.0f%% %6.0f%% %9s%n",
-                        label,
-                        seedLabels[i],
-                        points.size(),
-                        collected.summary(),
-                        control.summary(),
-                        collected.rate() * 100,
-                        control.rate() * 100,
-                        eligible ? String.format("%.4f", pValue) : "n too low"));
-                if (eligible && pValue < bestP) {
-                    bestP = pValue;
-                    trace.bestLabel = label + " / " + seedLabels[i];
-                    trace.bestPoints = points;
-                    trace.collectedRate = collected.rate();
-                    trace.controlRate = control.rate();
-                    trace.bestEligible = true;
-                }
-            }
-        }
-
-        double corrected = Math.min(1.0, bestP * Math.max(1, comparisons));
-        sb.append("\ncomparisons tried: ")
-                .append(comparisons)
-                .append("   best eligible p: ")
-                .append(trace.bestEligible ? String.format("%.4f", bestP) : "none eligible")
-                .append("   Bonferroni-corrected: ")
-                .append(trace.bestEligible ? String.format("%.4f", corrected) : "-")
-                .append('\n');
-
-        if (!trace.bestEligible) {
-            sb.append("""
-                    claim 2 NOT_SHOWN -- no comparison reached the sample floor, so nothing here is
-                    evidence either way. NOT refuted.
-
-                    Why, concretely: this pattern family's getInterval() is large relative to the area
-                    one player keeps loaded, so a region that fits inside loaded chunks cannot hold
-                    enough of its points. The remedy is a denser pattern, which is why the densest is
-                    selected first -- if even that is too sparse, the next variable is the region, and
-                    that needs more loaded chunks, i.e. a second player or a larger view distance.
-                    """);
-            trace.crossing = crossing(sb, generator, seedInt);
-            return trace;
-        }
-
-        trace.verdict = corrected < 0.05 ? "MEASURED" : "NOT_SHOWN";
-        sb.append("best: ")
-                .append(trace.bestLabel)
-                .append("  collected ")
-                .append(String.format("%.0f%%", trace.collectedRate * 100))
-                .append(" vs control ")
-                .append(String.format("%.0f%%", trace.controlRate * 100))
-                .append("  -> claim 2 ")
-                .append(trace.verdict)
-                .append('\n');
+    /**
+     * Part 3 — is {@code collect()} what per-chunk prefab placement calls? (claim 2)
+     *
+     * <p><strong>This replaces the terrain-deviation test, and also replaces the instrument the
+     * previous session named to replace it.</strong> That instrument was {@code
+     * UniquePrefabEntry.getPosition()} against {@code collect()} output, and it compares two
+     * different placement systems: {@code UniquePrefabGenerator} has no {@code IPointGenerator} at
+     * all — not on the generator, not on its {@code UniquePrefabConfiguration}, which places by
+     * anchor + maxDistance + maxAttempts rejection sampling against a {@code Random}. The engine
+     * runs the two as separate steps of one pass ({@code generatePrefabs} from the collect-filled
+     * {@code prefabs} list, then {@code generateUniquePrefabs} from {@code getUniquePrefabs}), so
+     * the comparison would have disagreed by construction and reported CLAIM2_REFUTED. That would
+     * have been the fourth cross-scope comparison in this probe's history.
+     *
+     * <p><strong>What answers claim 2 is a call edge</strong>, decompiled from {@code 0.7.6}:
+     *
+     * <pre>
+     * ChunkGeneratorExecution -&gt; PrefabPopulator.populate(seed, execution)
+     *   -&gt; ChunkGenerator.getResource().prefabPopulator.run(seed, execution)
+     *        -&gt; collectBiomes(...)
+     *        -&gt; collectPrefabs(...)   // entry.getPrefabPatternGenerator()
+     *                                 //      .getGridGenerator()
+     *                                 //      .collect(seed, minX, minZ, maxX, maxZ, this::collectPrefab)
+     *        -&gt; generatePrefabs(...)       // places from `prefabs`
+     *        -&gt; generateUniquePrefabs(...) // the OTHER system
+     * </pre>
+     *
+     * <p>and the region is the chunk's own bounds expanded by the entry's own extent:
+     * {@code [ChunkUtil.minBlock(cx) - entry.getExtents(), ChunkUtil.maxBlock(cx) + entry.getExtents()]},
+     * where {@code minBlock(c) = c << 5} and {@code maxBlock(c) = (c << 5) + 31}.
+     *
+     * <p><strong>The expansion term is {@code getExtents()}, not {@code getMaxSize()}.</strong>
+     * {@code maxSize} feeds {@code getLargestFeatureChunkExtents} and therefore the world bound;
+     * {@code getExtents()} feeds this per-chunk query region. Part 1b calls {@code getExtents()}
+     * characterisation with no known role — this is its role, and it is also why it needs a worldgen
+     * thread: it is read inside the populator, which only ever runs on one.
+     *
+     * <p>The edge itself is static evidence. What this part MEASURES is that the live world can
+     * actually answer it: the populator instance exists on the resource, every prefab entry has a
+     * usable grid generator, and the exact call the populator makes completes for every entry at
+     * real chunk coordinates.
+     *
+     * <p><strong>It does not prove the engine used those points to place anything.</strong> The test
+     * that would close that is containment — every pattern prefab placed in a chunk sits at one of
+     * the collected points — and it is blocked on enumerating placed prefabs, which no public API
+     * appears to offer: {@code PrefabContainerEntry} holds no instance records, {@code run} clears
+     * its candidate list on the way out, and {@code getPrefabLoadingCache()} is a type-keyed
+     * template cache rather than a placement record.
+     */
+    @SuppressWarnings("removal") // ChunkGenerator.execute, as Part 1b: deliberate, and reported
+    private static String callEdge(StringBuilder sb, ChunkGenerator generator, Census census, long seed) {
+        sb.append("\n=== PART 3: is collect() what per-chunk prefab placement calls? ===\n");
         sb.append("""
-                The test is Fisher's exact right tail on (collected deviating, control deviating),
-                multiplied by the number of comparisons tried, against 0.05. The previous rule was
-                "collected > 2x control AND separation > 15 points", which has no sample-size floor
-                and no correction: it returned MEASURED on 5/8 vs 10/48, a single-table p of ~0.026
-                that is ~0.10 once the four seed candidates it was the best of are accounted for.
+                The call edge, decompiled from 0.7.6 bytecode -- this is the evidence, and it is
+                static. Full listing in the spec and in the engine doc.
+
+                  ChunkGeneratorExecution -> PrefabPopulator.populate(seed, execution)
+                    -> ChunkGenerator.getResource().prefabPopulator.run(seed, execution)
+                         -> collectPrefabs(seed, execution)
+                              entry.getPrefabPatternGenerator()
+                                   .getGridGenerator()
+                                   .collect(seed,
+                                            minBlock(cx) - entry.getExtents(),
+                                            minBlock(cz) - entry.getExtents(),
+                                            maxBlock(cx) + entry.getExtents(),
+                                            maxBlock(cz) + entry.getExtents(),
+                                            this::collectPrefab)
+                         -> generatePrefabs(...)        places from the collect-filled list
+                         -> generateUniquePrefabs(...)  the OTHER placement system
+
+                minBlock(c) = c << 5 and maxBlock(c) = (c << 5) + 31, both read from their bodies.
+                So the region is THE CHUNK expanded by the entry's own extent -- and the expansion
+                term is getExtents(), not getMaxSize(). What follows measures that the live world
+                can answer that exact call.
                 """);
-        if (!"MEASURED".equals(trace.verdict)) {
-            sb.append("NOT_SHOWN is not REFUTED. The unreadable seedOffset remains a live explanation.\n");
+
+        if (census.entryRefs.isEmpty()) {
+            sb.append("no prefab entries retained by Part 1, so there is nothing to call. UNTESTED\n");
+            return "UNTESTED";
         }
 
-        trace.crossing = crossing(sb, generator, seedInt);
-        return trace;
+        Edge edge;
+        try {
+            CompletableFuture<Edge> future = generator.execute(0, (index, cg) -> {
+                Edge e = new Edge();
+
+                ChunkGeneratorResource resource;
+                try {
+                    resource = ChunkGenerator.getResource();
+                } catch (Throwable thrown) {
+                    e.resourceFail = describe(thrown);
+                    return e;
+                }
+                if (resource == null) {
+                    e.resourceFail = "getResource() returned null";
+                    return e;
+                }
+                e.resourceOk = true;
+                try {
+                    e.populatorOk = resource.prefabPopulator != null;
+                    if (!e.populatorOk) {
+                        e.resourceFail = "resource.prefabPopulator is null";
+                    }
+                } catch (Throwable thrown) {
+                    e.resourceFail = describe(thrown);
+                    return e;
+                }
+
+                // The populator's own arguments, at two real chunks. Origin alone would not show
+                // that the region TRACKS the chunk, and a degenerate region there would be
+                // indistinguishable from a correct one.
+                for (int chunkIndex = 0; chunkIndex < CALL_CHUNKS.length; chunkIndex++) {
+                    int[] chunk = CALL_CHUNKS[chunkIndex];
+                    for (EntryRef ref : census.entryRefs) {
+                        PrefabPatternGenerator pattern;
+                        IPointGenerator grid;
+                        int extents;
+                        try {
+                            pattern = ref.entry().getPrefabPatternGenerator();
+                            if (pattern == null) {
+                                e.gridNull++;
+                                e.gridReason = "getPrefabPatternGenerator() returned null";
+                                continue;
+                            }
+                            grid = pattern.getGridGenerator();
+                            if (grid == null) {
+                                e.gridNull++;
+                                e.gridReason = "getGridGenerator() returned null";
+                                continue;
+                            }
+                            extents = ref.entry().getExtents();
+                        } catch (Throwable thrown) {
+                            e.gridThrew++;
+                            e.gridReason = describe(thrown);
+                            continue;
+                        }
+                        e.gridOk++;
+
+                        double interval;
+                        try {
+                            interval = grid.getInterval();
+                        } catch (Throwable thrown) {
+                            e.intervalBad++;
+                            e.gridReason = describe(thrown);
+                            continue;
+                        }
+                        if (!Double.isFinite(interval) || interval <= 0.0) {
+                            e.intervalBad++;
+                            e.gridReason = "getInterval() = " + interval;
+                            continue;
+                        }
+                        e.intervalOk++;
+
+                        // extents vs maxSize, so correction 1 is visible in the output.
+                        //
+                        // ONCE PER ENTRY, not once per (entry, chunk): this is a property of the
+                        // entry and the loop visits each one twice. Counting it inside the chunk
+                        // loop would print exactly 2x the entry count, which would look like a
+                        // census over twice as many entries as exist.
+                        if (chunkIndex == 0) {
+                            if (extents > ref.declaredMax()) {
+                                e.extAbove++;
+                            } else if (extents < ref.declaredMax()) {
+                                e.extBelow++;
+                            } else {
+                                e.extEqual++;
+                            }
+                        }
+
+                        int minX = (chunk[0] << CHUNK_SHIFT) - extents;
+                        int minZ = (chunk[1] << CHUNK_SHIFT) - extents;
+                        int maxX = (chunk[0] << CHUNK_SHIFT) + CHUNK_MAX_OFFSET + extents;
+                        int maxZ = (chunk[1] << CHUNK_SHIFT) + CHUNK_MAX_OFFSET + extents;
+                        int[] count = {0};
+                        try {
+                            grid.collect(seedInt(seed), minX, minZ, maxX, maxZ, (x, z) -> count[0]++);
+                            e.callOk++;
+                            e.callPoints += count[0];
+                            // THE WORKED EXAMPLE EXISTS TO MAKE THE EXPANSION VISIBLE, so it is
+                            // selected for that and not for density. Picking the smallest interval
+                            // chose extents=0 at chunk(0,0): region [0..31], i.e. the chunk itself
+                            // with no expansion, at the one coordinate where `c << 5` is 0 -- the
+                            // degenerate case CALL_CHUNKS was written to avoid, demonstrating
+                            // neither of the two things the example is for. Selecting by an extreme
+                            // and getting an uninformative one is correction #5 of the previous
+                            // spec. Prefer the non-origin chunk, then the largest extents.
+                            int score = chunkIndex * 1_000_000 + extents;
+                            if (count[0] > 0 && score > e.sampleScore) {
+                                e.sampleScore = score;
+                                e.sampleInterval = interval;
+                                e.sampleWhere = ref.where();
+                                e.sampleExtents = extents;
+                                e.sampleMaxSize = ref.declaredMax();
+                                e.sampleChunkX = chunk[0];
+                                e.sampleChunkZ = chunk[1];
+                                e.sampleMinX = minX;
+                                e.sampleMaxX = maxX;
+                                e.samplePoints = count[0];
+                            }
+                        } catch (Throwable thrown) {
+                            // Throwable, not Exception: procedural-library code can raise an Error,
+                            // and a swallowed reason is the defect Part 1b had to have corrected.
+                            e.callThrew++;
+                            e.callReason = describe(thrown);
+                        }
+                    }
+                }
+                return e;
+            });
+            edge = future.get(120, TimeUnit.SECONDS);
+        } catch (Throwable thrown) {
+            sb.append("execute() on the generator pool failed: ")
+                    .append(describe(thrown))
+                    .append("\nclaim 2 stays UNTESTED rather than being absorbed into a pass.\n");
+            return "UNTESTED";
+        }
+
+        sb.append("resource: ")
+                .append(edge.resourceOk ? "ChunkGenerator.getResource() OK" : "UNAVAILABLE")
+                .append("   resource.prefabPopulator: ")
+                .append(edge.populatorOk ? "present" : "ABSENT")
+                .append(edge.resourceOk && edge.populatorOk ? "" : "   (" + edge.resourceFail + ")")
+                .append('\n');
+
+        int attempts = census.entryRefs.size() * CALL_CHUNKS.length;
+        sb.append("entries x chunks attempted: ")
+                .append(attempts)
+                .append("   (")
+                .append(census.entryRefs.size())
+                .append(" entries x ")
+                .append(CALL_CHUNKS.length)
+                .append(" chunks)\n");
+        sb.append("grid generator present: ")
+                .append(edge.gridOk)
+                .append("   null: ")
+                .append(edge.gridNull)
+                .append("   threw: ")
+                .append(edge.gridThrew)
+                .append('\n');
+        sb.append("getInterval() usable: ")
+                .append(edge.intervalOk)
+                .append("   unusable: ")
+                .append(edge.intervalBad)
+                .append('\n');
+        sb.append("collect() with the populator's own arguments -- completed: ")
+                .append(edge.callOk)
+                .append("   threw: ")
+                .append(edge.callThrew)
+                .append("   points returned: ")
+                .append(edge.callPoints)
+                .append('\n');
+        if (edge.gridNull + edge.gridThrew + edge.intervalBad + edge.callThrew > 0) {
+            sb.append("first failure reason: ")
+                    .append(truncate(edge.gridReason.equals("-") ? edge.callReason : edge.gridReason, 160))
+                    .append('\n');
+        }
+
+        sb.append("getExtents() vs its entry's declared maxSize: above=")
+                .append(edge.extAbove)
+                .append(" equal=")
+                .append(edge.extEqual)
+                .append(" below=")
+                .append(edge.extBelow)
+                .append("  -- two different quantities, and the per-chunk region uses the FORMER\n");
+
+        if (edge.samplePoints > 0) {
+            sb.append(String.format(
+                    "worked example: %s  interval=%.0f extents=%d maxSize=%d  chunk(%d,%d)%n",
+                    truncate(edge.sampleWhere, 40),
+                    edge.sampleInterval,
+                    edge.sampleExtents,
+                    edge.sampleMaxSize,
+                    edge.sampleChunkX,
+                    edge.sampleChunkZ));
+            sb.append(String.format(
+                    "  x region = [%d << 5) - %d .. (%d << 5) + 31 + %d] = [%d .. %d]  width %d -> %d points%n",
+                    edge.sampleChunkX,
+                    edge.sampleExtents,
+                    edge.sampleChunkX,
+                    edge.sampleExtents,
+                    edge.sampleMinX,
+                    edge.sampleMaxX,
+                    edge.sampleMaxX - edge.sampleMinX + 1,
+                    edge.samplePoints));
+        }
+
+        String verdict = edge.verdict();
+        sb.append("\nclaim 2 ")
+                .append(verdict)
+                .append(" -- ")
+                .append(
+                        switch (verdict) {
+                            case "CALL_EDGE" -> """
+                    the edge is recorded and every runtime precondition holds: the populator exists
+                    on the live resource, every prefab entry answers getGridGenerator() with a usable
+                    interval, and the exact call collectPrefabs makes completed for every one of them
+                    at real chunk coordinates.
+
+                    This is NOT [measured] for "the engine placed something from these points". It is
+                    the call edge plus the measured fact that the live world can answer it. The
+                    containment test that would close the rest is blocked on an enumeration API that
+                    does not appear to exist -- see the spec.
+                    """;
+                            case "PRECONDITION_FAILED" -> """
+                    a precondition the edge depends on does not hold in the live world. Read the
+                    counts above for which: an absent populator, a null grid generator, an unusable
+                    interval, or a collect() that threw. Any of these is a real finding -- the
+                    per-chunk query model would not hold universally -- and NOT a refutation of the
+                    call edge, which is in the bytecode either way.
+                    """;
+                            default -> """
+                    the worldgen thread was not reachable, so nothing above ran. UNTESTED is not
+                    evidence either way.
+                    """;
+                        });
+        return verdict;
     }
+
     /**
      * Part 4 — does a real placed prefab's bounding box span a chunk border?
      *
      * <p><strong>This replaces a test that was not sound.</strong> The first version inferred
      * placement from terrain: it read the topmost solid block at {@code border-2} and
      * {@code border+1} and called "both deviate from generateHeight" a crossing. It reported
-     * OBSERVED, and the number that invalidates it is in Part 3's own table — control deviation
-     * rates run <strong>15–31%</strong> everywhere, so the detector has a ~20% background
-     * disagreement rate. Worse, those two columns are three blocks apart and adjacent terrain
+     * OBSERVED, and the number that invalidates it was measured by the Part 3 that has since been
+     * retired: control deviation rates ran <strong>15–31%</strong> everywhere, so the detector has
+     * a ~20% background disagreement rate. That table is in the 2026-11-07 probe spec's § Results,
+     * not in this command's output any more. Worse, those two columns are three blocks apart and adjacent terrain
      * columns are strongly correlated, so "both sides deviate" is close to the same measurement
      * twice rather than two independent events. Third instance in this one probe of a measurement
      * that does not test what it claims.
@@ -993,107 +1052,6 @@ public class FeatureLocalityCommand extends AbstractWorldCommand {
         return "NOT_OBSERVED";
     }
 
-    private static List<long[]> collectPoints(IPointGenerator grid, int seedCandidate, int px, int pz) {
-        List<long[]> points = new ArrayList<>();
-        try {
-            grid.collect(
-                    seedCandidate,
-                    px - COLLECT_HALF_WIDTH,
-                    pz - COLLECT_HALF_WIDTH,
-                    px + COLLECT_HALF_WIDTH,
-                    pz + COLLECT_HALF_WIDTH,
-                    (x, z) -> points.add(new long[] {(long) x, (long) z}));
-        } catch (Throwable t) {
-            // Throwable: a wrong seed into procedural-library code can produce an Error, and a part
-            // that dies silently is worse than one that says so.
-            points.clear();
-        }
-        return points;
-    }
-
-    /**
-     * Control positions: a lattice over the same region, excluding neighbourhoods of collected
-     * points.
-     *
-     * <p>The exclusion radius SCALES with the collected spacing. A fixed 24 blocks returned an empty
-     * control set against a pattern whose {@code getInterval()} is 1 -- every candidate position was
-     * within 24 blocks of some collected point -- and an empty control reads as a failed test rather
-     * than as the structural fact it is: when candidate sites cover everything, there is no contrast
-     * to measure. Scaling keeps the control non-empty wherever one can exist, and the band check in
-     * Part 3 is what rules out the case where one cannot.
-     */
-    private static List<long[]> controlPoints(int px, int pz, List<long[]> collected, double interval) {
-        int exclusion = (int) Math.max(3.0, Math.min(24.0, interval / 4.0));
-        int step = (int) Math.max(17.0, Math.min(47.0, interval / 2.0));
-        List<long[]> control = new ArrayList<>();
-        for (int dx = -COLLECT_HALF_WIDTH; dx <= COLLECT_HALF_WIDTH; dx += step) {
-            for (int dz = -COLLECT_HALF_WIDTH; dz <= COLLECT_HALF_WIDTH; dz += step) {
-                int x = px + dx;
-                int z = pz + dz;
-                boolean near = false;
-                for (long[] point : collected) {
-                    if (Math.abs(point[0] - x) < exclusion && Math.abs(point[1] - z) < exclusion) {
-                        near = true;
-                        break;
-                    }
-                }
-                if (!near) {
-                    control.add(new long[] {x, z});
-                }
-            }
-        }
-        return control;
-    }
-
-    private static Deviation deviation(
-            SectionReader reader, ChunkGenerator generator, int seedInt, List<long[]> points, int target) {
-        Deviation d = new Deviation();
-        int step = Math.max(1, points.size() / target);
-        for (int i = 0; i < points.size() && d.scored() < target; i += step) {
-            Integer result = deviates(reader, generator, seedInt, (int) points.get(i)[0], (int) points.get(i)[1]);
-            if (result == null) {
-                d.unscorable++;
-            } else if (result >= DEVIATION_MIN_BLOCKS) {
-                d.deviating++;
-            } else {
-                d.agreeing++;
-            }
-        }
-        return d;
-    }
-
-    /**
-     * {@code null} if the column is unreadable, {@code 0} if the topmost solid block agrees with
-     * {@code generateHeight}, the absolute difference otherwise.
-     *
-     * <p>Deliberately does NOT use {@code SectionReaderTerrainSample.surfaceHeightAt}: that returns
-     * one fixed y for every column, and session 27 compared {@code generateHeight} against it and
-     * read the coincidence as a validated match. The downward scan is sound because
-     * {@code getBlock == 0} meaning "no block" is itself measured on 0.7.4 via {@code /blockidprobe}.
-     */
-    private static Integer deviates(SectionReader reader, ChunkGenerator generator, int seedInt, int x, int z) {
-        int predicted;
-        try {
-            predicted = generator.generateHeight(seedInt, x, z);
-        } catch (Throwable t) {
-            return null;
-        }
-        if (predicted < 0 || predicted > WORLD_TOP_Y) {
-            return null;
-        }
-        int top = Math.min(WORLD_TOP_Y, predicted + SCAN_HALF_BAND);
-        int bottom = Math.max(0, predicted - SCAN_HALF_BAND);
-        for (int y = top; y >= bottom; y--) {
-            if (!reader.canHoldY(y) || !reader.hasStorageInMemory(x, y, z)) {
-                return null;
-            }
-            if (reader.getBlock(x, y, z) != 0) {
-                return Math.abs(y - predicted);
-            }
-        }
-        return null;
-    }
-
     // -------------------------------------------------------------- plumbing
 
     private static final class Census {
@@ -1107,7 +1065,6 @@ public class FeatureLocalityCommand extends AbstractWorldCommand {
         int zoneProviderMaxExtent = -1;
         int largestPrefabSize = 0;
         double largestCaveSize = 0.0;
-        PrefabPatternGenerator largestPattern;
         boolean refuted;
 
         /**
@@ -1188,69 +1145,62 @@ public class FeatureLocalityCommand extends AbstractWorldCommand {
         }
     }
 
-    private static final class Trace {
-        String verdict = "UNTESTED";
-        String crossing = "NOT_OBSERVED";
-        String bestLabel = "-";
-        boolean bestEligible;
-        List<long[]> bestPoints;
-        double collectedRate;
-        double controlRate;
-    }
-
-    private static final class Deviation {
-        int deviating;
-        int agreeing;
-        int unscorable;
-
-        int scored() {
-            return deviating + agreeing;
-        }
-
-        double rate() {
-            return scored() == 0 ? 0.0 : (double) deviating / scored();
-        }
-
-        String summary() {
-            return deviating + "/" + scored() + (unscorable > 0 ? " (+" + unscorable + " unread)" : "");
-        }
-    }
-
     /**
-     * Fisher's exact test, right tail: P(at least {@code a} of {@code n} deviating), given the
-     * pooled rate from the control.
+     * Part 3's result, built on the worldgen thread and formatted on the command thread.
      *
-     * <p>Exists because a ratio threshold is not a test. The first run with a player called 5/8
-     * against 10/48 a MEASURED contrast; this returns 0.0256 for that table, which is ~0.10 after
-     * correcting for having picked the best of four seed candidates.
+     * <p>Built-then-formatted rather than appended-in-place because the lambda runs on the
+     * generator pool. Part 1b established the same shape.
      */
-    private static double fisherRightTail(int a, int n, int c, int m) {
-        int deviating = a + c;
-        int total = n + m;
-        if (n <= 0 || m <= 0 || deviating <= 0 || deviating > total) {
-            return 1.0;
-        }
-        double tail = 0.0;
-        int upper = Math.min(n, deviating);
-        for (int k = a; k <= upper; k++) {
-            tail += Math.exp(logChoose(deviating, k) + logChoose(total - deviating, n - k) - logChoose(total, n));
-        }
-        return Math.min(1.0, Math.max(0.0, tail));
-    }
+    private static final class Edge {
+        boolean resourceOk;
+        boolean populatorOk;
+        String resourceFail = "-";
+        int gridOk;
+        int gridNull;
+        int gridThrew;
+        String gridReason = "-";
+        int intervalOk;
+        int intervalBad;
+        int callOk;
+        int callThrew;
+        int callPoints;
+        String callReason = "-";
+        int extAbove;
+        int extEqual;
+        int extBelow;
+        int sampleScore = -1;
+        double sampleInterval;
+        String sampleWhere = "-";
+        int sampleExtents;
+        int sampleMaxSize;
+        int sampleChunkX;
+        int sampleChunkZ;
+        int sampleMinX;
+        int sampleMaxX;
+        int samplePoints;
 
-    private static double logChoose(int n, int k) {
-        if (k < 0 || k > n) {
-            return Double.NEGATIVE_INFINITY;
+        /**
+         * The verdict, computed from the counts the body printed.
+         *
+         * <p>Correction #7 of the previous spec was a verdict line that contradicted its own body,
+         * because a refactor stopped something setting the field the summary read. This reads only
+         * fields the body above it has already printed.
+         *
+         * <p>A zero point count is NOT a failure: a sparse pattern legitimately has no candidate in
+         * a 32-block chunk. Only a throw is.
+         */
+        String verdict() {
+            if (!resourceOk || !populatorOk) {
+                return "PRECONDITION_FAILED";
+            }
+            if (gridOk == 0 || callOk == 0) {
+                return "PRECONDITION_FAILED";
+            }
+            if (gridNull > 0 || gridThrew > 0 || intervalBad > 0 || callThrew > 0) {
+                return "PRECONDITION_FAILED";
+            }
+            return "CALL_EDGE";
         }
-        return logFactorial(n) - logFactorial(k) - logFactorial(n - k);
-    }
-
-    private static double logFactorial(int n) {
-        double sum = 0.0;
-        for (int i = 2; i <= n; i++) {
-            sum += Math.log(i);
-        }
-        return sum;
     }
 
     private static String truncate(String s, int max) {
@@ -1279,10 +1229,6 @@ public class FeatureLocalityCommand extends AbstractWorldCommand {
     }
 
     private static Boolean safeBool(ThrowingSupplier<Boolean> supplier) {
-        return safeObj(supplier);
-    }
-
-    private static Double safeDoubleBoxed(ThrowingSupplier<Double> supplier) {
         return safeObj(supplier);
     }
 
