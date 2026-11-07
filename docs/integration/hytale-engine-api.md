@@ -3,15 +3,15 @@
 > **This is the accreting reference. The other integration documents are dated snapshots.**
 >
 > `hytale-capability-audit.md` audited build `0.5.9` on 2026-08-24 and has not been re-run since;
-> the game is now `0.7.4` (this line said `0.7.2` until 2026-10-21 and `0.7.3` until 2026-10-23 —
-> re-derived from `../../scripts/api-baseline/snapshots/`, whose newest entry is `0.7.4-c9581a28`,
+> the game is now `0.7.6` (this line said `0.7.2` until 2026-10-21, `0.7.3` until 2026-10-23, and `0.7.4` until 2026-11-07 —
+> re-derived from `../../scripts/api-baseline/snapshots/`, whose newest entry is `0.7.6-c540fda1`,
 > after session 27 recorded every one of its measurements against `0.7.4` while this line still
 > said `0.7.3`), and its own §6 *Re-audit checklist* was never executed for `0.6.1`, `0.7.2`,
-> `0.7.3` or `0.7.4`.
+> `0.7.3`, `0.7.4` or `0.7.6`.
 >
 > **Read the build off the snapshots directory, not off this sentence** — `ls
 > ../../scripts/api-baseline/snapshots/ | tail -1`. A hand-maintained version string in prose is
-> the one thing here guaranteed to go stale, and it has now done so twice in three days.
+> the one thing here guaranteed to go stale, and it has now done so three times — the third while sitting in an unmerged PR whose own purpose was to stop asserting a build in prose.
 > `docs/README.md` already warns that it is "unreliable per row". That document stays as
 > history. **New findings land here**, one row at a time, each stamped with the build it was
 > established against and how.
@@ -406,21 +406,59 @@ footprint is **384 blocks = 12 chunks**, which sits inside the 16-chunk padding 
 reserves. The architecture fork session 27 posed — *"a run-ahead derivation service, or bounding the
 footprint"* — is answered by neither: declare the footprint and derive per chunk, as the engine does.
 
-**Does not settle.** Every row above is `[javap]`, which this document's own tier table calls **a
-hypothesis**. Specifically unconfirmed:
+**Confirmed by execution 2026-11-07 against `0.7.6`**, by `/featurelocality` — design and full
+results in `../superpowers/specs/2026-11-07-feature-locality-confirming-probe-design.md`. The rows
+above were written `[javap]`; these two are now `[measured]`.
 
-- That `getLargestFeatureChunkExtents` is the *only* thing gating feature reach. It is the only one
-  found; absence of a second gate was not established.
-- Whether `IPointGenerator.collect` is actually what prefab placement calls per chunk, as opposed to
-  being used some other way. The field exists and the interface affords it; the call was not traced.
-- Whether a mod can register into this path at all, or only read it. `builtin.worldgen.modifier` is
-  live (session 27: 3 references from `ChunkGeneratorJsonLoader` against 0 for
-  `builtin.hytalegenerator`) and its content types include `PointGrid` — so the declarative route is
-  plausibly open, but nothing has shipped a modifier asset and watched it take effect.
+| Fact | How | Tier |
+|---|---|---|
+| The world bound **is** `(largest declared feature blocks >> 5) + CHUNK_BOUNDS_PADDING` | `minChunkCoord` is private, but **`isChunkOutsideGeneratableArea(int,int)` is public** — binary-searching it recovered `minChunkCoord=-67108837`, `maxChunkCoord=67108836`, i.e. **extents 27 chunks, symmetric**, against `(370 >> 5) + 16 = 27` predicted from the public declared sizes. MATCH | **[measured, 0.7.6]** |
+| `CHUNK_BOUNDS_PADDING = 16` chunks is a real term in that computation | falls out of the match above | **[measured, 0.7.6]** |
+| A real feature's blocks **do** lie in chunks other than its own | `UniquePrefabEntry.getLowBound*/getHighBound*` give a placed prefab's actual box: `Temple` is `x[-1117..-1032]` chunks `[-35..-33]`, `z[262..380]` chunks `[8..11]` — 86x118 blocks, crossing 2 and 3 chunk borders | **[measured, 0.7.6]** |
+| No aggregate the live generator exposes clamps reach | 283 aggregates over 28 zones and 1,429 patterns, **0 clamping**, each compared against *its own scope* | **[measured, 0.7.6]** |
 
-**The probe that would confirm it:** declare a trivial feature with a known `maxSize` and an
-`exclusionRadius`, and check that its blocks appear in chunks other than the one containing its
-point. Until then this is a strong hypothesis about a mechanism, not a measured capability.
+So the reach claim is no longer a hypothesis: nothing gates a feature's footprint below what it
+declares, and features demonstrably span chunk borders.
+
+**Three new rows the probe established on the way**, all `[measured, 0.7.6]`:
+
+- **`PrefabContainerEntry.getExtents()` is only callable on a worldgen thread.** It resolves through
+  the **thread-local** `ChunkGeneratorResource`, whose `chunkGenerator` back-reference is set only on
+  the generator's own pool threads; from a command thread every one of 1,429 calls threw
+  `NPE: Cannot invoke "ChunkGenerator.getPrefabLoadingCache()" because "this.chunkGenerator" is null`.
+  `ChunkGenerator.execute(int, IntObjectFunction)` submits onto that pool and the read then succeeds
+  1,429/1,429.
+- **`ChunkGenerator.execute` is `@Deprecated` and marked FOR REMOVAL on `0.7.6`.** The only known
+  route to a worldgen thread is therefore on a removal path.
+- **`getExtents()` is not comparable to `getMaxSize()`.** It ranges 0..131 and came out *above* its
+  entry's declared `maxSize` for 1,049 of 1,429 entries and *below* for 361. A split in both
+  directions is two different quantities; `getLargestFeatureChunkExtents` never consults it.
+
+**Still unconfirmed, and narrowed to one claim:**
+
+- Whether `IPointGenerator.collect` is actually what prefab placement calls per chunk. The probe
+  tried to show it by contrast — do `collect`'s points deviate from `generateHeight` more than
+  controls — and the answer is **NOT_SHOWN, not refuted**: 76 comparisons, best single-table Fisher
+  p 0.0059, **Bonferroni-corrected 0.4517**. It is **not answerable by that method**, for two
+  structural reasons: ~20% of *all* columns deviate >= 3 blocks from `generateHeight` regardless of
+  signal, and the usable `getInterval()` band for one player's loaded area (16..67 blocks) contains
+  **only `maxSize=5` patterns**, while the only large features (`maxSize=100`) sit 333 blocks apart.
+  Size and density are inversely related, so the band that yields statistics holds nothing
+  detectable. **The instrument to use instead**, found while fixing the crossing test and not yet
+  run: `UniquePrefabEntry.getPosition()` against `collect()` output — a direct comparison with no
+  terrain inference and no noise floor.
+- Whether a mod can register into this path, or only read it. **Deliberately out of scope**, not
+  merely unrun: the 2026-10-21 adoption derives residue in `:core` behind an injected terrain port
+  and authors no worldgen JSON, and `Workspace_Deferrals` #18 records the `WorldGenModifier` route as
+  V1-only — the branch the operator ruled against investing in. It reopens only if that decision
+  does.
+
+> **The probe's own first answers were wrong four times**, each time reporting a confident verdict
+> rather than an error: `CLAIM1_REFUTED` twice from comparing quantities across incompatible scopes,
+> `claim2 MEASURED` off n=8 as the best of four candidates, and `crossing OBSERVED` from two
+> correlated columns against a 20% noise floor. The spec records all seven corrections. Read it
+> before extending this section — the failure mode is specific and it recurs: **a measurement that
+> does not test what it claims, and that fails by answering.**
 
 ### One asymmetry worth carrying to the anchor model
 
