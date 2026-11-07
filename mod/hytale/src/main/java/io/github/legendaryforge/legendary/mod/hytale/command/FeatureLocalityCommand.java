@@ -21,6 +21,7 @@ import com.hypixel.hytale.server.worldgen.cave.CaveGenerator;
 import com.hypixel.hytale.server.worldgen.cave.CaveType;
 import com.hypixel.hytale.server.worldgen.chunk.ChunkGenerator;
 import com.hypixel.hytale.server.worldgen.container.PrefabContainer;
+import com.hypixel.hytale.server.worldgen.container.UniquePrefabContainer;
 import com.hypixel.hytale.server.worldgen.prefab.PrefabPatternGenerator;
 import com.hypixel.hytale.server.worldgen.zone.Zone;
 import com.hypixel.hytale.server.worldgen.zone.ZonePatternProvider;
@@ -80,6 +81,25 @@ public class FeatureLocalityCommand extends AbstractWorldCommand {
 
     /** Columns sampled per set in Part 3. Collected and control sets are matched in size. */
     private static final int SAMPLE_TARGET = 48;
+
+    /**
+     * Minimum scorable columns per set before a contrast may be called MEASURED.
+     *
+     * <p>The first run with a player reported MEASURED off <strong>8</strong> collected points, at
+     * 5/8 against a control 10/48. Fisher one-sided on that single table is p ~ 0.026, and it was the
+     * best of four seed candidates, so the corrected figure is ~0.10 -- not significant. A ratio
+     * threshold with no sample-size floor and no multiple-comparison correction waves noise through.
+     */
+    private static final int MIN_SCORABLE = 30;
+
+    /**
+     * Minimum |actual - generateHeight| counted as a placed feature, in blocks.
+     *
+     * <p>Was effectively 1, which counted a one-block disagreement as a prefab. generateHeight
+     * matched the topmost solid block 7/7 EXACTLY on 0.7.4, so a small difference is real signal
+     * about the generator -- but it is not evidence of a structure, which is what Part 3 is asking.
+     */
+    private static final int DEVIATION_MIN_BLOCKS = 3;
 
     /**
      * Vertical half-band searched for the topmost solid block, around {@code generateHeight}.
@@ -607,6 +627,10 @@ public class FeatureLocalityCommand extends AbstractWorldCommand {
     // ------------------------------------------------------------- Parts 3+4
 
     /** Does {@code collect} name where features are? Measured against a matched control set. */
+    private static int seedInt(long seed) {
+        return (int) seed;
+    }
+
     private static Trace trace(
             StringBuilder sb,
             World world,
@@ -617,38 +641,8 @@ public class FeatureLocalityCommand extends AbstractWorldCommand {
         Trace trace = new Trace();
         sb.append("\n=== PART 3: does collect() name where features are? ===\n");
 
-        PrefabPatternGenerator pattern = census.largestPattern;
-        if (pattern == null) {
-            sb.append("no prefab pattern found; claim 2 UNTESTED\n");
-            return trace;
-        }
-        IPointGenerator grid = safeObj(pattern::getGridGenerator);
-        if (grid == null) {
-            sb.append("largest pattern has no gridGenerator; claim 2 UNTESTED\n");
-            return trace;
-        }
-        Double interval = safeDoubleBoxed(grid::getInterval);
-        Boolean fitHeightmap = safeBool(pattern::isFitHeightmap);
-        sb.append("pattern: ")
-                .append(safe(() -> String.valueOf(pattern.getCategory()), "?"))
-                .append("  maxSize=")
-                .append(census.largestPrefabSize)
-                .append("  exclusionRadius=")
-                .append(safeInt(pattern::getExclusionRadius))
-                .append("  fitHeightmap=")
-                .append(fitHeightmap)
-                .append('\n');
-        sb.append("gridGenerator: ")
-                .append(grid.getClass().getName())
-                .append("  getInterval()=")
-                .append(interval)
-                .append("   (our cellSize is 128)\n");
-        sb.append("""
-                READ fitHeightmap BEFORE the numbers. If it is true the generator may already account
-                for placed prefabs, in which case deviation is near zero EVERYWHERE and the collected
-                number alone means nothing. Only the contrast against the control is interpretable.
-                """);
-
+        // The player comes FIRST now: every measurement below reads loaded chunks, so without one
+        // there is nothing to do and printing pattern details first only buried that.
         int px = 0;
         int pz = 0;
         String who = null;
@@ -666,12 +660,13 @@ public class FeatureLocalityCommand extends AbstractWorldCommand {
             break;
         }
         if (who == null) {
-            sb.append("\nno connected player with a TransformComponent. Parts 3 and 4 read the topmost\n")
-                    .append("solid block, which needs LOADED chunks, and a headless server has none.\n")
-                    .append("Connect a client and re-run. Parts 1 and 2 above are unaffected.\n");
+            sb.append("no connected player with a TransformComponent. PART 3 reads the topmost solid\n")
+                    .append("block, which needs LOADED chunks, and a headless server has none, so claim 2\n")
+                    .append("stays UNTESTED. Parts 1, 1b, 2 and 4 do not need a player.\n");
+            trace.crossing = crossing(sb, generator, seedInt(seed));
             return trace;
         }
-        sb.append("\nanchor: ")
+        sb.append("anchor: ")
                 .append(who)
                 .append(" at ")
                 .append(px)
@@ -679,59 +674,183 @@ public class FeatureLocalityCommand extends AbstractWorldCommand {
                 .append(pz)
                 .append('\n');
 
-        // seedOffset is `protected final` with NO public getter, so the engine's exact per-pattern
-        // seed cannot be reproduced. A wrong seed returns a DIFFERENT valid point set, which would
-        // show no contrast even if claim 2 is true -- so the seed is scanned rather than assumed,
-        // and a scan that finds nothing names the seed as the leading explanation.
-        int seedInt = (int) seed;
-        int[] candidateSeeds = {seedInt, 0, (int) (seed >>> 32), seedInt + 1};
-        String[] seedLabels = {"(int) worldSeed", "0", "worldSeed >>> 32", "worldSeed+1 (control seed)"};
-
-        SectionReader reader = new SectionReader(world.getChunkStore());
+        // PATTERN SELECTION IS WHAT THIS TEST TURNS ON, and both obvious selectors are wrong.
+        //
+        // Picking the largest maxSize gave getInterval()=333 blocks: a region inside one player's
+        // loaded radius holds ~8 of its points, so the comparison can never reach the sample floor,
+        // and the first version reported MEASURED off exactly that.
+        //
+        // Picking the DENSEST then gave getInterval()=1, which collects 130,812 points in the same
+        // region -- and produced control 0/0, because a control position must not sit near a
+        // collected one and at interval 1 every position does. That failure is structural, not a
+        // bug in the control: when candidate sites cover everything there is no "not a site" to
+        // contrast against, so no contrast exists to measure.
+        //
+        // The usable interval is therefore a BAND, derived from the geometry rather than guessed:
+        //   upper: enough points to clear the sample floor, (2*HW/iv)^2 >= 1.5*MIN_SCORABLE
+        //   lower: sparse enough that excluded neighbourhoods leave a control set behind
+        double bandMax = (2.0 * COLLECT_HALF_WIDTH) / Math.sqrt(1.5 * MIN_SCORABLE);
+        double bandMin = 16.0;
         sb.append(String.format(
-                "%n%-28s %7s %10s %10s %9s %9s%n",
-                "seed candidate", "points", "collected", "control", "dev rate", "ctl rate"));
+                "usable getInterval() band for this region (+/-%d blocks) and floor n=%d: %.0f..%.0f%n",
+                COLLECT_HALF_WIDTH, MIN_SCORABLE, bandMin, bandMax));
 
-        double best = -1.0;
-        for (int i = 0; i < candidateSeeds.length; i++) {
-            List<long[]> points = collectPoints(grid, candidateSeeds[i], px, pz);
-            if (points.isEmpty()) {
-                sb.append(String.format("%-28s %7d %10s %10s %9s %9s%n", seedLabels[i], 0, "-", "-", "-", "-"));
+        // Group by interval: 1,429 patterns share a handful of intervals, and testing 500 patterns
+        // with identical spacing would just inflate the comparison count the correction divides by.
+        java.util.Map<Double, PrefabPatternGenerator> byInterval = new java.util.TreeMap<>();
+        java.util.Map<Double, Integer> intervalCounts = new java.util.TreeMap<>();
+        for (PrefabPatternGenerator candidate : census.patterns) {
+            IPointGenerator g = safeObj(candidate::getGridGenerator);
+            if (g == null) {
                 continue;
             }
-            Deviation collected = deviation(reader, generator, seedInt, points, SAMPLE_TARGET);
-            Deviation control = deviation(reader, generator, seedInt, controlPoints(px, pz, points), SAMPLE_TARGET);
-            sb.append(String.format(
-                    "%-28s %7d %10s %10s %8.0f%% %8.0f%%%n",
-                    seedLabels[i],
-                    points.size(),
-                    collected.summary(),
-                    control.summary(),
-                    collected.rate() * 100,
-                    control.rate() * 100));
-            double contrast = collected.rate() - control.rate();
-            if (collected.scored() > 0 && control.scored() > 0 && contrast > best) {
-                best = contrast;
-                trace.bestLabel = seedLabels[i];
-                trace.bestPoints = points;
-                trace.collectedRate = collected.rate();
-                trace.controlRate = control.rate();
+            Double iv = safeDoubleBoxed(g::getInterval);
+            if (iv == null || iv <= 0.0) {
+                continue;
+            }
+            double key = Math.round(iv * 100.0) / 100.0;
+            intervalCounts.merge(key, 1, Integer::sum);
+            byInterval.putIfAbsent(key, candidate);
+        }
+        sb.append("distinct getInterval() values across ")
+                .append(census.patterns.size())
+                .append(" patterns: ")
+                .append(intervalCounts.size())
+                .append("  -> ");
+        int shown = 0;
+        for (java.util.Map.Entry<Double, Integer> e : intervalCounts.entrySet()) {
+            if (shown++ > 0) {
+                sb.append(", ");
+            }
+            sb.append(String.format("%.0f(x%d)", e.getKey(), e.getValue()));
+            if (shown >= 14) {
+                sb.append(", ...");
+                break;
             }
         }
+        sb.append('\n');
 
-        if (trace.bestPoints == null) {
-            sb.append("\nno seed candidate produced a scorable comparison; claim 2 NOT_SHOWN.\n")
-                    .append("NOT refuted -- a null here is at least as likely to be about the instrument.\n")
-                    .append("Next variable to change: the pattern, to one whose prefabs sit ON terrain\n")
-                    .append("rather than carved into it.\n");
+        List<PrefabPatternGenerator> chosen = new ArrayList<>();
+        for (java.util.Map.Entry<Double, PrefabPatternGenerator> e : byInterval.entrySet()) {
+            if (e.getKey() >= bandMin && e.getKey() <= bandMax) {
+                chosen.add(e.getValue());
+            }
+        }
+        if (chosen.isEmpty()) {
+            // Keep the two extremes so the output still SHOWS why nothing is in band, rather than
+            // printing an empty table that reads like a probe that did not run.
+            sb.append("NO pattern falls in the band -- the two extremes are tested anyway so the\n")
+                    .append("table shows the failure rather than printing nothing.\n");
+            if (!byInterval.isEmpty()) {
+                chosen.add(byInterval.values().iterator().next());
+                if (census.largestPattern != null) {
+                    chosen.add(census.largestPattern);
+                }
+            }
+        } else {
+            sb.append("in-band patterns selected: ").append(chosen.size()).append('\n');
+        }
+
+        if (chosen.isEmpty()) {
+            sb.append("no prefab pattern with a point generator; claim 2 UNTESTED\n");
             return trace;
         }
 
-        // A threshold is a judgement, so it is stated rather than hidden: 2x the control rate AND at
-        // least 15 points of absolute separation. Below that the probe says NOT_SHOWN.
-        boolean shown = trace.collectedRate > 2 * trace.controlRate && (trace.collectedRate - trace.controlRate) > 0.15;
-        trace.verdict = shown ? "MEASURED" : "NOT_SHOWN";
-        sb.append("\nbest contrast: ")
+        // seedOffset is `protected final` with NO public getter, so the engine's exact per-pattern
+        // seed cannot be reproduced. A wrong seed returns a DIFFERENT valid point set, which shows no
+        // contrast even if claim 2 is true -- so the seed is scanned. Every (pattern, seed) pair
+        // tried is a comparison, and the count is carried into the correction below: selecting the
+        // best of N and then testing it at 0.05 is testing at 0.05*N.
+        int seedInt = (int) seed;
+        int[] candidateSeeds = {seedInt, 0, (int) (seed >>> 32), seedInt + 1};
+        String[] seedLabels = {"(int) worldSeed", "0", "worldSeed>>>32", "worldSeed+1 (ctl seed)"};
+
+        SectionReader reader = new SectionReader(world.getChunkStore());
+        sb.append("deviation counted at >= ")
+                .append(DEVIATION_MIN_BLOCKS)
+                .append(" blocks from generateHeight; a set needs >= ")
+                .append(MIN_SCORABLE)
+                .append(" scorable columns to be eligible.\n");
+        sb.append(String.format(
+                "%n%-34s %-22s %7s %9s %9s %7s %7s %9s%n",
+                "pattern (interval)", "seed", "points", "collected", "control", "dev%", "ctl%", "p (1-sided)"));
+
+        int comparisons = 0;
+        double bestP = 1.0;
+        for (PrefabPatternGenerator candidate : chosen) {
+            IPointGenerator grid = safeObj(candidate::getGridGenerator);
+            if (grid == null) {
+                continue;
+            }
+            Double iv = safeDoubleBoxed(grid::getInterval);
+            Integer maxSize = safeInt(candidate::getMaxSize);
+            Boolean fit = safeBool(candidate::isFitHeightmap);
+            String label = String.format("iv=%.0f max=%s fit=%s", iv == null ? -1.0 : iv, maxSize, fit);
+            for (int i = 0; i < candidateSeeds.length; i++) {
+                List<long[]> points = collectPoints(grid, candidateSeeds[i], px, pz);
+                if (points.isEmpty()) {
+                    sb.append(String.format(
+                            "%-34s %-22s %7d %9s %9s %7s %7s %9s%n", label, seedLabels[i], 0, "-", "-", "-", "-", "-"));
+                    continue;
+                }
+                Deviation collected = deviation(reader, generator, seedInt, points, SAMPLE_TARGET);
+                Deviation control = deviation(
+                        reader,
+                        generator,
+                        seedInt,
+                        controlPoints(px, pz, points, iv == null ? 1.0 : iv),
+                        SAMPLE_TARGET);
+                comparisons++;
+                double pValue =
+                        fisherRightTail(collected.deviating, collected.scored(), control.deviating, control.scored());
+                boolean eligible = collected.scored() >= MIN_SCORABLE && control.scored() >= MIN_SCORABLE;
+                sb.append(String.format(
+                        "%-34s %-22s %7d %9s %9s %6.0f%% %6.0f%% %9s%n",
+                        label,
+                        seedLabels[i],
+                        points.size(),
+                        collected.summary(),
+                        control.summary(),
+                        collected.rate() * 100,
+                        control.rate() * 100,
+                        eligible ? String.format("%.4f", pValue) : "n too low"));
+                if (eligible && pValue < bestP) {
+                    bestP = pValue;
+                    trace.bestLabel = label + " / " + seedLabels[i];
+                    trace.bestPoints = points;
+                    trace.collectedRate = collected.rate();
+                    trace.controlRate = control.rate();
+                    trace.bestEligible = true;
+                }
+            }
+        }
+
+        double corrected = Math.min(1.0, bestP * Math.max(1, comparisons));
+        sb.append("\ncomparisons tried: ")
+                .append(comparisons)
+                .append("   best eligible p: ")
+                .append(trace.bestEligible ? String.format("%.4f", bestP) : "none eligible")
+                .append("   Bonferroni-corrected: ")
+                .append(trace.bestEligible ? String.format("%.4f", corrected) : "-")
+                .append('\n');
+
+        if (!trace.bestEligible) {
+            sb.append("""
+                    claim 2 NOT_SHOWN -- no comparison reached the sample floor, so nothing here is
+                    evidence either way. NOT refuted.
+
+                    Why, concretely: this pattern family's getInterval() is large relative to the area
+                    one player keeps loaded, so a region that fits inside loaded chunks cannot hold
+                    enough of its points. The remedy is a denser pattern, which is why the densest is
+                    selected first -- if even that is too sparse, the next variable is the region, and
+                    that needs more loaded chunks, i.e. a second player or a larger view distance.
+                    """);
+            trace.crossing = crossing(sb, generator, seedInt);
+            return trace;
+        }
+
+        trace.verdict = corrected < 0.05 ? "MEASURED" : "NOT_SHOWN";
+        sb.append("best: ")
                 .append(trace.bestLabel)
                 .append("  collected ")
                 .append(String.format("%.0f%%", trace.collectedRate * 100))
@@ -740,64 +859,138 @@ public class FeatureLocalityCommand extends AbstractWorldCommand {
                 .append("  -> claim 2 ")
                 .append(trace.verdict)
                 .append('\n');
-        sb.append("threshold, stated not hidden: collected > 2x control AND separation > 15 points.\n");
-        if (!shown) {
-            sb.append("NOT_SHOWN is not REFUTED. Leading explanation remains the unreadable seedOffset.\n");
+        sb.append("""
+                The test is Fisher's exact right tail on (collected deviating, control deviating),
+                multiplied by the number of comparisons tried, against 0.05. The previous rule was
+                "collected > 2x control AND separation > 15 points", which has no sample-size floor
+                and no correction: it returned MEASURED on 5/8 vs 10/48, a single-table p of ~0.026
+                that is ~0.10 once the four seed candidates it was the best of are accounted for.
+                """);
+        if (!"MEASURED".equals(trace.verdict)) {
+            sb.append("NOT_SHOWN is not REFUTED. The unreadable seedOffset remains a live explanation.\n");
         }
 
-        crossing(sb, reader, generator, seedInt, census, trace);
+        trace.crossing = crossing(sb, generator, seedInt);
         return trace;
     }
-
-    /** Part 4 — do a feature's deviating columns appear on BOTH sides of a chunk border? */
-    private static void crossing(
-            StringBuilder sb, SectionReader reader, ChunkGenerator generator, int seedInt, Census census, Trace trace) {
-        sb.append("\n=== PART 4: does a feature cross a chunk border? ===\n");
-        int maxSize = census.largestPrefabSize;
-        if (trace.bestPoints == null || maxSize <= 0) {
-            sb.append("no usable point set; crossing NOT_OBSERVED (untested)\n");
-            return;
-        }
-        if (maxSize <= 32) {
-            sb.append("largest declared feature is ")
-                    .append(maxSize)
-                    .append(" blocks, which fits inside one 32-block chunk. Crossing cannot be\n")
-                    .append("demonstrated from this pattern -- that is a fact about the pattern, not\n")
-                    .append("about the engine.\n");
-        }
-        for (long[] p : trace.bestPoints) {
-            int x = (int) p[0];
-            int z = (int) p[1];
-            int offX = Math.floorMod(x, 32);
-            if (offX > 4 && offX < 28) {
-                continue;
+    /**
+     * Part 4 — does a real placed prefab's bounding box span a chunk border?
+     *
+     * <p><strong>This replaces a test that was not sound.</strong> The first version inferred
+     * placement from terrain: it read the topmost solid block at {@code border-2} and
+     * {@code border+1} and called "both deviate from generateHeight" a crossing. It reported
+     * OBSERVED, and the number that invalidates it is in Part 3's own table — control deviation
+     * rates run <strong>15–31%</strong> everywhere, so the detector has a ~20% background
+     * disagreement rate. Worse, those two columns are three blocks apart and adjacent terrain
+     * columns are strongly correlated, so "both sides deviate" is close to the same measurement
+     * twice rather than two independent events. Third instance in this one probe of a measurement
+     * that does not test what it claims.
+     *
+     * <p>{@code UniquePrefabEntry} removes the inference entirely: it exposes
+     * {@code getLowBoundX/Y/Z} and {@code getHighBoundX/Y/Z} — the actual bounding box of a placed
+     * prefab — so crossing is exact arithmetic, {@code lowX >> 5 != highX >> 5}. No terrain read, no
+     * noise floor, and no player needed.
+     */
+    private static String crossing(StringBuilder sb, ChunkGenerator generator, int seedInt) {
+        sb.append("\n=== PART 4: does a placed prefab's bounding box span a chunk border? ===\n");
+        try {
+            CompletableFuture<String> future = generator.execute(0, (index, cg) -> {
+                UniquePrefabContainer.UniquePrefabEntry[] entries = cg.getUniquePrefabs(seedInt);
+                if (entries == null || entries.length == 0) {
+                    return "NONE";
+                }
+                int crossX = 0;
+                int crossZ = 0;
+                int maxSpanBlocks = 0;
+                int maxSpanChunks = 0;
+                String example = "-";
+                for (UniquePrefabContainer.UniquePrefabEntry entry : entries) {
+                    if (entry == null) {
+                        continue;
+                    }
+                    int lowX = entry.getLowBoundX();
+                    int highX = entry.getHighBoundX();
+                    int lowZ = entry.getLowBoundZ();
+                    int highZ = entry.getHighBoundZ();
+                    boolean spansX = (lowX >> CHUNK_SHIFT) != (highX >> CHUNK_SHIFT);
+                    boolean spansZ = (lowZ >> CHUNK_SHIFT) != (highZ >> CHUNK_SHIFT);
+                    if (spansX) {
+                        crossX++;
+                    }
+                    if (spansZ) {
+                        crossZ++;
+                    }
+                    int spanBlocks = Math.max(highX - lowX, highZ - lowZ);
+                    int spanChunks = Math.max(
+                            (highX >> CHUNK_SHIFT) - (lowX >> CHUNK_SHIFT),
+                            (highZ >> CHUNK_SHIFT) - (lowZ >> CHUNK_SHIFT));
+                    if (spanBlocks > maxSpanBlocks) {
+                        maxSpanBlocks = spanBlocks;
+                    }
+                    if (spanChunks > maxSpanChunks && (spansX || spansZ)) {
+                        maxSpanChunks = spanChunks;
+                        example = String.format(
+                                "%s x[%d..%d] chunks[%d..%d]  z[%d..%d] chunks[%d..%d]",
+                                entry.getName(),
+                                lowX,
+                                highX,
+                                lowX >> CHUNK_SHIFT,
+                                highX >> CHUNK_SHIFT,
+                                lowZ,
+                                highZ,
+                                lowZ >> CHUNK_SHIFT,
+                                highZ >> CHUNK_SHIFT);
+                    }
+                }
+                return entries.length + "|" + crossX + "|" + crossZ + "|" + maxSpanBlocks + "|" + maxSpanChunks + "|"
+                        + example;
+            });
+            String raw = future.get(60, TimeUnit.SECONDS);
+            if ("NONE".equals(raw)) {
+                sb.append("getUniquePrefabs(seed) returned no entries, so there is nothing to measure.\n")
+                        .append("crossing NOT_OBSERVED (untested, not refuted)\n");
+                return "NOT_OBSERVED";
             }
-            int border = (offX <= 4) ? (x - offX) : (x - offX + 32);
-            Integer left = deviates(reader, generator, seedInt, border - 2, z);
-            Integer right = deviates(reader, generator, seedInt, border + 1, z);
-            if (left == null || right == null) {
-                continue;
-            }
-            sb.append("point ")
-                    .append(x)
-                    .append(',')
-                    .append(z)
-                    .append("  chunk border x=")
-                    .append(border)
-                    .append("  deviates left=")
-                    .append(left)
-                    .append(" right=")
-                    .append(right)
+            String[] f = raw.split("\\|", 6);
+            int total = Integer.parseInt(f[0]);
+            int crossX = Integer.parseInt(f[1]);
+            int crossZ = Integer.parseInt(f[2]);
+            sb.append("unique prefab entries: ")
+                    .append(total)
+                    .append("   spanning a chunk border in x: ")
+                    .append(crossX)
+                    .append("   in z: ")
+                    .append(crossZ)
                     .append('\n');
-            if (left > 0 && right > 0) {
-                trace.crossing = "OBSERVED";
-                sb.append("OBSERVED: deviating columns on both sides of a chunk border. A feature whose\n")
-                        .append("blocks appear in two chunks cannot have been written by a single-chunk\n")
-                        .append("pass that knows nothing of its neighbours.\n");
-                return;
+            sb.append("largest bounding box: ")
+                    .append(f[3])
+                    .append(" blocks, ")
+                    .append(f[4])
+                    .append(" chunk border(s) crossed\n");
+            sb.append("example: ").append(f[5]).append('\n');
+            if (crossX > 0 || crossZ > 0) {
+                sb.append("""
+                        OBSERVED, by arithmetic on a real prefab's own bounds rather than by inferring
+                        placement from terrain. A feature whose declared box lies in two chunks cannot
+                        have been written by a single-chunk pass that knows nothing of its neighbours,
+                        which is what #149's locality claim asserts.
+                        """);
+                return "OBSERVED";
+            } else {
+                sb.append("""
+                        NOT_OBSERVED: every unique prefab's box falls inside one chunk. That is a fact
+                        about the unique-prefab set at this seed, not a refutation -- these are the
+                        hand-placed landmarks, and the ordinary per-biome patterns are a different
+                        population this route does not see.
+                        """);
+                return "NOT_OBSERVED";
             }
+        } catch (Throwable thrown) {
+            sb.append("getUniquePrefabs via the generator pool failed: ")
+                    .append(describe(thrown))
+                    .append("\ncrossing NOT_OBSERVED (untested, not refuted)\n");
         }
-        sb.append("no point sat near enough to a chunk border with both sides loaded; NOT_OBSERVED\n");
+        return "NOT_OBSERVED";
     }
 
     private static List<long[]> collectPoints(IPointGenerator grid, int seedCandidate, int px, int pz) {
@@ -818,16 +1011,28 @@ public class FeatureLocalityCommand extends AbstractWorldCommand {
         return points;
     }
 
-    /** Control positions: a lattice over the same region, excluding anything near a collected point. */
-    private static List<long[]> controlPoints(int px, int pz, List<long[]> collected) {
+    /**
+     * Control positions: a lattice over the same region, excluding neighbourhoods of collected
+     * points.
+     *
+     * <p>The exclusion radius SCALES with the collected spacing. A fixed 24 blocks returned an empty
+     * control set against a pattern whose {@code getInterval()} is 1 -- every candidate position was
+     * within 24 blocks of some collected point -- and an empty control reads as a failed test rather
+     * than as the structural fact it is: when candidate sites cover everything, there is no contrast
+     * to measure. Scaling keeps the control non-empty wherever one can exist, and the band check in
+     * Part 3 is what rules out the case where one cannot.
+     */
+    private static List<long[]> controlPoints(int px, int pz, List<long[]> collected, double interval) {
+        int exclusion = (int) Math.max(3.0, Math.min(24.0, interval / 4.0));
+        int step = (int) Math.max(17.0, Math.min(47.0, interval / 2.0));
         List<long[]> control = new ArrayList<>();
-        for (int dx = -COLLECT_HALF_WIDTH; dx <= COLLECT_HALF_WIDTH; dx += 31) {
-            for (int dz = -COLLECT_HALF_WIDTH; dz <= COLLECT_HALF_WIDTH; dz += 31) {
+        for (int dx = -COLLECT_HALF_WIDTH; dx <= COLLECT_HALF_WIDTH; dx += step) {
+            for (int dz = -COLLECT_HALF_WIDTH; dz <= COLLECT_HALF_WIDTH; dz += step) {
                 int x = px + dx;
                 int z = pz + dz;
                 boolean near = false;
-                for (long[] p : collected) {
-                    if (Math.abs(p[0] - x) < 24 && Math.abs(p[1] - z) < 24) {
+                for (long[] point : collected) {
+                    if (Math.abs(point[0] - x) < exclusion && Math.abs(point[1] - z) < exclusion) {
                         near = true;
                         break;
                     }
@@ -848,7 +1053,7 @@ public class FeatureLocalityCommand extends AbstractWorldCommand {
             Integer result = deviates(reader, generator, seedInt, (int) points.get(i)[0], (int) points.get(i)[1]);
             if (result == null) {
                 d.unscorable++;
-            } else if (result > 0) {
+            } else if (result >= DEVIATION_MIN_BLOCKS) {
                 d.deviating++;
             } else {
                 d.agreeing++;
@@ -987,6 +1192,7 @@ public class FeatureLocalityCommand extends AbstractWorldCommand {
         String verdict = "UNTESTED";
         String crossing = "NOT_OBSERVED";
         String bestLabel = "-";
+        boolean bestEligible;
         List<long[]> bestPoints;
         double collectedRate;
         double controlRate;
@@ -1008,6 +1214,43 @@ public class FeatureLocalityCommand extends AbstractWorldCommand {
         String summary() {
             return deviating + "/" + scored() + (unscorable > 0 ? " (+" + unscorable + " unread)" : "");
         }
+    }
+
+    /**
+     * Fisher's exact test, right tail: P(at least {@code a} of {@code n} deviating), given the
+     * pooled rate from the control.
+     *
+     * <p>Exists because a ratio threshold is not a test. The first run with a player called 5/8
+     * against 10/48 a MEASURED contrast; this returns 0.0256 for that table, which is ~0.10 after
+     * correcting for having picked the best of four seed candidates.
+     */
+    private static double fisherRightTail(int a, int n, int c, int m) {
+        int deviating = a + c;
+        int total = n + m;
+        if (n <= 0 || m <= 0 || deviating <= 0 || deviating > total) {
+            return 1.0;
+        }
+        double tail = 0.0;
+        int upper = Math.min(n, deviating);
+        for (int k = a; k <= upper; k++) {
+            tail += Math.exp(logChoose(deviating, k) + logChoose(total - deviating, n - k) - logChoose(total, n));
+        }
+        return Math.min(1.0, Math.max(0.0, tail));
+    }
+
+    private static double logChoose(int n, int k) {
+        if (k < 0 || k > n) {
+            return Double.NEGATIVE_INFINITY;
+        }
+        return logFactorial(n) - logFactorial(k) - logFactorial(n - k);
+    }
+
+    private static double logFactorial(int n) {
+        double sum = 0.0;
+        for (int i = 2; i <= n; i++) {
+            sum += Math.log(i);
+        }
+        return sum;
     }
 
     private static String truncate(String s, int max) {

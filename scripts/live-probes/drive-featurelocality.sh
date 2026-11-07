@@ -31,8 +31,23 @@ if [ ! -f "$JAR" ]; then
   exit 1
 fi
 mkdir -p mods
-cp "$JAR" "mods/.hytale-all.jar.tmp" && mv "mods/.hytale-all.jar.tmp" "mods/hytale-all.jar"
-echo "MOD DEPLOYED $(stat -c%s "mods/hytale-all.jar") bytes"
+# The deploy filename MUST match server-up.sh's exactly. This script originally wrote
+# mods/hytale-all.jar while server-up.sh writes mods/hytale-0.0.0-SNAPSHOT-all.jar, so after
+# using both the directory held two copies of the same plugin and the server refused to boot:
+#   SEVERE [PluginManager] Tried to load duplicate plugin: io.github.legendaryforge:LegendaryHytale
+#   [HytaleServer] Shutting down... 'client.disconnection.shutdownReason.pluginDuplicate'
+# The driver reported only "SERVER DIED EARLY", which named the symptom and not the cause.
+DEPLOYED="mods/hytale-0.0.0-SNAPSHOT-all.jar"
+cp "$JAR" "mods/.deploy.tmp" && mv -f "mods/.deploy.tmp" "$DEPLOYED"
+echo "MOD DEPLOYED $(stat -c%s "$DEPLOYED") bytes"
+# Fail loudly on any OTHER copy of our plugin rather than letting the server die at boot.
+STRAY="$(find mods -maxdepth 1 -name '*.jar' ! -name "$(basename "$DEPLOYED")" -printf '%f\n')"
+if [ -n "$STRAY" ]; then
+  echo "STRAY PLUGIN JAR(S) in mods/, which boots as a duplicate-plugin shutdown:" >&2
+  echo "$STRAY" >&2
+  echo "DRIVER_VERDICT: FAILED"
+  exit 1
+fi
 
 : > "$OUT"
 "$JAVA" -jar "$GAME/Server/HytaleServer.jar" \

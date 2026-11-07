@@ -1,6 +1,10 @@
 # Feature locality — the confirming probe
 
-**Status: PROPOSED 2026-11-07.** Supplies the probe that `2026-10-23`'s worldgen-locality
+**Status: EXECUTED 2026-11-07** against game build `0.7.6`. Results and the method corrections
+the run forced are in § *Results* at the end; the specification above is left as written so what
+was predicted and what was found can be compared.
+
+**Status (original): PROPOSED 2026-11-07.** Supplies the probe that `2026-10-23`'s worldgen-locality
 finding names but does not execute.
 
 > **That finding is not on `main`.** It lives in
@@ -214,3 +218,132 @@ this project is shaped around.
 - Does not establish behaviour at identical signatures. A signature diff cannot see a behaviour
   change and neither can this; that is what the live probes exist for, one question at a time.
 - Does not re-audit `hytale-capability-audit.md`. That document stays the `0.5.9` snapshot.
+
+
+---
+
+## Results — run against `0.7.6`, 2026-11-07
+
+```
+LOCALITY_VERDICT: CLAIM1_SURVIVES | extents recovered=27 predicted=27 MATCH
+                  | claim2 NOT_SHOWN | crossing OBSERVED
+```
+
+### Part 2 — the result
+
+| | |
+|---|---|
+| `minChunkCoord` / `maxChunkCoord` | `-67108837` / `67108836` |
+| extents recovered | **27 chunks** from the min side, **27** from the max — symmetric |
+| predicted from public declared sizes | `(370 >> 5) + 16` = **27 chunks** |
+| | **MATCH** |
+
+`getLargestFeatureChunkExtents` is confirmed **by execution**, `CHUNK_BOUNDS_PADDING = 16` chunks is
+a real term rather than a read constant, and feature reach is derived from what features declare.
+That is the claim the finding rested on, now `[measured]`.
+
+### Part 1 — claim 1 survives
+
+**283 aggregates** across **28 zones** and **1,429 prefab patterns**, **0 clamping**. Every aggregate
+the live generator exposes is at least as large as the scope it aggregates over.
+
+### Part 1b — and the gap the accounting found
+
+`PrefabContainerEntry.getExtents()` threw on every one of 1,429 attempts:
+
+```
+NullPointerException: Cannot invoke "ChunkGenerator.getPrefabLoadingCache()"
+                      because "this.chunkGenerator" is null
+```
+
+It resolves through the **thread-local** `ChunkGeneratorResource`, whose `chunkGenerator`
+back-reference is set only on the generator's own pool threads. `ChunkGenerator.execute` is public
+and submits onto that pool, so the read succeeds there: **1,429 / 1,429, 0 failures.**
+
+**`ChunkGenerator.execute` is `@Deprecated` and marked for removal on `0.7.6`.** Recorded, not worked
+around; the probe prints it.
+
+### Part 4 — answered exactly, by a different instrument than this spec proposed
+
+`UniquePrefabEntry` exposes `getLowBoundX/Y/Z` and `getHighBoundX/Y/Z` — a placed prefab's actual
+bounding box — so crossing is arithmetic, `lowX >> 5 != highX >> 5`:
+
+```
+unique prefab entries: 2   spanning a chunk border in x: 2   in z: 2
+largest bounding box: 118 blocks, 3 chunk border(s) crossed
+example: Temple x[-1117..-1032] chunks[-35..-33]  z[262..380] chunks[8..11]
+```
+
+**OBSERVED.** A feature whose declared box lies in two chunks cannot have been written by a
+single-chunk pass that knows nothing of its neighbours. No terrain inference, no noise floor, and
+**no player required** — §"The probe" assumed this part needed one and it does not.
+
+### Claim 2 — NOT_SHOWN, and not answerable by this method
+
+With a player connected: **76 comparisons**, best eligible single-table p = **0.0059**,
+Bonferroni-corrected **0.4517**. Not significant. `NOT_SHOWN`, not refuted.
+
+The diagnosis matters more than the number, and it is structural rather than a tuning problem:
+
+- **Background noise swamps the signal.** Control deviation rates run **15–31%** everywhere, so
+  "topmost solid disagrees with `generateHeight` by ≥3 blocks" fires on about a fifth of *all*
+  columns. A feature-presence signal has to beat that.
+- **No pattern is both dense enough and large enough.** The usable `getInterval()` band for one
+  player's loaded area is 16..67 blocks, and **every in-band pattern has `maxSize = 5`** — 5-block
+  props that barely perturb a column. The only large features (`maxSize = 100`) have
+  `getInterval() = 333`, which yields ~8 points in the region. Size and density are inversely
+  related, so the band that gives statistics contains nothing detectable.
+
+**The instrument to use instead** — found while fixing Part 4, not yet run: `UniquePrefabEntry`
+carries `getPosition()`, so claim 2 can be tested by comparing `collect()` output against where the
+engine says prefabs **actually are**, with no terrain inference and no noise floor. That is a direct
+test of the same claim and should replace Part 3's approach rather than tune it.
+
+### Seven things the run corrected, all found by executing
+
+Listed because the shape repeats and the spec did not anticipate most of it.
+
+1. **Cross-scope comparison, first instance.** Claim 1's test compared *local* quantities against the
+   *global* largest feature: `D` is 370 from a cave in one zone while `PrefabContainer.getMaxSize` is
+   a per-biome prefab aggregate. ~500 false gates, reported `CLAIM1_REFUTED`. Fixed by comparing each
+   aggregate against its own scope, accumulated bottom-up.
+2. **Absence reading as a pass.** "283 aggregates" against 1,429 patterns did not add up. Per-kind
+   accounting — added only to check that — showed `PrefabContainerEntry.getExtents` at **0 checked /
+   1,429 unreadable**: an entire aggregate kind missing, hidden inside a clean "0 clamping". The
+   helper had also swallowed the throwable, so the reason was added too.
+3. **Cross-scope comparison, second instance.** Part 1b then called 361 entries whose `getExtents()`
+   was below their declared `maxSize` a clamp, and reported `CLAIM1_REFUTED` again — while **1,049 of
+   1,429 were above**. A split in both directions is two different quantities, not a clamp.
+   `getExtents()` ranges 0..131 and is never consulted by `getLargestFeatureChunkExtents`. Demoted to
+   characterisation.
+4. **A ratio threshold is not a test.** Claim 2 first returned `MEASURED` on **5/8** vs 10/48 — no
+   sample floor, no multiple-comparison correction, and it was the best of four seed candidates.
+   Single-table p ≈ 0.026, corrected ≈ 0.10. Replaced with Fisher's exact right tail, a floor of
+   n ≥ 30 per set, and Bonferroni over every comparison tried.
+5. **Selecting by extremes.** Largest `maxSize` → `interval` 333 → 8 points. Then densest →
+   `interval` 1 → 130,812 points and **control 0/0**, because every position sits near a collected
+   one. The usable interval is a *band*, derived from the region size and the sample floor.
+6. **Part 4's original test was unsound.** It inferred placement from terrain at `border-2` and
+   `border+1` — three blocks apart, strongly correlated, against a ~20% background rate — and
+   reported `OBSERVED`. Replaced with the bounds arithmetic above.
+7. **The verdict line contradicted the body.** After Part 4 was refactored it stopped setting
+   `trace.crossing`, so the summary read `NOT_OBSERVED` while the section above it read `OBSERVED`.
+   The repo's own gate discipline is that the verdict line is what a reader trusts; this is that
+   failure inside a probe written under that discipline. `crossing()` now returns its verdict.
+
+Six of the seven are one shape: **a measurement that does not test what it claims**, and in four
+cases it produced a confident wrong verdict rather than an error. The two that were caught early were
+caught by an arithmetic cross-check (1,429 vs 283) and by a negative control behaving like the real
+seeds — not by reading the code.
+
+### Harness
+
+`server-up.sh` ran green against `0.7.6` with no changes across eight boot/stop cycles, so the
+`0.7.4` → `0.7.6` move cost the harness nothing. Reported separately from the probe result, as
+§"Known risks" required, so a harness fix could not be mistaken for a finding.
+
+One harness defect was introduced and fixed here: `drive-featurelocality.sh` deployed to
+`mods/hytale-all.jar` while `server-up.sh` uses `mods/hytale-0.0.0-SNAPSHOT-all.jar`, so after using
+both the directory held two copies of the same plugin and the server refused to boot
+(`Tried to load duplicate plugin`). The driver had reported only `SERVER DIED EARLY` — the symptom,
+not the cause. It now writes the same filename and fails loudly on any stray jar.
