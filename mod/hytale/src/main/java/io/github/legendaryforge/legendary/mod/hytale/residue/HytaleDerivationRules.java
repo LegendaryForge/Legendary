@@ -72,11 +72,18 @@ public final class HytaleDerivationRules {
      * </ul>
      */
     /**
-     * The count that reproduces the old 1% fraction floor at the default window — {@code ceil(0.01 *
-     * 43,560)}. Used for every element whose floor was never the binding constraint, so this change
-     * moves only the one that was measurably wrong.
+     * The volume that reproduces the old 1% fraction floor at the default window — {@code ceil(0.01 *
+     * 43,560) = 436} samples at step 8, so {@code 436 * 8³}. Used for every element whose floor was
+     * never the binding constraint.
+     *
+     * <p><strong>This number's provenance is a window fraction, not a volume.</strong> It is carried
+     * forward unchanged because changing it is a separate decision from making it step-invariant, and
+     * because for Earth, Wind and Water the floor has never been the binding constraint — a column is
+     * 20-80% solid, and session 26 measured water at 4,225 samples where a pocket read 91. If
+     * {@code measurementRadius} is ever narrowed, this is the value to re-derive: at radius 64 the
+     * same volume is 3.8% of the window rather than 1%.
      */
-    private static final int ABUNDANT_FLOOR = 436;
+    private static final int ABUNDANT_VOLUME = 436 * 8 * 8 * 8;
 
     /**
      * Fire's floor, derived from a live measurement rather than chosen.
@@ -89,9 +96,12 @@ public final class HytaleDerivationRules {
      * the "2x2 puddle" the floor exists to reject.
      *
      * <p>The old 1% fraction floor was 436 samples and lava's best reading anywhere was 261, so Fire
-     * could never site at all. See {@code ElementGrounding.minimumStrengthSamples()}.
+     * could never site at all. See {@code ElementGrounding.minimumStrengthVolume()}.
+     *
+     * <p>Stated as the volume directly, so the 44x separation it rests on cannot be rescaled by a
+     * sampling change: {@code 10 * 8³}.
      */
-    private static final int FIRE_FLOOR = 10;
+    private static final int FIRE_VOLUME = 10 * 8 * 8 * 8;
 
     public static List<ElementGrounding> cosmologicalFive() {
         return List.of(
@@ -105,7 +115,7 @@ public final class HytaleDerivationRules {
                         "fire",
                         Set.of("Lava_Source", "Lava"),
                         Set.of("Volcanoes", "Caves_Volcanic", "Crucible", "Wastes"),
-                        FIRE_FLOOR),
+                        FIRE_VOLUME),
 
                 // Glacial is corroboration here rather than a separate Ice element: the roster
                 // decision models Ice inside Water.
@@ -117,7 +127,7 @@ public final class HytaleDerivationRules {
                         "water",
                         Set.of("Water_Source", "Water"),
                         Set.of("Shores", "Swamps", "Glacial", "Caves_Swamps", "Oasis"),
-                        ABUNDANT_FLOOR),
+                        ABUNDANT_VOLUME),
 
                 // --- Geometric: terrain shape, no marker to require.
                 //
@@ -139,7 +149,7 @@ public final class HytaleDerivationRules {
                 // anchors favour valleys and lowlands while earth anchors favour high ground, and
                 // the two tile the world instead of competing for it.
                 new ElementGrounding.Geometric(
-                        "wind", Set.of("Env_"), 0, 15, ElementGrounding.Occupancy.OPEN, ABUNDANT_FLOOR),
+                        "wind", Set.of("Env_"), 0, 15, ElementGrounding.Occupancy.OPEN, ABUNDANT_VOLUME),
 
                 // Deliberately the inverse exposure band: enclosed stone, not open ground. A cave
                 // environment read at high sky light is a cave mouth, and scores lower for it.
@@ -149,11 +159,11 @@ public final class HytaleDerivationRules {
                 // Sky 0..15 and a substring every environment id carries keep the record's non-empty
                 // invariant while gating on occupancy alone.
                 new ElementGrounding.Geometric(
-                        "earth", Set.of("Env_"), 0, 15, ElementGrounding.Occupancy.SOLID, ABUNDANT_FLOOR),
+                        "earth", Set.of("Env_"), 0, 15, ElementGrounding.Occupancy.SOLID, ABUNDANT_VOLUME),
 
                 // --- Weather: no physical presence at all. Storm probability comes from the
                 // environment's own WeatherForecasts weights, which is why this is the one grounding
                 // where an environment id is the primary signal rather than a coarse proxy.
-                new ElementGrounding.Weather("lightning", 0.10, 13, 15, ABUNDANT_FLOOR));
+                new ElementGrounding.Weather("lightning", 0.10, 13, 15, ABUNDANT_VOLUME));
     }
 }
