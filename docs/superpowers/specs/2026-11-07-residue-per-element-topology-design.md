@@ -158,13 +158,35 @@ terrain is smooth" and "the detector does not work".
 
 ### The cross-check that decides how to read it
 
-Mean anchor spacing is **~900 blocks** — `1/sqrt(1.24)` km at the measured per-element anchor
-density. The coherent valley runs are **142–460 blocks**. So the best channel in five regions is half
-an anchor spacing and the median region's is a fifth of one.
+Mean anchor spacing is **447 blocks**, per element:
 
-**A valley therefore cannot carry a current between two anchors.** Channel structure in this terrain
-is a local texture at the few-hundred-block scale, not a network at the kilometre scale anchors live
-at.
+```bash
+grep -n -A6 'Quantity, per element' 2026-10-23-residue-sizing-re-derivation.md
+grep -n 'suppressionRadius' ../../../core/src/main/java/io/github/legendaryforge/legendary/core/api/residue/AnchorParameters.java
+```
+
+The sizing table gives **5.00 anchors/km²** at `suppressionRadius = 256`, which is the committed
+value, so spacing is `1/sqrt(5.00)` km = 447 b. Cross-checks against Matérn hard-core packing:
+`1/(pi * 256^2)` = 4.86/km².
+
+> **Read the column, not the number.** That table's other column, `1.23` anchors/km², is the
+> **R=512** figure — the superseded radius. Taking it yields a 900 b spacing, which this spec
+> asserted in its first draft and which made the argument below twice as strong as it is. That is the
+> `512`-outliving-`256` confusion [`architecture/residue.md`](../../architecture/residue.md) exists to
+> prevent, reproduced inside a spec citing its rule, because this figure was the one transcribed
+> without its re-derivation command attached.
+
+Against 447 b, the coherent valley runs of **142–460 blocks** are **0.32x to 1.03x** one anchor
+spacing. So in the best region of five, one valley is about one anchor gap; typically it is a third to
+three quarters of one.
+
+**That is still not a topology, and the reason is sharper than "too short".** A topology needs
+*every* edge to be realisable. A feature that reaches the next anchor only in the most favourable
+region cannot carry a connected network — the network would be defined where terrain happened to
+cooperate and undefined elsewhere, which is the extent problem the lattice was introduced to solve. A
+**path cost** has the opposite property: it uses whatever constriction is present over whatever
+distance it runs, and needs no guarantee at all. Features at 0.3–1.0 anchor spacings are well suited
+to the second role and unusable in the first.
 
 ### The decision
 
@@ -177,12 +199,14 @@ at.
    It also makes Wind headlessly measurable for the first time — `GeneratorTerrainSample` currently
    documents Wind as not measurable by this route, because `OPEN` needs fluid data it does not have,
    and a heightmap-only grounding removes that dependency.
-2. **Wind's topology is `Sprawling`**, like Earth and Water. No third kind. The channels are too short
-   by a factor of two to six.
+2. **Wind's topology is `Sprawling`**, like Earth and Water. No third kind — the channels reach
+   0.32x to 1.03x of an anchor spacing, so they are sometimes long enough and usually not, which is
+   the one thing a topology cannot be.
 3. **Constriction enters at the path layer**, which §4 already decided: a current is *"a least-cost
    path weighted by element affinity"*. Wind's affinity is constriction, so a current threads through
    the gaps because the gaps are cheap — not because the topology is built from them. A 142–460-block
-   coherent feature is the right size for a path segment and hopelessly small for a topology.
+   coherent feature is a good size for a path segment, over an edge averaging 447 b, and unusable as
+   a topology for the reason above.
 
 Note which figure matters under this reading. The weakest number above is axis agreement (62–74%),
 and a **cost field does not need a consistent axis** — it only needs some columns to be cheap. The

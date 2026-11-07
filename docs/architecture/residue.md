@@ -143,9 +143,16 @@ Everything above anchors. Nothing here exists in code.
   the whole world column, which its own javadoc records as reading *"strongest over deep water"* — so
   wind anchors favour ocean floors, the inverse of where wind reads. Measured 2026-11-07 over five
   regions: narrow gorges are absent (runs of 28–64 blocks) while valley structure is real (142–460
-  blocks at 62–74% directional coherence) — but mean anchor spacing is ~900 blocks, so a valley
-  cannot carry a current *between* anchors. Constriction therefore decides **where a wind anchor is**
-  and **which way a current bends**, never what connects to what.
+  blocks at 62–74% directional coherence). Against a mean anchor spacing of **447 blocks** — the
+  sizing table's `5.00` anchors/km² at the committed `suppressionRadius 256`, *not* its `1.23` row,
+  which is the superseded `512` — those runs are **0.32x to 1.03x** of one anchor gap: sometimes
+  enough, usually not, which is the one thing a topology cannot be. A path cost needs no such
+  guarantee. Constriction therefore decides **where a wind anchor is** and **which way a current
+  bends**, never what connects to what.
+
+  ```bash
+  grep -n -A6 'Quantity, per element' ../superpowers/specs/2026-10-23-residue-sizing-re-derivation.md
+  ```
 - **Anchors are 3D**, each carrying its own y from its element's rule — fluid surface for Fire and
   Water, the cave volume's level for Earth, above terrain for Wind, exposed surface for Lightning.
   This dissolves a measured defect rather than patching it: with one shared reference plane, the
