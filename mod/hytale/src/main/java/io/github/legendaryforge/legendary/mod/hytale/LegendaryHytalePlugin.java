@@ -27,6 +27,7 @@ import io.github.legendaryforge.legendary.mod.hytale.command.PrefabPasteProbeCom
 import io.github.legendaryforge.legendary.mod.hytale.command.ResidueAnchorsCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.ResidueParticleProbeCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.ResidueScaleCommand;
+import io.github.legendaryforge.legendary.mod.hytale.command.ResidueSeparationCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.ResidueSiteProbeCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.StormseekerAdvanceCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.StormseekerStatusCommand;
@@ -127,10 +128,11 @@ public class LegendaryHytalePlugin extends JavaPlugin {
         getCommandRegistry().registerCommand(new FluidCensusCommand());
         getCommandRegistry().registerCommand(new PartitionGapCommand());
         getCommandRegistry().registerCommand(new FeatureLocalityCommand());
+        getCommandRegistry().registerCommand(new ResidueSeparationCommand());
         getLogger()
                 .atInfo()
                 .log(
-                        "Commands registered: /stormseeker, /ss-advance, /ss-trial, /weatherprobe, /weatheroverrideprobe, /weatherportprobe, /residueparticleprobe, /residueprobe, /blockprobe, /blockspoofprobe, /prefabprobe, /beamprobe, /pointprobe, /markerprobe, /signalprobe, /fluidscancost, /blockidprobe, /residueanchors, /residuescale, /worldgenquery, /worldgenheight, /chunkhookprobe, /fluidcensus, /partitiongap, /featurelocality");
+                        "Commands registered: /stormseeker, /ss-advance, /ss-trial, /weatherprobe, /weatheroverrideprobe, /weatherportprobe, /residueparticleprobe, /residueprobe, /blockprobe, /blockspoofprobe, /prefabprobe, /beamprobe, /pointprobe, /markerprobe, /signalprobe, /fluidscancost, /blockidprobe, /residueanchors, /residuescale, /worldgenquery, /worldgenheight, /chunkhookprobe, /fluidcensus, /partitiongap, /featurelocality, /residueseparation");
     }
 
     private void onPlayerConnect(PlayerConnectEvent event) {

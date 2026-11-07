@@ -26,8 +26,22 @@ import java.util.OptionalInt;
  * heightmap is unresolved — {@code IHeightmap.forLoader} constructs one rather than fetching it — and
  * inventing a downward block scan would have required assuming which block id means empty, an
  * assumption nothing here has verified. So the probe samples a slab at the operator's own elevation
- * and says so in its output. Finding the real heightmap accessor is the next probe's question, not a
- * silent approximation inside this one.
+ * and says so in its output.
+ *
+ * <p><strong>That question is answered, and the answer is not {@code IHeightmap}.</strong> This
+ * paragraph used to end "finding the real heightmap accessor is the next probe's question".
+ * {@code ChunkGenerator.generateHeight(seed, x, z)} is that accessor in effect: a pure generator
+ * call, measured against the topmost solid block <strong>7/7 exactly</strong> on {@code 0.7.4} by
+ * {@code /worldgenheight}, needing nothing loaded. {@link GeneratorTerrainSample} uses it.
+ *
+ * <p>Upgrading {@link #surfaceHeightAt} to use it is therefore a small, known change rather than an
+ * open question — and it is <strong>not</strong> done here, deliberately. Two reasons, both worth
+ * stating so the next reader does not assume neglect. It would need the generator and seed threaded
+ * through all seven construction sites, five of which hold neither. And the payoff is narrower than
+ * it looks: {@code VolumeStrength} never calls {@code surfaceHeightAt} — it walks the whole column —
+ * so no anchor strength depends on this plane. Its only real consumer is {@code SiteScorer}, the
+ * weighted-sum scorer that {@code /residueprobe} still drives. So this affects that probe's output
+ * and nothing in the volume model.
  */
 public final class SectionReaderTerrainSample implements TerrainSample {
 
