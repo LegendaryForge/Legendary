@@ -1,0 +1,11 @@
+Build-Jdk-Spec: 25
+Implementation-Branch: release/release
+Implementation-Build: NoJar
+Implementation-Patchline: release
+Implementation-Revision-Id: c540fda164620dc01f5e1b44990ad03edf00814d
+Implementation-Title: Server
+Implementation-Vendor-Id: com.hypixel.hytale
+Implementation-Version: 0.7.6
+Java-Version: 25
+Jar-SHA256: fb80f84b1079643ee370fec1d9139438eefc34e071143ebd7ac0ff0be1e16871
+Jar-Bytes: 112456755
