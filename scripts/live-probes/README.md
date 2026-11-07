@@ -41,6 +41,8 @@ executing, not by reading.
 
 | Driver | Probe | Last run green | Against |
 |---|---|---|---|
+| `drive-windchannels.sh` | `/windchannels` (headless; 5 regions, 3 controls) | 2026-11-07 | **0.7.6** |
+| `drive-residueseparation.sh` | `/residueseparation` (headless; Earth only) | 2026-11-07 | **0.7.6** |
 | `drive-featurelocality.sh` | `/featurelocality` (headless; Parts 1/1b/2 only) | 2026-11-07 | **0.7.6** |
 | `drive-blockspoofprobe-client.sh` | `/blockspoofprobe` | 2026-10-20 (partial) | 0.7.2 |
 | `drive-blockspoofprobe.sh` | `/blockspoofprobe` (headless subset) | 2026-10-20 | 0.7.2 |
@@ -52,6 +54,13 @@ executing, not by reading.
 | `drive-signalprobe.sh` | `/signalprobe` | 2026-10-21 | 0.7.2 |
 | `drive-blockprobe.sh` | `/blockplacementprobe` | 2026-08-29 | **0.6.1 — unverified since** |
 | `drive-prefabprobe.sh` | `/prefabprobe` | 2026-08-29 | **0.6.1 — unverified since** |
+
+**`drive-residueseparation.sh` was absent from this table from the day it shipped** (session 30)
+until 2026-11-07, and nothing reported it: `checkDocsOrganization`'s indexing rule covers `docs/`,
+and this file is under `scripts/`. So the one table listing which probes exist, and which game build
+each was last green against, is maintained by whoever remembers — the arrangement that rule exists to
+replace. Recorded rather than fixed with a guard, since the guard would be a change to `buildSrc` and
+this is a two-row correction.
 
 `server-up.sh` is **not** in the table because it is not a probe driver — see below. It is
 nonetheless the **only** route to `/featurelocality`'s Parts 3 and 4, which read the topmost solid
