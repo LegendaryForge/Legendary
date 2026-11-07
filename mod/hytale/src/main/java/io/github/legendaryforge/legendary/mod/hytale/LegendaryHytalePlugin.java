@@ -17,6 +17,7 @@ import io.github.legendaryforge.legendary.mod.hytale.command.BlockIdProbeCommand
 import io.github.legendaryforge.legendary.mod.hytale.command.BlockPlacementProbeCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.BlockSpoofProbeCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.ChunkHookProbeCommand;
+import io.github.legendaryforge.legendary.mod.hytale.command.FeatureLocalityCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.FluidCensusCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.FluidScanCostCommand;
 import io.github.legendaryforge.legendary.mod.hytale.command.MarkerProbeCommand;
@@ -125,10 +126,11 @@ public class LegendaryHytalePlugin extends JavaPlugin {
         getCommandRegistry().registerCommand(new ChunkHookProbeCommand());
         getCommandRegistry().registerCommand(new FluidCensusCommand());
         getCommandRegistry().registerCommand(new PartitionGapCommand());
+        getCommandRegistry().registerCommand(new FeatureLocalityCommand());
         getLogger()
                 .atInfo()
                 .log(
-                        "Commands registered: /stormseeker, /ss-advance, /ss-trial, /weatherprobe, /weatheroverrideprobe, /weatherportprobe, /residueparticleprobe, /residueprobe, /blockprobe, /blockspoofprobe, /prefabprobe, /beamprobe, /pointprobe, /markerprobe, /signalprobe, /fluidscancost, /blockidprobe, /residueanchors, /residuescale, /worldgenquery, /worldgenheight, /chunkhookprobe, /fluidcensus, /partitiongap");
+                        "Commands registered: /stormseeker, /ss-advance, /ss-trial, /weatherprobe, /weatheroverrideprobe, /weatherportprobe, /residueparticleprobe, /residueprobe, /blockprobe, /blockspoofprobe, /prefabprobe, /beamprobe, /pointprobe, /markerprobe, /signalprobe, /fluidscancost, /blockidprobe, /residueanchors, /residuescale, /worldgenquery, /worldgenheight, /chunkhookprobe, /fluidcensus, /partitiongap, /featurelocality");
     }
 
     private void onPlayerConnect(PlayerConnectEvent event) {

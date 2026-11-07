@@ -41,6 +41,7 @@ executing, not by reading.
 
 | Driver | Probe | Last run green | Against |
 |---|---|---|---|
+| `drive-featurelocality.sh` | `/featurelocality` (headless; Parts 1/1b/2 only) | 2026-11-07 | **0.7.6** |
 | `drive-blockspoofprobe-client.sh` | `/blockspoofprobe` | 2026-10-20 (partial) | 0.7.2 |
 | `drive-blockspoofprobe.sh` | `/blockspoofprobe` (headless subset) | 2026-10-20 | 0.7.2 |
 | `drive-weatheroverrideprobe-client.sh` | `/weatheroverrideprobe` | 2026-10-20 | 0.7.2 |
@@ -52,7 +53,16 @@ executing, not by reading.
 | `drive-blockprobe.sh` | `/blockplacementprobe` | 2026-08-29 | **0.6.1 — unverified since** |
 | `drive-prefabprobe.sh` | `/prefabprobe` | 2026-08-29 | **0.6.1 — unverified since** |
 
-`server-up.sh` is **not** in the table because it is not a probe driver — see below.
+`server-up.sh` is **not** in the table because it is not a probe driver — see below. It is
+nonetheless the **only** route to `/featurelocality`'s Parts 3 and 4, which read the topmost solid
+block and so need loaded chunks: boot with `server-up.sh`, connect a client, then
+`echo featurelocality > .scratch/hytale-server/console`. The headless driver above covers Parts 1,
+1b and 2, which are the critical-path ones.
+
+**`server-up.sh` ran green against `0.7.6` on 2026-11-07** with no changes needed, across five
+boot/stop cycles. Worth recording because the game had just moved `0.7.4` → `0.7.6` and this
+directory's own warning is that the harness expires with the build — that warning was right to
+exist and, this time, did not fire.
 
 The last two predate the 0.7.2 migration and are promoted as-is, labelled rather
 than silently endorsed. `/prefabprobe` in particular is known to have changed
