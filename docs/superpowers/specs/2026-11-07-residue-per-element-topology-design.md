@@ -250,11 +250,20 @@ once written.
 
 | Open | State |
 |---|---|
-| `reach`, per element | Derived, not chosen: from where connectivity structure stops changing as reach grows, expressed as a ratio to an existing parameter and pinned the way `suppressionRadius / cellSize == 2` is. Unmeasured |
+| `reach`, per element | Derived, not chosen: from where connectivity structure stops changing as reach grows, expressed as a ratio to an existing parameter and pinned the way `suppressionRadius / cellSize == 2` is. Unmeasured, but **bounded below by 256 blocks** — see below |
 | Current length per km² | Replaces `0.48 A/R`, which was measured against the MST. With it, crystal coverage `2w/R` |
 | Does the sprawling forest degenerate in a uniform field? | The ocean case. A near-flat strength field could yield one long arbitrary chain. Measurable headlessly for Earth; the risk to find before building |
 | Whether constriction places Wind anchors sensibly | Now testable headlessly, which it was not before |
 | Does any of it feel like wind | Needs a person in a valley |
+
+**`reach` has a hard lower bound, and it is derivable rather than measurable.** No two anchors are
+ever closer than `suppressionRadius` = **256 blocks**: `AnchorSelector.beats` is a *total* order, so
+of any two candidates within the radius one strictly beats the other and the loser is not an anchor.
+A `reach` at or below 256 therefore produces **no edge at all** — every anchor is an isolated source.
+And because the nearest *stronger* anchor is farther than the nearest anchor, `reach` has to clear
+the nearest-stronger distribution rather than the minimum separation, which at a mean spacing of 447
+b puts the useful range comfortably above `suppressionRadius` and makes a ratio to it the natural
+form. The measurement is of that distribution; the floor is arithmetic.
 | Earth's y source | Unchanged by this spec; still degenerate at `y=0` |
 | Lightning's measure | Unchanged; `VolumeStrength` still throws for `Weather`. Its *topology* is decided here, which is progress from nothing |
 
