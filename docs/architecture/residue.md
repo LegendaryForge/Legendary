@@ -66,6 +66,22 @@ Pinned by `AnchorParametersTest`, which also asserts `suppressionRadius / cellSi
 that keeps selection saturated, so the lattice proposes and terrain disposes rather than `cellSize`
 quietly setting anchor density.
 
+**Anchor density depends on how spatially correlated the strength field is, and the two published
+figures differ by 3.3x for that reason.** Measured 2026-11-07 by `/anchordrainage` over a 37.75 km²
+core region: real Earth terrain gives **1.48 anchors/km²** (spacing ~821 b), while the same probe's
+flat-field control gives **4.90/km²** (spacing ~452 b) — independently reproducing
+`SizingScan`'s 5.00/km². That scan ranks by an uncorrelated hash and says so (*"strengths tie, so the
+hash decides"*), whereas real Earth strength is smooth, because neighbouring candidates share most of
+a 128-radius window at 128 cell spacing, and a smooth field has far fewer local maxima.
+
+**So any figure derived from anchor spacing must say which regime it came from** — `0.48 A/R` current
+length and `2w/R` crystal coverage both inherit this, and both were derived under the uncorrelated
+one. Only Earth has been measured.
+
+```bash
+bash scripts/live-probes/drive-anchordrainage.sh | grep DRAINAGE_VERDICT
+```
+
 **Element floors**, stated as block volumes on each grounding:
 
 ```bash
@@ -143,15 +159,14 @@ Everything above anchors. Nothing here exists in code.
   the whole world column, which its own javadoc records as reading *"strongest over deep water"* — so
   wind anchors favour ocean floors, the inverse of where wind reads. Measured 2026-11-07 over five
   regions: narrow gorges are absent (runs of 28–64 blocks) while valley structure is real (142–460
-  blocks at 62–74% directional coherence). Against a mean anchor spacing of **447 blocks** — the
-  sizing table's `5.00` anchors/km² at the committed `suppressionRadius 256`, *not* its `1.23` row,
-  which is the superseded `512` — those runs are **0.32x to 1.03x** of one anchor gap: sometimes
-  enough, usually not, which is the one thing a topology cannot be. A path cost needs no such
-  guarantee. Constriction therefore decides **where a wind anchor is** and **which way a current
-  bends**, never what connects to what.
+  blocks at 62–74% directional coherence). Against a **measured** mean Earth anchor spacing of
+  **~821 blocks**, those runs are **0.17x to 0.56x** of one anchor gap — in no region measured does a
+  valley reach the next anchor. A path cost needs no such guarantee. Constriction therefore decides
+  **where a wind anchor is** and **which way a current bends**, never what connects to what.
 
   ```bash
-  grep -n -A6 'Quantity, per element' ../superpowers/specs/2026-10-23-residue-sizing-re-derivation.md
+  bash scripts/live-probes/drive-anchordrainage.sh   # spacing, from measured anchor density
+  bash scripts/live-probes/drive-windchannels.sh     # channel runs
   ```
 - **Anchors are 3D**, each carrying its own y from its element's rule — fluid surface for Fire and
   Water, the cave volume's level for Earth, above terrain for Wind, exposed surface for Lightning.

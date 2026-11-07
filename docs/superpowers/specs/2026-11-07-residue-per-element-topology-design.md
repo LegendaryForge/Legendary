@@ -158,27 +158,36 @@ terrain is smooth" and "the detector does not work".
 
 ### The cross-check that decides how to read it
 
-Mean anchor spacing is **447 blocks**, per element:
+Mean Earth anchor spacing is **~821 blocks**, measured on real terrain:
 
 ```bash
-grep -n -A6 'Quantity, per element' 2026-10-23-residue-sizing-re-derivation.md
-grep -n 'suppressionRadius' ../../../core/src/main/java/io/github/legendaryforge/legendary/core/api/residue/AnchorParameters.java
+./gradlew :mod:hytale:shadowJar && bash scripts/live-probes/drive-anchordrainage.sh
 ```
 
-The sizing table gives **5.00 anchors/km²** at `suppressionRadius = 256`, which is the committed
-value, so spacing is `1/sqrt(5.00)` km = 447 b. Cross-checks against Matérn hard-core packing:
-`1/(pi * 256^2)` = 4.86/km².
+**56 anchors in a 37.75 km² core region = 1.48/km², so spacing is `1/sqrt(1.48)` km = 821 b.**
 
-> **Read the column, not the number.** That table's other column, `1.23` anchors/km², is the
-> **R=512** figure — the superseded radius. Taking it yields a 900 b spacing, which this spec
-> asserted in its first draft and which made the argument below twice as strong as it is. That is the
-> `512`-outliving-`256` confusion [`architecture/residue.md`](../../architecture/residue.md) exists to
-> prevent, reproduced inside a spec citing its rule, because this figure was the one transcribed
-> without its re-derivation command attached.
+> **This figure is regime-dependent, and both numbers this spec published before it came from the
+> wrong regime.** [`2026-10-23-residue-sizing-re-derivation.md`](2026-10-23-residue-sizing-re-derivation.md)
+> gives **5.00 anchors/km²** at `suppressionRadius = 256`, implying 452 b — and that is *correct for
+> the model it used*. `SizingScan.select` ranks candidates by `mix(seed ^ elementDomain, x, z)`, a
+> spatially **uncorrelated** hash, and says so at its line 70: *"strengths tie, so the hash
+> decides."* Real Earth strength is spatially **smooth**, because neighbouring candidates share most
+> of a 128-radius window at 128 cell spacing, and a smooth field has far fewer local maxima than a
+> hash field at the same spacing. Measured ratio **3.3x**.
+>
+> What makes this a difference of regime rather than an instrument error: the same probe's
+> flat-field control reproduces the sizing figure independently at **4.90/km²** — two encodings
+> agreeing. Cross-check in the other direction: measured nearest-stronger p50 is **640 b**,
+> consistent with ~821 b spacing and not with 452 b.
+>
+> **The first draft said ~900 b and the second said 447 b, and the first was closer by luck.** It
+> came from reading the `R=512` column of that table — a different error that happened to land near
+> the right answer. The lesson is the one
+> [`architecture/residue.md`](../../architecture/residue.md) already states and neither draft obeyed:
+> a number needs the command that re-derives it **and** the regime it was derived under.
 
-Against 447 b, the coherent valley runs of **142–460 blocks** are **0.32x to 1.03x** one anchor
-spacing. So in the best region of five, one valley is about one anchor gap; typically it is a third to
-three quarters of one.
+Against ~821 b, the coherent valley runs of **142–460 blocks** are **0.17x to 0.56x** one anchor
+spacing. So in no region measured does a valley reach the next anchor.
 
 **That is still not a topology, and the reason is sharper than "too short".** A topology needs
 *every* edge to be realisable. A feature that reaches the next anchor only in the most favourable
@@ -200,13 +209,12 @@ to the second role and unusable in the first.
    documents Wind as not measurable by this route, because `OPEN` needs fluid data it does not have,
    and a heightmap-only grounding removes that dependency.
 2. **Wind's topology is `Sprawling`**, like Earth and Water. No third kind — the channels reach
-   0.32x to 1.03x of an anchor spacing, so they are sometimes long enough and usually not, which is
-   the one thing a topology cannot be.
+   0.17x to 0.56x of an anchor spacing, so none measured spans an anchor gap.
 3. **Constriction enters at the path layer**, which §4 already decided: a current is *"a least-cost
    path weighted by element affinity"*. Wind's affinity is constriction, so a current threads through
    the gaps because the gaps are cheap — not because the topology is built from them. A 142–460-block
-   coherent feature is a good size for a path segment, over an edge averaging 447 b, and unusable as
-   a topology for the reason above.
+   coherent feature is a good size for a path segment, over an edge averaging ~821 b, and unusable
+   as a topology for the reason above.
 
 Note which figure matters under this reading. The weakest number above is axis agreement (62–74%),
 and a **cost field does not need a consistent axis** — it only needs some columns to be cheap. The
@@ -250,9 +258,10 @@ once written.
 
 | Open | State |
 |---|---|
-| `reach`, per element | Derived, not chosen: from where connectivity structure stops changing as reach grows, expressed as a ratio to an existing parameter and pinned the way `suppressionRadius / cellSize == 2` is. Unmeasured, but **bounded below by 256 blocks** — see below |
+| `reach`, for Earth | **Measured 2026-11-07**: nearest-stronger p50 **640 b**, p90 **1312 b**, max 4839 b. At reach 512, 39 of 56 core anchors are sources (70%); at 1536, 4 of 56 (7%). A usable Earth reach is therefore **~6x `suppressionRadius`**, far above the floor derived below. Unmeasured for the other four |
 | Current length per km² | Replaces `0.48 A/R`, which was measured against the MST. With it, crystal coverage `2w/R` |
-| Does the sprawling forest degenerate in a uniform field? | The ocean case. A near-flat strength field could yield one long arbitrary chain. Measurable headlessly for Earth; the risk to find before building |
+| Does a `Sprawling` forest follow the field or the hash? | **Open, and the first instrument could not tell.** `/anchordrainage`'s edge-bearing-coherence metric reads flat 19.4%, ramp 60.0%, real 29.4% at reach 512 — but the ramp figure there rests on **5 edges**, and where the ramp has enough edges (768–1536) it settles at **29%**, indistinguishable from real terrain. A clean monotone field and real terrain look the same under this metric, so it separates nothing. The predicted 12.5% null is wrong too: flat reads 17–21%, because jittered-lattice anchors cluster their bearings on lattice axes. **The replacement test** compares each edge against the *local strength gradient* rather than against other edges — strength is proportional to mean window height, so uphill is computable and the null is a uniform angle distribution |
+| Anchor density for the other four elements | Earth is 1.48/km² measured. The 5.00/km² sizing figure is the uncorrelated regime for all five, so every quantity derived from spacing — `0.48 A/R`, `2w/R` crystal coverage — inherits the same 3.3x question |
 | Whether constriction places Wind anchors sensibly | Now testable headlessly, which it was not before |
 | Does any of it feel like wind | Needs a person in a valley |
 
