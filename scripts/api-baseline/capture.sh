@@ -82,4 +82,24 @@ echo "snapshot:   $DIR"
 echo "version:    $VERSION  rev ${REVID:0:8}"
 echo "classes:    $(wc -l < "$DIR/classes.txt") top-level com.hypixel types"
 echo "signatures: ${#TYPES[@]} imported types, $MISSING unresolved"
+
+# Name the comparison command here, at the one moment a reader is about to reach
+# for `diff -ru` -- which is misleading, because the type list above is derived
+# from OUR sources at capture time and so moves between captures independently of
+# the engine. See README.md "Do NOT read a cross-version diff with diff -ru".
+# No 2>/dev/null here, deliberately: this search's emptiness is treated as
+# evidence ("no earlier snapshot"), and a suppressed error would make a broken
+# snapshots/ directory read as an empty one -- fail-green, workspace rule 2.
+PREV=""
+if [ -d "$OUT_ROOT" ]; then
+  PREV="$(find "$OUT_ROOT" -mindepth 1 -maxdepth 1 -type d ! -path "$DIR" -printf '%T@ %p\n' \
+    | LC_ALL=C sort -rn | head -1 | cut -d' ' -f2-)"
+fi
+if [ -n "$PREV" ]; then
+  echo "compare:    python3 $(realpath --relative-to="$REPO" "$(pwd)")/compare.py \\"
+  echo "              $(realpath --relative-to="$REPO" "$PREV") \\"
+  echo "              $(realpath --relative-to="$REPO" "$DIR")"
+else
+  echo "compare:    (no earlier snapshot to compare against)"
+fi
 echo "BASELINE_VERDICT: CAPTURED"
