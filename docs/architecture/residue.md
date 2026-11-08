@@ -44,6 +44,12 @@ per element, and hard-core suppression that selects anchors from candidates.
 | Selection | `AnchorSelector` | Matérn type II: a site must beat everything within the suppression radius; ties broken by position hash |
 | Engine terrain reads | `SectionReaderTerrainSample` | live, needs loaded chunks |
 | Generator terrain reads | `GeneratorTerrainSample` | headless, **Earth only** — see its javadoc for why |
+| Current topology | `CurrentTopology`, `Currents` | `Sprawling` (nearest stronger within reach) and `Contained` (single-linkage groups, minimum spanning tree inside each), returning a `CurrentForest` of directed `CurrentEdge`s |
+
+**The topology layer is built; the currents themselves are not.** `Currents.build` decides *which
+anchors a current joins*. It does not produce a path: §4's least-cost path weighted by element
+affinity is still unbuilt, so nothing is placed in the world and no crystal has a line to mark. What
+exists is the graph.
 
 **Strength is a block volume, not a sample count**, and therefore invariant under `sampleStep`.
 This was a real defect: a floor expressed as raw samples became 8× looser at step 4, which would
@@ -137,7 +143,8 @@ model is a mistake this document exists to prevent.
 Everything above anchors. Nothing here exists in code.
 
 - **Currents — topology is per element, and a global spanning tree is retired.** Decided
-  2026-11-07; see `../superpowers/specs/2026-11-07-residue-per-element-topology-design.md`. Anchors
+  2026-11-07 and **the topology half is now built** (§1); the paths are not. See
+  `../superpowers/specs/2026-11-07-residue-per-element-topology-design.md`. Anchors
   are derived from an area's elemental affinity, so each element's anchor set is **patchy** — and a
   spanning tree must connect every anchor, so it must emit an edge bridging two volcanic regions
   across a snowfield. That is the defect terrain derivation was adopted to kill, reimported at the
@@ -147,11 +154,27 @@ Everything above anchors. Nothing here exists in code.
     within `reach`; nothing stronger in reach makes it a source. Acyclic because strength strictly
     decreases, directional because upstream is *toward stronger*, and local with a halo of exactly
     `reach` — the same margin `AnchorSelector` documents for `suppressionRadius`. Reuses the shipped
-    total order `AnchorSelector.beats`.
+    total order `AnchorSelector.beats`. **Built**, and the acyclicity claim is mutation-tested: the
+    realistic wrong rule, "at least as strong as mine", makes every tied pair mutually upstream and
+    was confirmed to turn the all-tied fixture into two-cycles.
   - **`Contained(reach)`** — Fire, Lightning. Single-linkage groups at `reach`, then a minimum
-    spanning tree *within* each group. The MST was not wrong, it was wrongly universalised: it is
-    right exactly where the grounding **guarantees** absence around the cluster. `Contained` on a
-    `Geometric` grounding is a construction error, because rock and air are never absent.
+    spanning tree *within* each group, oriented toward the group's strongest anchor so "upstream"
+    means what it means for `Sprawling`. The MST was not wrong, it was wrongly universalised: it is
+    right exactly where the grounding **guarantees** absence around the group. **Built.** `Contained`
+    on a `Geometric` grounding throws — rock and open air are everywhere, so single linkage over them
+    yields one unbounded group and the structure degenerates into the global tree it replaces. The
+    design asked for that to be a *construction* error; it is enforced at `Currents.build` instead,
+    which is the only place topology is used, because putting topology on the grounding record would
+    have changed every grounding construction site. Both directions are tested — `Weather` is
+    accepted, since a storm gate means Lightning *can* be absent.
+
+    ```bash
+    grep -rn 'Currents.build' core/src quests mod harness | grep -v /test/
+    ```
+
+    That returning nothing today is expected: `LegendaryHytalePlugin` wires Stormseeker imperatively
+    and nothing consumes currents yet. Minimality is mutation-tested — a star rooted at the strongest
+    anchor also spans each group and also respects `reach`, and was confirmed to fail the fixture.
   - Each edge is still a **least-cost path weighted by element affinity**, not a straight line,
     because crystal density makes the line's path observable and a straight line over a ridge reads
     as geometry rather than place. Rivers then emerge as water currents with no special case.
