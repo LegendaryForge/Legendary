@@ -8,6 +8,7 @@ import io.github.legendaryforge.legendary.core.api.residue.WorldPoint2d;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 /**
  * How much of one element is in a candidate's window — anchor-density design §2, "strength is
@@ -92,8 +93,73 @@ public final class VolumeStrength {
                         .filter(physical.requiredFluids()::contains)
                         .isPresent();
             case ElementGrounding.Geometric geometric -> satisfiesGeometric(sample, geometric, x, y, z);
+            case ElementGrounding.Channelled channelled -> satisfiesChannelled(sample, channelled, x, y, z);
             case ElementGrounding.Weather weather -> satisfiesWeather(weather);
         };
+    }
+
+    /**
+     * Air that terrain has funnelled — three conditions, and the third is the load-bearing one.
+     *
+     * <p>Open air, <em>and</em> a constricted column, <em>and</em> at or below the wall top. Drop the
+     * third and a deep valley is scored by how much sky sits over it, which is the same
+     * valley-above-summit inversion {@code Occupancy.OPEN} produced for Wind and that this grounding
+     * exists to fix.
+     *
+     * <p><strong>A bowl is not a channel.</strong> A column walled on <em>every</em> axis is a
+     * sheltered hollow with nothing flowing through it, so constriction requires at least one axis
+     * open — the same distinction {@code /windchannels} measured as CHANNEL against BOWL.
+     *
+     * <p>An unreadable neighbour makes this false rather than true: not knowing whether a column is
+     * constricted is not the same as its being constricted, and the opposite choice would mint
+     * qualifying air along the edge of every loaded region.
+     */
+    private static boolean satisfiesChannelled(
+            TerrainSample sample, ElementGrounding.Channelled channelled, int x, int y, int z) {
+        Optional<String> environment = sample.environmentAt(x, y, z);
+        if (environment.isEmpty()
+                || !ElementGrounding.environmentMatches(environment.get(), channelled.environments())) {
+            return false;
+        }
+        int sky = sample.skyLightAt(x, y, z);
+        if (sky < channelled.minSkyLight() || sky > channelled.maxSkyLight()) {
+            return false;
+        }
+        // Open air, by the same rule OPEN uses: getBlock reports 0 inside a fluid, so "not solid"
+        // alone would count submerged positions as air.
+        if (sample.isSolidAt(x, y, z) || sample.fluidAt(x, y, z).isPresent()) {
+            return false;
+        }
+        OptionalInt here = sample.surfaceHeightAt(x, z);
+        if (here.isEmpty()) {
+            return false;
+        }
+        int surface = here.getAsInt();
+        int d = channelled.ringDistance();
+        int minWall = Integer.MAX_VALUE;
+        int maxWall = Integer.MIN_VALUE;
+        for (int axis = 0; axis < 4; axis++) {
+            int dx = axis == 1 ? 0 : d;
+            int dz =
+                    switch (axis) {
+                        case 0 -> 0;
+                        case 3 -> -d;
+                        default -> d;
+                    };
+            OptionalInt low = sample.surfaceHeightAt(x - dx, z - dz);
+            OptionalInt high = sample.surfaceHeightAt(x + dx, z + dz);
+            if (low.isEmpty() || high.isEmpty()) {
+                return false;
+            }
+            int wall = Math.min(low.getAsInt(), high.getAsInt()) - surface;
+            minWall = Math.min(minWall, wall);
+            maxWall = Math.max(maxWall, wall);
+        }
+        int rise = channelled.riseThreshold();
+        if (maxWall < rise || minWall >= rise) {
+            return false;
+        }
+        return y <= surface + maxWall;
     }
 
     /**
