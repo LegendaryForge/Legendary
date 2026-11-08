@@ -68,9 +68,9 @@ quietly setting anchor density.
 
 **Anchor density depends on how spatially correlated the strength field is, and the two published
 figures differ by 3.3x for that reason.** Measured 2026-11-07 by `/anchordrainage` over a 37.75 km²
-core region: real Earth terrain gives **1.48 anchors/km²** (spacing ~821 b), while the same probe's
-flat-field control gives **4.90/km²** (spacing ~452 b) — independently reproducing
-`SizingScan`'s 5.00/km². That scan ranks by an uncorrelated hash and says so (*"strengths tie, so the
+core region, and replicated on 2.8x the area: real Earth terrain gives **1.53 anchors/km²**
+(spacing **810 b**; the first, smaller region gave 1.48 and 821), while the same probe's flat-field
+control gives **4.90/km²** (spacing ~452 b) — independently reproducing `SizingScan`'s 5.00/km². That scan ranks by an uncorrelated hash and says so (*"strengths tie, so the
 hash decides"*), whereas real Earth strength is smooth, because neighbouring candidates share most of
 a 128-radius window at 128 cell spacing, and a smooth field has far fewer local maxima.
 
@@ -184,8 +184,8 @@ Everything above anchors. Nothing here exists in code.
 
 | Open | State |
 |---|---|
-| `reach`, per element | The one parameter the topology decision adds. Derived, not chosen: from where connectivity structure stops changing as reach grows, expressed as a ratio to an existing parameter and pinned the way `suppressionRadius / cellSize == 2` is. **Unmeasured** |
-| Does a sprawling forest degenerate in a uniform field? | The ocean case: a near-flat strength field could yield one long arbitrary chain instead of a network. Measurable headlessly for Earth, and the risk to find before building |
+| `reach`, per element | The one parameter the topology decision adds. **Measured for Earth**: nearest-stronger p50 690 b, p90 1445 b over 104.86 km², so ~5.6x `suppressionRadius`. It also has an arithmetic floor of `suppressionRadius` itself — no two anchors are ever closer than that, since `AnchorSelector.beats` is a total order and the loser of any closer pair is not an anchor, so a smaller reach yields no edge at all. Unmeasured for the other four |
+| Does a `Sprawling` forest follow the field, or the hash? | **Answered for Earth 2026-11-07 — the field, significantly but weakly.** Edge-versus-gradient angle, null arithmetic at 90°/0.50: real peaks at gradient radius 512 b (median edge 690 b) with uphill **0.63 ± 0.04**, n=147 — 3.2 SE above the null — holds at 1024 b and collapses to 0.49 at 2048 b, which is what rules out the regional trend. Flat declines 494/494; the ramp control reads 0.88–0.89 at every radius. **Real terrain is ~1/3 of the way from arbitrary to clean-gradient-following**, so whether that reads as sensible on the ground is a perception question, not a measured one. Unmeasured for the other four elements |
 | Current length per km² | Replaces `0.48 A/R`, which was measured against the retired MST — and with it the `2w/R` crystal coverage derived from it |
 | Does constriction place Wind anchors sensibly? | Newly testable headlessly, which `Occupancy.OPEN` was not |
 | `measurementRadius` | Earth **measured** 2026-11-07: at the current window 32% of contests are decided by gaps under 1%, which halves at radius 64. But the original argument for 128 was about *water saturation*, which runs the opposite way and is unmeasured |

@@ -81,7 +81,7 @@ sleep 5
 # interleaves two boots' output.
 echo "anchordrainage" >&3
 FOUND=0
-for _ in $(seq 1 600); do
+for _ in $(seq 1 1800); do
   if grep -aq "DRAINAGE_VERDICT:" "$OUT"; then FOUND=1; break; fi
   kill -0 "$PID" 2>/dev/null || { echo "SERVER DIED DURING PROBE"; break; }
   sleep 1

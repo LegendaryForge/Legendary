@@ -75,14 +75,31 @@ import java.util.Optional;
  */
 public class AnchorDrainageCommand extends AbstractWorldCommand {
 
-    /** Half-width of the region whose anchors are reported on. ~38 km² at this size. */
-    private static final int CORE_HALF = 3072;
+    /**
+     * Half-width of the region whose anchors are reported on. ~105 km² at this size.
+     *
+     * <p>Widened from 3072 on the third run: the binding constraint on the discriminator was
+     * <strong>n = 52 edges</strong>, not the metric. At the measured 1.48 anchors/km² this should
+     * yield roughly 155.
+     */
+    private static final int CORE_HALF = 5120;
 
     /** Coarser than the shipped 8. Legitimate because strength is a volume; see the class javadoc. */
     private static final int PROBE_SAMPLE_STEP = 16;
 
     /** Reaches measured, in blocks. 256 is `suppressionRadius`, which must yield no edge at all. */
     private static final int[] REACHES = {256, 384, 512, 768, 1024, 1536};
+
+    /**
+     * The reach the discriminator is read at, in blocks.
+     *
+     * <p>1536 rather than 512, and fixed before the run. The measured nearest-stronger p90 is
+     * 1312 b, so at reach 512 roughly 70% of core anchors have no parent and the edge set is both
+     * tiny and selected for short edges — which is how the previous version of this probe came to
+     * read its ramp control off <strong>five edges</strong>. The discriminator needs the reach where
+     * nearly every anchor is linked, not the one where few are.
+     */
+    private static final int USABLE_REACH = 1536;
 
     private static final int FLAT_SURFACE = 160;
 
@@ -91,8 +108,26 @@ public class AnchorDrainageCommand extends AbstractWorldCommand {
     /** One block of rise per 32 east: ~192 blocks of rise across the core region. */
     private static final int SLOPE_RUN = 32;
 
-    /** Edge bearings are bucketed into this many sectors; chance agreement is 1/this. */
+    /** Edge bearings are bucketed into this many sectors. Retained only for the forest table. */
     private static final int BEARING_SECTORS = 8;
+
+    /**
+     * Radii, in blocks, over which the local strength gradient is fitted.
+     *
+     * <p><strong>Four of them, and the curve is the result rather than any one row.</strong> A
+     * gradient is an estimate at a scale, and reading one scale and believing it is what defeated
+     * this probe's previous metric and the wind-channel probe before it.
+     *
+     * <p><strong>The prediction, stated before the run that uses these radii.</strong> "Does this
+     * edge go uphill" means uphill <em>over the distance the edge travels</em>, and the measured
+     * median edge is 640 b. So alignment should strengthen as the radius approaches the edge scale
+     * and then <strong>plateau</strong>. If instead it rises monotonically through 2048 b, that is
+     * not edges-follow-field — it is the regional trend being picked up, and {@code Sprawling}
+     * should be reported as unsupported. The first two radii already measured 89.6 and 74.8 degrees
+     * on real terrain, so the direction of movement is known and only the shape of the rest of the
+     * curve is not.
+     */
+    private static final int[] GRADIENT_RADII = {256, 512, 1024, 2048};
 
     /** No parent. */
     private static final int NO_PARENT = -1;
@@ -259,10 +294,149 @@ public class AnchorDrainageCommand extends AbstractWorldCommand {
         out.nearestStrongerP90 = percentile(nearestStronger, 90);
         out.nearestStrongerMax = percentile(nearestStronger, 100);
 
+        // Gradients are a property of the field and the anchor, not of any reach, so they are
+        // computed once here. Recomputing them inside the per-reach loop multiplied the fit cost by
+        // the number of reaches for no change in the answer.
+        //
+        // `measured` -- the candidate field -- is what the gradient is fitted over, not the anchor
+        // set: candidates sit every cellSize (128 b) where anchors sit every ~820, so the anchor set
+        // is far too sparse to estimate a local gradient from.
+        double[][][] gradients = new double[GRADIENT_RADII.length][anchors.size()][];
+        for (int r = 0; r < GRADIENT_RADII.length; r++) {
+            for (int i = 0; i < anchors.size(); i++) {
+                if (!inCore(anchors.get(i))) {
+                    continue;
+                }
+                Anchor a = anchors.get(i);
+                gradients[r][i] =
+                        gradientAt(measured, a.position().x(), a.position().z(), GRADIENT_RADII[r]);
+            }
+        }
+
         for (int reach : REACHES) {
-            out.rows.add(forestAt(anchors, reach, seed));
+            Row row = forestAt(anchors, reach, seed);
+            for (int r = 0; r < GRADIENT_RADII.length; r++) {
+                row.alignments.add(alignment(anchors, row.parents, gradients[r], GRADIENT_RADII[r]));
+            }
+            out.rows.add(row);
         }
         return out;
+    }
+
+    /**
+     * How well a reach's edges follow the local strength gradient.
+     *
+     * <p><strong>This replaces edge-bearing coherence, which could not discriminate.</strong> That
+     * metric compared edges against <em>each other</em>, so its null had to be calibrated from a
+     * control — and measured 29% on a clean monotone ramp against 19% on a pure hash field, a window
+     * too narrow to classify real terrain, which sat inside it. This metric compares each edge
+     * against the field it is supposed to be following, so <strong>the null is arithmetic</strong>:
+     * if edges ignore the field, the angle between edge and uphill is uniform on {@code [0,180]}, so
+     * the mean is {@code 90} degrees and the fraction below {@code 90} is exactly {@code 0.5}. No
+     * control calibrates that.
+     *
+     * <p>A zero gradient is reported as <strong>undefined rather than as a number</strong>, which is
+     * what makes the flat control informative: on a field with no gradient this metric must decline
+     * to answer, and a figure appearing there would mean the fit is reading noise.
+     */
+    private static Alignment alignment(List<Anchor> anchors, int[] parents, double[][] gradients, int gradientRadius) {
+        Alignment out = new Alignment();
+        out.gradientRadius = gradientRadius;
+        List<Double> angles = new ArrayList<>();
+        for (int i = 0; i < anchors.size(); i++) {
+            Anchor self = anchors.get(i);
+            if (!inCore(self) || parents[i] == NO_PARENT) {
+                continue;
+            }
+            double[] gradient = gradients[i];
+            if (gradient == null) {
+                out.undefined++;
+                continue;
+            }
+            Anchor parent = anchors.get(parents[i]);
+            double ex = parent.position().x() - self.position().x();
+            double ez = parent.position().z() - self.position().z();
+            double edgeLength = Math.hypot(ex, ez);
+            double gradientLength = Math.hypot(gradient[0], gradient[1]);
+            if (edgeLength == 0 || gradientLength == 0) {
+                out.undefined++;
+                continue;
+            }
+            double cosine = (ex * gradient[0] + ez * gradient[1]) / (edgeLength * gradientLength);
+            double theta = Math.toDegrees(Math.acos(Math.max(-1, Math.min(1, cosine))));
+            angles.add(theta);
+            if (theta < 90.0) {
+                out.uphill++;
+            }
+        }
+        out.defined = angles.size();
+        double sum = 0;
+        for (double theta : angles) {
+            sum += theta;
+        }
+        out.meanAngle = angles.isEmpty() ? Double.NaN : sum / angles.size();
+        out.medianAngle = percentile(angles, 50);
+        return out;
+    }
+
+    /**
+     * Least-squares plane fit of candidate strength around a point, as {@code {dS/dx, dS/dz}}.
+     *
+     * <p>Null when the neighbourhood is degenerate or the fitted gradient is exactly zero — which is
+     * the whole-field case for the flat control, and must not be reported as a direction.
+     */
+    private static double[] gradientAt(List<Anchor> field, double x, double z, int radius) {
+        double sumX = 0;
+        double sumZ = 0;
+        double sumS = 0;
+        int n = 0;
+        for (Anchor a : field) {
+            double dx = a.position().x() - x;
+            double dz = a.position().z() - z;
+            if (Math.hypot(dx, dz) > radius) {
+                continue;
+            }
+            sumX += dx;
+            sumZ += dz;
+            sumS += a.strength();
+            n++;
+        }
+        if (n < 4) {
+            return null;
+        }
+        double meanX = sumX / n;
+        double meanZ = sumZ / n;
+        double meanS = sumS / n;
+        double sxx = 0;
+        double szz = 0;
+        double sxz = 0;
+        double sxs = 0;
+        double szs = 0;
+        for (Anchor a : field) {
+            double dx = a.position().x() - x;
+            double dz = a.position().z() - z;
+            if (Math.hypot(dx, dz) > radius) {
+                continue;
+            }
+            double cx = dx - meanX;
+            double cz = dz - meanZ;
+            double cs = a.strength() - meanS;
+            sxx += cx * cx;
+            szz += cz * cz;
+            sxz += cx * cz;
+            sxs += cx * cs;
+            szs += cz * cs;
+        }
+        double det = sxx * szz - sxz * sxz;
+        if (det == 0) {
+            return null;
+        }
+        double bx = (szz * sxs - sxz * szs) / det;
+        double bz = (sxx * szs - sxz * sxs) / det;
+        if (bx == 0 && bz == 0) {
+            return null;
+        }
+        return new double[] {bx, bz};
     }
 
     /** One reach's forest, with statistics over core anchors only. */
@@ -275,6 +449,7 @@ public class AnchorDrainageCommand extends AbstractWorldCommand {
 
         Row row = new Row();
         row.reach = reach;
+        row.parents = parent;
         List<Double> lengths = new ArrayList<>();
         int[] sectors = new int[BEARING_SECTORS];
         for (int i = 0; i < n; i++) {
@@ -390,12 +565,6 @@ public class AnchorDrainageCommand extends AbstractWorldCommand {
 
     private static String interpret(Forests flat, Forests slope, Forests real) {
         StringBuilder out = new StringBuilder();
-        Row flatMid = flat.at(512);
-        Row slopeMid = slope.at(512);
-        Row realMid = real.at(512);
-        if (flatMid == null || slopeMid == null || realMid == null) {
-            return "a reach row is missing; nothing to compare.\n";
-        }
         Row realMin = real.at(REACHES[0]);
         out.append("reach = suppressionRadius (")
                 .append(REACHES[0])
@@ -404,30 +573,56 @@ public class AnchorDrainageCommand extends AbstractWorldCommand {
                 .append(" edges on real terrain. It must be 0: no two anchors are closer than\n")
                 .append("the suppression radius, because `beats` is a total order and the loser of any\n")
                 .append("close pair is not an anchor. A non-zero count here falsifies that argument.\n\n");
+
+        int reach = USABLE_REACH;
+        out.append("=== THE DISCRIMINATOR, at reach ").append(reach).append(" ===\n");
+        out.append("Null is arithmetic, not calibrated: edges that ignore the field make the angle\n")
+                .append("between edge and uphill uniform on [0,180], so meanAngle 90 and uphill 0.50.\n\n");
+        for (int gradientRadius : GRADIENT_RADII) {
+            Alignment flatA = flat.alignmentAt(reach, gradientRadius);
+            Alignment slopeA = slope.alignmentAt(reach, gradientRadius);
+            Alignment realA = real.alignmentAt(reach, gradientRadius);
+            if (flatA == null || slopeA == null || realA == null) {
+                out.append("  gradient radius ").append(gradientRadius).append(": not computed\n");
+                continue;
+            }
+            out.append(String.format("  gradient radius %d b%n", gradientRadius));
+            out.append(String.format(
+                    "    flat  meanAngle %5.1f  uphill %s   (defined %d, undefined %d)%n",
+                    flatA.meanAngle, frac(flatA), flatA.defined, flatA.undefined));
+            out.append(String.format(
+                    "    ramp  meanAngle %5.1f  uphill %s   (defined %d, undefined %d)%n",
+                    slopeA.meanAngle, frac(slopeA), slopeA.defined, slopeA.undefined));
+            out.append(String.format(
+                    "    real  meanAngle %5.1f  uphill %s   (defined %d, undefined %d)%n",
+                    realA.meanAngle, frac(realA), realA.defined, realA.undefined));
+        }
+        out.append("\nThe flat row should be almost entirely UNDEFINED: a field with no gradient has no\n")
+                .append("uphill, so the metric must decline to answer rather than produce a figure. A\n")
+                .append("number there would mean the plane fit is reading noise, and would invalidate the\n")
+                .append("real row too.\n");
+        out.append("\nIf the two gradient radii disagree, the answer is about the smoothing scale and\n")
+                .append("not about the forest -- which is the mistake both earlier probes in this session\n")
+                .append("made by reading a single scale.\n");
+
         out.append(String.format(
-                "bearing coherence at reach 512, the discriminator:%n  flat %.1f%%   ramp %.1f%%   real %.1f%%   (chance %.1f%%)%n",
-                flatMid.bearingCoherence,
-                slopeMid.bearingCoherence,
-                realMid.bearingCoherence,
-                100.0 / BEARING_SECTORS));
-        out.append("Real terrain near the flat figure would mean the forest follows the hash rather\n")
-                .append("than the field, which is the degeneracy. Near the ramp figure means it follows\n")
-                .append("the field. Depth alone cannot separate those, which is why it is not the test.\n\n");
-        out.append(String.format(
-                "nearest-stronger distance on real terrain: p10 %.0f  p50 %.0f  p90 %.0f  max %.0f b%n",
+                "%nnearest-stronger distance on real terrain: p10 %.0f  p50 %.0f  p90 %.0f  max %.0f b%n",
                 real.nearestStrongerP10, real.nearestStrongerP50, real.nearestStrongerP90, real.nearestStrongerMax));
         out.append("That distribution is what sets `reach`: a reach below p90 leaves a tenth of\n")
                 .append("anchors as sources for want of a parent they have.\n");
         return out.toString();
     }
 
+    private static String frac(Alignment a) {
+        return Double.isNaN(a.uphillFraction())
+                ? "-"
+                : String.format("%.2f+-%.2f", a.uphillFraction(), a.nullStandardError());
+    }
+
     private static String verdict(Forests flat, Forests slope, Forests real) {
-        Row flatMid = flat.at(512);
-        Row slopeMid = slope.at(512);
-        Row realMid = real.at(512);
         Row realMin = real.at(REACHES[0]);
-        if (flatMid == null || slopeMid == null || realMid == null || realMin == null) {
-            return "UNTESTED | a reach row is missing";
+        if (realMin == null) {
+            return "UNTESTED | the floor reach row is missing";
         }
         if (real.coreAnchors == 0) {
             return "UNTESTED | no anchor in the core region";
@@ -439,20 +634,37 @@ public class AnchorDrainageCommand extends AbstractWorldCommand {
                 }
             }
         }
+        Alignment flatA = flat.alignmentAt(USABLE_REACH, GRADIENT_RADII[0]);
+        Alignment slopeA = slope.alignmentAt(USABLE_REACH, GRADIENT_RADII[0]);
+        Alignment realA = real.alignmentAt(USABLE_REACH, GRADIENT_RADII[0]);
+        if (flatA == null || slopeA == null || realA == null) {
+            return "UNTESTED | the alignment rows are missing";
+        }
+        // The flat control must DECLINE to answer. If it produces a direction, the plane fit is
+        // reading noise and the real row is not evidence -- so this is a gate, not a reported stat.
+        if (flatA.defined > flatA.undefined) {
+            return String.format(
+                    "CONTROL_FAILED | flat field produced %d defined gradients against %d undefined; "
+                            + "a field with no gradient has no uphill, so the fit is reading noise",
+                    flatA.defined, flatA.undefined);
+        }
         String floorClaim = realMin.edges == 0 ? "HOLDS" : "FALSIFIED";
         return String.format(
-                "MEASURED | core anchors %d | reach=%d floor %s | coherence flat %.1f%% ramp %.1f%% real %.1f%% (chance %.1f%%) | nearestStronger p50 %.0f p90 %.0f b | real sources %d/%d at reach 512",
+                "MEASURED | core anchors %d | reach=%d floor %s | reach=%d gradR=%d: ramp %.1fdeg/%.2f real %.1fdeg/%.2f (null 90deg/0.50, n=%d) | flat declined %d/%d | nearestStronger p50 %.0f p90 %.0f b",
                 real.coreAnchors,
                 REACHES[0],
                 floorClaim,
-                flatMid.bearingCoherence,
-                slopeMid.bearingCoherence,
-                realMid.bearingCoherence,
-                100.0 / BEARING_SECTORS,
+                USABLE_REACH,
+                GRADIENT_RADII[0],
+                slopeA.meanAngle,
+                slopeA.uphillFraction(),
+                realA.meanAngle,
+                realA.uphillFraction(),
+                realA.defined,
+                flatA.undefined,
+                flatA.defined + flatA.undefined,
                 real.nearestStrongerP50,
-                real.nearestStrongerP90,
-                realMid.sources,
-                realMid.core);
+                real.nearestStrongerP90);
     }
 
     /** One terrain's anchor set and its forest at every reach. */
@@ -496,13 +708,78 @@ public class AnchorDrainageCommand extends AbstractWorldCommand {
             for (Row r : rows) {
                 out.append(r.render());
             }
+            out.append("\nedge agreement with the local strength gradient -- the discriminator.\n")
+                    .append("meanAngle 90 and uphill 0.50 are the arithmetic null: edges ignoring the field.\n")
+                    .append("Lower angle and higher fraction mean the forest follows the field.\n");
+            out.append(String.format(
+                    "%-7s %7s %9s %11s %11s %10s %9s%n",
+                    "reach", "gradR", "defined", "undefined", "meanAngle", "medAngle", "uphill"));
+            for (Row r : rows) {
+                for (Alignment a : r.alignments) {
+                    out.append(a.render(r.reach));
+                }
+            }
             return out.toString();
+        }
+
+        /** The alignment at one reach and one gradient radius, or null. */
+        Alignment alignmentAt(int reach, int gradientRadius) {
+            Row row = at(reach);
+            if (row == null) {
+                return null;
+            }
+            for (Alignment a : row.alignments) {
+                if (a.gradientRadius == gradientRadius) {
+                    return a;
+                }
+            }
+            return null;
+        }
+    }
+
+    /** One edge set's agreement with the local strength gradient. */
+    private static final class Alignment {
+        int gradientRadius;
+        int defined;
+        int undefined;
+        int uphill;
+        double meanAngle = Double.NaN;
+        double medianAngle = Double.NaN;
+
+        /** Fraction of edges pointing into the uphill half-plane. Arithmetic null: 0.5. */
+        double uphillFraction() {
+            return defined == 0 ? Double.NaN : (double) uphill / defined;
+        }
+
+        /** One standard error of {@link #uphillFraction()} under the null, so n is visible. */
+        double nullStandardError() {
+            return defined == 0 ? Double.NaN : 0.5 / Math.sqrt(defined);
+        }
+
+        String render(int reach) {
+            return String.format(
+                    "%-7d %7d %9d %11d %11s %10s %9s%n",
+                    reach,
+                    gradientRadius,
+                    defined,
+                    undefined,
+                    fmt(meanAngle),
+                    fmt(medianAngle),
+                    Double.isNaN(uphillFraction())
+                            ? "-"
+                            : String.format("%.2f+-%.2f", uphillFraction(), nullStandardError()));
+        }
+
+        private static String fmt(double value) {
+            return Double.isNaN(value) ? "-" : String.format("%.1f", value);
         }
     }
 
     /** One reach's forest statistics, over core anchors. */
     private static final class Row {
         int reach;
+        int[] parents = new int[0];
+        final List<Alignment> alignments = new ArrayList<>();
         int core;
         int edges;
         int sources;
