@@ -72,6 +72,15 @@ public final class SiteScorer {
                             scoreGeometric(geometric, environment, sky, parameters);
                         case ElementGrounding.Weather weather ->
                             scoreWeather(weather, sample, x, y, z, sky, parameters);
+                        // Refused rather than scored. This is the retired weighted-sum scorer, and
+                        // Channelled was designed for the volume model: its signal is how much
+                        // funnelled air a window holds, which a per-point weighted score cannot
+                        // express. Returning null would read as "this element does not type here",
+                        // which is a claim about terrain rather than about this scorer.
+                        case ElementGrounding.Channelled channelled ->
+                            throw new UnsupportedOperationException("SiteScorer cannot score the Channelled grounding"
+                                    + " for " + channelled.elementId() + ": it is the retired weighted-sum scorer,"
+                                    + " and constriction is a volume signal. Use VolumeStrength.");
                     };
             if (typing != null) {
                 typings.add(typing);

@@ -14,13 +14,15 @@ import java.util.Set;
  * qualify that same way. Encoding the distinction in the type system means
  * {@link io.github.legendaryforge.legendary.core.internal.residue.SiteScorer} cannot forget it.
  *
- * <p>Three groundings, and a fourth case that deliberately has no member here:
+ * <p>Four groundings, and a fifth case that deliberately has no member here:
  *
  * <ul>
  *   <li>{@link Physical} — a block or fluid exists. Fire is lava; Water is water. The feature is
  *       <strong>required</strong>; environment only corroborates.
- *   <li>{@link Geometric} — no marker exists, but the geometry is real. Earth is enclosed stone,
- *       Wind is open exposure. Qualifies on terrain shape, never on a marker.
+ *   <li>{@link Geometric} — no marker exists, but the geometry is real. Earth is enclosed stone.
+ *       Qualifies on terrain shape, never on a marker. <strong>Wind was here and is not any
+ *       more</strong> — see {@link Channelled} and the {@link Occupancy#OPEN} javadoc for the
+ *       measured reason.
  *   <li>{@link Weather} — <strong>no physical presence at all.</strong> Lightning is not a thing that
  *       <em>is</em> somewhere, it is a thing that <em>happens</em> somewhere, so its signal is storm
  *       probability. That is authored data rather than inference:
@@ -127,11 +129,17 @@ public sealed interface ElementGrounding {
      * What counts as the element being present at a sampled point, for a {@link Geometric}
      * grounding.
      *
-     * <p>Earth and Wind are the same grounding scored by the same rule, and the only thing that
-     * differs is this. Anchor-density design §2: Earth counts points where "the point is rock", Wind
-     * counts points that are "open air in a matching environment". Without this the scorer needs an
-     * {@code elementId} branch, which is exactly the per-element special-casing the sealed hierarchy
-     * exists to prevent.
+     * <p>Earth and Wind were the same grounding scored by the same rule, and the only thing that
+     * differed was this. Anchor-density design §2: Earth counts points where "the point is rock",
+     * Wind counted points that are "open air in a matching environment". Without this the scorer
+     * needs an {@code elementId} branch, which is exactly the per-element special-casing the sealed
+     * hierarchy exists to prevent.
+     *
+     * <p><strong>Wind no longer uses this.</strong> {@link #OPEN}'s own "known consequence" note
+     * below — that counting open space over a column favours valleys and ocean floors — turned out
+     * to be the wrong signal rather than an acceptable side effect, so Wind moved to
+     * {@link Channelled}. {@link #OPEN} is retained because it is the exact complement that makes
+     * the pair coherent, and because nothing else has replaced what it describes.
      */
     enum Occupancy {
         /**
@@ -219,6 +227,65 @@ public sealed interface ElementGrounding {
                 throw new IllegalArgumentException(
                         "Geometric grounding for " + elementId + " names no environment, so only its sky range "
                                 + "would decide — which qualifies every column in the world at that exposure.");
+            }
+        }
+    }
+
+    /**
+     * An element grounded in terrain that <strong>funnels</strong> it — a constriction rather than a
+     * shape or a marker.
+     *
+     * <p>Wind's only grounding, and it replaced {@link Occupancy#OPEN} for a measured reason.
+     * {@code OPEN} counts open space over the whole world column, which that constant's own javadoc
+     * records as reading "strongest over deep water" — so wind anchors favoured ocean floors and
+     * lowlands, the exact inverse of where wind reads. Air concentrates where terrain narrows, so
+     * the signal is narrowness.
+     *
+     * <p><strong>Three conditions, and the third is the one that stops this becoming the defect it
+     * replaces.</strong> A point counts when it is open air, <em>and</em> its column is constricted,
+     * <em>and</em> it lies at or below the wall top of that constriction. Without the third, a deep
+     * valley is scored by how much sky sits above it — which is the same inversion in new clothes.
+     *
+     * <p><strong>A separate record rather than a fourth {@link Occupancy}.</strong> Constriction
+     * needs two parameters no other grounding has, and hanging them on {@link Geometric} would put
+     * fields there that only one occupancy value reads — which is the "one record with fluids,
+     * environments and a sky range" shape this hierarchy's own history records as wrong in both
+     * directions at once.
+     *
+     * <p><strong>Measured 2026-11-07 before this existed</strong>, by {@code /windchannels} over
+     * five regions: narrow gorges are absent from this generator (coherent runs of 28-64 blocks)
+     * while valley structure is real (142-460 blocks at 62-74% directional coherence). So a
+     * {@code ringDistance} at valley scale is where the signal is, and a gorge-scale one finds
+     * almost nothing.
+     *
+     * @param ringDistance how far out, in blocks, the eight neighbours are probed. The scale of
+     *     constriction this element answers to: small finds gorges, large finds valley floors
+     * @param riseThreshold how far the ground must stand proud on the enclosed sides, in blocks,
+     *     before the column counts as constricted
+     */
+    record Channelled(
+            String elementId,
+            Set<String> environments,
+            int minSkyLight,
+            int maxSkyLight,
+            int ringDistance,
+            int riseThreshold,
+            int minimumStrengthVolume)
+            implements ElementGrounding {
+        public Channelled {
+            requireElementId(elementId);
+            requireMinimumStrengthVolume(elementId, minimumStrengthVolume);
+            environments = Set.copyOf(Objects.requireNonNull(environments, "environments"));
+            requireSkyRange(minSkyLight, maxSkyLight);
+            if (ringDistance <= 0) {
+                throw new IllegalArgumentException(
+                        "ringDistance for " + elementId + " must be positive, got " + ringDistance);
+            }
+            if (riseThreshold <= 0) {
+                throw new IllegalArgumentException("riseThreshold for " + elementId
+                        + " must be positive, got " + riseThreshold
+                        + " — a zero threshold makes every column constricted, which is the"
+                        + " everywhere-qualifies defect this grounding exists to avoid");
             }
         }
     }
